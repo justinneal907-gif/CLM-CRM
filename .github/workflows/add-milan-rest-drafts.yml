@@ -1,0 +1,74 @@
+name: Add remaining Milan Fashion Week drafts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/add-milan-rest-drafts.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Add researched Milan S/S 2027 drafts
+        shell: python
+        run: |
+          from pathlib import Path
+          import base64, json
+
+          payload=json.loads(base64.b64decode("eyJkcmFmdHMiOlt7ImlkIjoibWlsYW4tc3MyNy1yZXN0LWx1aXNhLWJlY2NhcmlhIiwiZGF0ZSI6IjIwMjYtMDktMTYiLCJwdXJwb3NlIjoic3VibWlzc2lvbiIsImNvbnRhY3RJZCI6IiIsImNvbnRhY3ROYW1lIjoiIiwiY29tcGFueSI6Ikx1aXNhIEJlY2NhcmlhIiwicmVjaXBpZW50RW1haWwiOiIiLCJicmFuZFByb2plY3QiOiJMdWlzYSBCZWNjYXJpYSDigJQgTWlsYW4gRmFzaGlvbiBXZWVrIFMvUyAyMDI3IiwicGFja2FnZUxpbmsiOiIiLCJicmllZiI6Ik1pbGFuIEZhc2hpb24gV2VlayDCoCBXZWRuZXNkYXksIFNlcHRlbWJlciAyMywgMjAyNiDCoCAwOTozMCDCoCBMb2NhdGlvbiBpbiB0aGUgaW52aXRhdGlvbi4gQ3VyYXRlZCBmb3IgTHVpc2EgQmVjY2FyaWE6IHJvbWFudGljLCBldGhlcmVhbCBmZW1pbmluZSBsdXh1cnkuIiwiY2FzdGluZ0JyaWVmUmF3IjoiTWlsYW4gRmFzaGlvbiBXZWVrIFMvUyAyMDI3IMK3IEx1aXNhIEJlY2NhcmlhIMK3IFdlZG5lc2RheSwgU2VwdGVtYmVyIDIzLCAyMDI2IMK3IDA5OjMwIMK3IExvY2F0aW9uIGluIHRoZSBpbnZpdGF0aW9uLiIsInBhcnNlZEJyaWVmIjp7InByb2plY3QiOiJMdWlzYSBCZWNjYXJpYSIsInNob290RGF0ZSI6IjIwMjYtMDktMjMiLCJkYXRlVGV4dCI6IlNlcHRlbWJlciAyMywgMjAyNiIsImxvY2F0aW9uIjoiTG9jYXRpb24gaW4gdGhlIGludml0YXRpb24iLCJuaWNoZUNsdWVzIjpbIkx1eHVyeSAvIFJ1bndheSIsIkZhc2hpb24tQ29tbWVyY2lhbCIsIkJlYXV0eSJdfSwic3ViamVjdCI6IlMvUyAyMDI3IE1vZGVsIFBhY2thZ2Ug4oCUIEx1aXNhIEJlY2NhcmlhIiwiaW5jbHVkZVN0YXRzIjp0cnVlLCJpbmNsdWRlUGhvdG9zIjp0cnVlLCJpbmNsdWRlU291cmNlcyI6dHJ1ZSwibW9kZWxzIjpbIk1vbGx5IEdhcmRpbmVyIiwiQ2FsbGllIFN0ZWciLCJDYW1lbGlhIEJvY2EiLCJTZXZlbiBXcmlnaHQiLCJBbmFzdGFzaWEiXSwibW9kZWxJZHMiOlsibmV3LXlvcmstd29tZW4tbW9sbHktZ2FyZGluZXIiLCJuZXcteW9yay13b21lbi1jYWxsaWUtc3RlZyIsIm1pbGFuLXdvbWVuLWNhbWVsaWEtYm9jYSIsIm5ldy15b3JrLXdvbWVuLXNldmVuLXdyaWdodCIsIm1pYW1pLXdvbWVuLWFuYXN0YXNpYSJdLCJodG1sIjoiIiwic291cmNlIjoiQ05NSSBTL1MgMjAyNyBmaW5hbCBjYWxlbmRhciB1cGRhdGVkIDIwMjYtMDktMTQgwrcgYnJhbmQtZml0IGFuYWx5c2lzOyBjdXJyZW50IFMvUyAyMDI3IGNhc3RpbmcgY29udGFjdCBub3QgdmVyaWZpZWQiLCJyZXNlYXJjaFVybCI6IiIsInNlbGVjdGlvblJhdGlvbmFsZSI6IlNvZnQgcm9tYW50aWMgcHJlc2VuY2UsIGdyYWNlZnVsIHByb3BvcnRpb25zIGFuZCBwb2xpc2hlZCBmZW1pbmluaXR5IGZpdCB0aGUgaG91c2UncyBvY2Nhc2lvbi1kcml2ZW4gcnVud2F5IGxhbmd1YWdlLiIsImZvcm1hdCI6IlJ1bndheSJ9LHsiaWQiOiJtaWxhbi1zczI3LXJlc3QtamlsLXNhbmRlciIsImRhdGUiOiIyMDI2LTA5LTE2IiwicHVycG9zZSI6InN1Ym1pc3Npb24iLCJjb250YWN0SWQiOiIiLCJjb250YWN0TmFtZSI6IkJlbiBHcmltZXMiLCJjb21wYW55IjoiSmlsIFNhbmRlciIsInJlY2lwaWVudEVtYWlsIjoiIiwiYnJhbmRQcm9qZWN0IjoiSmlsIFNhbmRlciDigJQgTWlsYW4gRmFzaGlvbiBXZWVrIFMvUyAyMDI3IiwicGFja2FnZUxpbmsiOiIiLCJicmllZiI6Ik1pbGFuIEZhc2hpb24gV2VlayDCoCBXZWRuZXNkYXksIFNlcHRlbWJlciAyMywgMjAyNiDCoCAxMDozMCDCoCBMb2NhdGlvbiBpbiB0aGUgaW52aXRhdGlvbi4gQ3VyYXRlZCBmb3IgSmlsIFNhbmRlcjogc2V2ZXJlIG1pbmltYWxpc20gd2l0aCBkaXN0aW5jdGl2ZSBlZGl0b3JpYWwgcHJlc2VuY2UuIiwiY2FzdGluZ0JyaWVmUmF3IjoiTWlsYW4gRmFzaGlvbiBXZWVrIFMvUyAyMDI3IMK3IEppbCBTYW5kZXIgwrcgV2VkbmVzZGF5LCBTZXB0ZW1iZXIgMjMsIDIwMjYgwrcgMTA6MzAgwrcgTG9jYXRpb24gaW4gdGhlIGludml0YXRpb24uIiwicGFyc2VkQnJpZWYiOnsicHJvamVjdCI6IkppbCBTYW5kZXIiLCJzaG9vdERhdGUiOiIyMDI2LTA5LTIzIiwiZGF0ZVRleHQiOiJTZXB0ZW1iZXIgMjMsIDIwMjYiLCJsb2NhdGlvbiI6IkxvY2F0aW9uIGluIHRoZSBpbnZpdGF0aW9uIiwibmljaGVDbHVlcyI6WyJIaWdoIEZhc2hpb24gLyBFZGl0b3JpYWwiLCJMdXh1cnkgLyBSdW53YXkiXX0sInN1YmplY3QiOiJTL1MgMjAyNyBNb2RlbCBQYWNrYWdlIOKAlCBKaWwgU2FuZGVyIiwiaW5jbHVkZVN0YXRzIjp0cnVlLCJpbmNsdWRlUGhvdG9zIjp0cnVlLCJpbmNsdWRlU291cmNlcyI6dHJ1ZSwibW9kZWxzIjpbIkNsYXVkaWEgTHVjY2hpbmkiLCJBZ2FuZyIsIlJhY2hlbCBTdG9uZSIsIlNhbCBTb2xpbWFuIiwiTWFqYSBTdG9ja3dlbGwiLCJNYXR0IFJvc3NpIl0sIm1vZGVsSWRzIjpbIm5ldy15b3JrLXdvbWVuLWNsYXVkaWEtbHVjY2hpbmkiLCJuZXcteW9yay13b21lbi1hZ2FuZyIsIm5ldy15b3JrLXdvbWVuLXJhY2hlbC1zdG9uZSIsIm5ldy15b3JrLXdvbWVuLXNhbC1zb2xpbWFuIiwibmV3LXlvcmstd29tZW4tbWFqYS1zdG9ja3dlbGwiLCJuZXcteW9yay1tZW4tbWF0dC1yb3NzaSJdLCJodG1sIjoiIiwic291cmNlIjoiQ05NSSBTL1MgMjAyNyBmaW5hbCBjYWxlbmRhciB1cGRhdGVkIDIwMjYtMDktMTQgwrcgRi9XIDIwMjYgY2FzdGluZzogQmVuIEdyaW1lcyDCoCBTL1MgMjAyNyBhc3NpZ25tZW50IG5vdCBpbmRlcGVuZGVudGx5IGNvbmZpcm1lZCIsInJlc2VhcmNoVXJsIjoiaHR0cHM6Ly9tb2RlbHMuY29tL3dvcmsvaml sLXNhbmRlci1qaWwtc2FuZGVyLWZ3LTI2LXNob3cvMjczNTExNiIsInNlbGVjdGlvblJhdGlvbmFsZSI6IlByaW9yIGNhc3RzIGZhdm9yIHN0cm9uZyBpbmRpdmlkdWFsaXR5LCBjbGVhbiBsaW5lcyBhbmQgcHJlY2lzZSBydW53YXkgcHJvcG9ydGlvbnMgcmF0aGVyIHRoYW4gZ2VuZXJpYyBjb21tZXJjaWFsIHBvbGlzaC4iLCJmb3JtYXQiOiJSdW53YXkifV0sImJyYW5kX3Byb2ZpbGVzIjp7Imx1aXNhIGJlY2NhcmlhIjp7Imxvb2siOiJSb21hbnRpYywgZXRoZXJlYWwgZmVtaW5pbmUgbHV4dXJ5IiwibmljaGVzIjpbIkx1eHVyeSAvIFJ1bndheSIsIkZhc2hpb24tQ29tbWVyY2lhbCIsIkJlYXV0eSJdLCJ3aHkiOiJTb2Z0IHJvbWFudGljIHByZXNlbmNlLCBncmFjZWZ1bCBwcm9wb3J0aW9ucyBhbmQgcG9saXNoZWQgZmVtaW5pbml0eSBmaXQgdGhlIGhvdXNlJ3Mgb2NjYXNpb24tZHJpdmVuIHJ1bndheSBsYW5ndWFnZS4ifSwiamlsIHNhbmRlciI6eyJsb29rIjoiU2V2ZXJlIG1pbmltYWxpc20gd2l0aCBkaXN0aW5jdGl2ZSBlZGl0b3JpYWwgcHJlc2VuY2UiLCJuaWNoZXMiOlsiSGlnaCBGYXNoaW9uIC8gRWRpdG9yaWFsIiwiTHV4dXJ5IC8gUnVud2F5Il0sIndoeSI6IlByaW9yIGNhc3RzIGZhdm9yIHN0cm9uZyBpbmRpdmlkdWFsaXR5LCBjbGVhbiBsaW5lcyBhbmQgcHJlY2lzZSBydW53YXkgcHJvcG9ydGlvbnMgcmF0aGVyIHRoYW4gZ2VuZXJpYyBjb21tZXJjaWFsIHBvbGlzaC4ifX19").decode("utf-8"))
+          p=Path("index.html")
+          s=p.read_text(encoding="utf-8")
+
+          if "const MILAN_REST_DRAFTS=" not in s:
+              js=(
+                  "const MILAN_REST_DRAFTS="+json.dumps(payload["drafts"],ensure_ascii=False,separators=(",",":"))+";\n"
+                  "const MILAN_REST_BRAND_PROFILES="+json.dumps(payload["brand_profiles"],ensure_ascii=False,separators=(",",":"))+";\n"
+                  "Object.assign(BRAND_PROFILES,MILAN_REST_BRAND_PROFILES);\n"
+              )
+              marker="const seed={models:"
+              if marker not in s:
+                  raise SystemExit("seed marker not found")
+              s=s.replace(marker,js+marker,1)
+
+          old="data.drafts=mergeRecovered([...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS],data.drafts||[]).map(normalizeRecordModelNames);"
+          new="data.drafts=mergeRecovered([...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS],data.drafts||[]).map(normalizeRecordModelNames);"
+          if old in s:
+              s=s.replace(old,new,1)
+          elif new not in s:
+              raise SystemExit("draft merge marker not found")
+
+          old_meta="milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,modelIdentityUpdatedOn:'2026-09-16'"
+          new_meta="milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,milanRestDraftsAddedOn:'2026-09-16',milanRestDraftCount:MILAN_REST_DRAFTS.length,modelIdentityUpdatedOn:'2026-09-16'"
+          if old_meta in s:
+              s=s.replace(old_meta,new_meta,1)
+          elif "milanRestDraftCount:MILAN_REST_DRAFTS.length" not in s:
+              raise SystemExit("recovery metadata marker not found")
+
+          p.write_text(s,encoding="utf-8")
+
+      - name: Validate and commit
+        shell: bash
+        run: |
+          grep -q "const MILAN_REST_DRAFTS=" index.html
+          grep -q "milan-ss27-rest-jil-sander" index.html
+          grep -q "milan-ss27-rest-bottega-veneta" index.html
+          grep -q "milan-ss27-rest-rechenberg" index.html
+          grep -q "MILAN_REST_BRAND_PROFILES" index.html
+          grep -q "milanRestDraftCount:MILAN_REST_DRAFTS.length" index.html
+          git diff --check
+          git config user.name "ChatGPT CRM Update"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes needed."
+            exit 0
+          fi
+          git commit -m "Add remaining Milan Fashion Week model packages"
+          git push origin HEAD:main
