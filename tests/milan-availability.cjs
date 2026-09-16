@@ -18,7 +18,7 @@ const oldDraft={id:'milan-ss27-day1-dhruv-kapoor',subject:'Edited subject',brand
 const unaffected={id:'nyfw-draft',brandProject:'NYFW S/S 2027',modelIds:[...blockedIds],models:['Seven'],html:'<b>Seven</b>',photoSelections:{[blockedIds[0]]:'keep-outside-milan.jpg'}};
 const future={...unaffected,id:'future',brandProject:'Milan Fashion Week S/S 2028'};
 const historical={id:'sent-record',models:['Seven'],modelIds:[blockedIds[0]],status:'Submitted'};
-const workspace={...structuredClone(seed),drafts:[oldDraft,unaffected,future],draft:{...oldDraft},activeDraftId:oldDraft.id,selected:[keep,...blockedIds],submissions:[historical],bookings:[{id:'booking',model:'Seven'}],tasks:[{id:'task',task:'Keep'}],customPhotos:{[blockedIds[0]]:'preserved.jpg'}};
+const workspace={...structuredClone(seed),recovery:{milanPackageDepthVersion:1},drafts:[oldDraft,unaffected,future],draft:{...oldDraft},activeDraftId:oldDraft.id,selected:[keep,...blockedIds],submissions:[historical],bookings:[{id:'booking',model:'Seven'}],tasks:[{id:'task',task:'Keep'}],customPhotos:{[blockedIds[0]]:'preserved.jpg'}};
 const migrated=applyRecovered(workspace);
 `, context);
 const result = run('migrated');
