@@ -10,7 +10,7 @@ const changed=packages.filter(d=>d.packageDepthReview);assert.equal(changed.leng
 assert.equal(changed.reduce((n,d)=>n+d.packageDepthReview.addedModels.length,0),43);
 assert.ok(run('[...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS].every(d=>d.modelIds.every(id=>!isMilanUnavailable(id,seed.models)))'));
 vm.runInContext(`
-const old=structuredClone(seed);old.drafts=structuredClone([...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS]);
+const old=structuredClone(seed);old.recovery={milanOpenCloseVersion:1};old.drafts=structuredClone([...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS]);
 for(const d of old.drafts){if(d.packageDepthReview){const added=d.packageDepthReview.addedModels;d.modelIds=d.modelIds.filter(id=>!added.includes(seed.models.find(m=>m.id===id)?.name));d.models=d.models.filter(n=>!added.includes(n));delete d.packageDepthReview}d.notes='Keep notes';d.recipientEmail='private@example.test';d.photoSelections={[d.modelIds[0]]:'custom-photo'};d.html='Cached model HTML'}
 const untouched=structuredClone(old.drafts.filter(d=>d.modelIds.length>=4));
 old.activeDraftId='milan-ss27-day1-prada';old.draft=structuredClone(old.drafts.find(d=>d.id===old.activeDraftId));old.selected=[...old.draft.modelIds];
