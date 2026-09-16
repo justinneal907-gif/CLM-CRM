@@ -1,4 +1,4 @@
-name: Build model photo library
+name: Add draft model presentation controls
 
 on:
   push:
@@ -16,458 +16,76 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Crawl Chez Les profiles and patch CRM
+      - name: Patch CRM
         shell: python
         run: |
           from pathlib import Path
-          import base64, json, re, html, time
-          from urllib.request import Request, urlopen
-          from urllib.parse import urljoin, urlsplit, urlunsplit, unquote
-          from collections import deque, defaultdict
 
-          p=Path("index.html")
-          s=p.read_text(encoding="utf-8")
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
 
-          ANALYSIS=json.loads(base64.b64decode("eyJuZXcteW9yay13b21lbi1hZ2FuZyI6eyJiNDhmMGRmOC0xODM4LTRiYjQtYjBlYi0yNzQ1OWNjZmQ2MDMuanBnIjp7ImxhYmVsIjoiQ2xlYW4gZnVsbC1sZW5ndGggZGlnaXRhbCIsInRhZ3MiOlsiY2xlYW4iLCJmdWxsIiwibWluaW1hbCIsInJ1bndheSIsImRpZ2l0YWwiXX0sIjRhYzgxMmNhLTk2YWEtNDhiOS04NTcwLWY5ZDcwYzlhNWI5Ni5qcGciOnsibGFiZWwiOiJDbGVhbiB0aHJlZS1xdWFydGVyIHBvcnRyYWl0IiwidGFncyI6WyJjbGVhbiIsInBvcnRyYWl0IiwiYmVhdXR5IiwibWluaW1hbCIsImRpZ2l0YWwiXX0sIjg2NDcyMDA1LWIwMGEtNDA5ZC05MzIzLTVjZTQ0M2E0MWEwNS5qcGciOnsibGFiZWwiOiJEaXJlY3Rpb25hbCBlZGl0b3JpYWwiLCJ0YWdzIjpbImVkaXRvcmlhbCIsImNoYXJhY3RlciIsInJ1bndheSJdfX0sIm5ldy15b3JrLXdvbWVuLWNsYXVkaWEtbHVjY2hpbmkiOnsiaW1nXzE3OTYuanBnIjp7ImxhYmVsIjoiRGlyZWN0aW9uYWwgZWRpdG9yaWFsIHRlc3QiLCJ0YWdzIjpbImVkaXRvcmlhbCIsImNoYXJhY3RlciIsInJ1bndheSJdfSwiaW1nXzE3OTcuanBnIjp7ImxhYmVsIjoiQ2xlYW4gZmFzaGlvbiBwb3J0cmFpdCIsInRhZ3MiOlsiY2xlYW4iLCJwb3J0cmFpdCIsIm1pbmltYWwiLCJydW53YXkiXX0sImltZ18xNzk4LmpwZyI6eyJsYWJlbCI6IkVkaXRvcmlhbCBydW53YXkgcG9ydHJhaXQiLCJ0YWdzIjpbImVkaXRvcmlhbCIsInJ1bndheSIsImNoYXJhY3RlciJdfSwiaW1nXzE4MDYuanBnIjp7ImxhYmVsIjoiUG9ydGZvbGlvIGxlYWQiLCJ0YWdzIjpbImVkaXRvcmlhbCIsInJ1bndheSIsImNsZWFuIl19fSwibmV3LXlvcmstd29tZW4tY2FsbGllLXN0ZWciOnsic2NyZWVuK3Nob3QrMjAyNi0wOC0xNSthdCs5LjI5LjUyK3BtLnBuZyI6eyJsYWJlbCI6IkJsYWNrLWFuZC13aGl0ZSBiZWF1dHkgY2xvc2UtdXAiLCJ0YWdzIjpbImJlYXV0eSIsInBvcnRyYWl0IiwicG9saXNoZWQiLCJnbGFtb3VyIl19LCJpbWdfNjI1MC5qcGciOnsibGFiZWwiOiJTb2Z0IG5hdHVyYWwgZmFzaGlvbiBwb3J0cmFpdCIsInRhZ3MiOlsiYmVhdXR5Iiwic29mdCIsImNvbW1lcmNpYWwiLCJwb3J0cmFpdCJdfSwiaW1nXzYyNDAuanBnIjp7ImxhYmVsIjoiQ2xlYW4gcG9ydGZvbGlvIGRpZ2l0YWwiLCJ0YWdzIjpbImNsZWFuIiwiZGlnaXRhbCIsImZ1bGwiLCJtaW5pbWFsIl19fSwibmV3LXlvcmstd29tZW4tZHItbmlhbGFoLXdpbHNvbi1zbWFsbCI6eyJkc2MwMzY5Mi5qcGciOnsibGFiZWwiOiJXYXJtIGJlYXV0eSBjbG9zZS11cCIsInRhZ3MiOlsiYmVhdXR5IiwicG9ydHJhaXQiLCJzb2Z0IiwiY29tbWVyY2lhbCJdfSwiZHNjMDM1OTMuanBnIjp7ImxhYmVsIjoiU3RyZWV0IGVkaXRvcmlhbCBsb29rIiwidGFncyI6WyJlZGl0b3JpYWwiLCJzdHJlZXQiLCJjaGFyYWN0ZXIiXX0sImRzYzAzNjMxLmpwZyI6eyJsYWJlbCI6IkVkaXRvcmlhbCBwb3J0cmFpdCIsInRhZ3MiOlsiZWRpdG9yaWFsIiwicG9ydHJhaXQiLCJjaGFyYWN0ZXIiXX19LCJuZXcteW9yay13b21lbi1oYWRpeWFoLWxhd2FsIjp7ImtvcmVhKy0rZmF5ZXdvbzMuanBnIjp7ImxhYmVsIjoiRmFzaGlvbiBlZGl0b3JpYWwiLCJ0YWdzIjpbImVkaXRvcmlhbCIsImNoYXJhY3RlciIsImZhc2hpb24iXX0sInRlc3QxNjM4LmpwZyI6eyJsYWJlbCI6IkNsZWFuIHBvcnRyYWl0IiwidGFncyI6WyJjbGVhbiIsInBvcnRyYWl0IiwiYmVhdXR5Il19LCJ0ZXN0MTU1OS5qcGciOnsibGFiZWwiOiJGYXNoaW9uIGZ1bGwtbGVuZ3RoIiwidGFncyI6WyJmYXNoaW9uIiwiZnVsbCIsInJ1bndheSJdfX0sIm5ldy15b3JrLXdvbWVuLWphbmVsLWNoZWF0aGFtIjp7InNjcmVlbnNob3QrMjAyNS0wNi0yNCthdCs5LjU3LjU2K3BtLnBuZyI6eyJsYWJlbCI6IkJlYXV0eSBlZGl0b3JpYWwiLCJ0YWdzIjpbImJlYXV0eSIsImVkaXRvcmlhbCIsInBvcnRyYWl0Il19LCJzY3JlZW5zaG90KzIwMjUtMDYtMjQrYXQrOS41OC4wNStwbS5wbmciOnsibGFiZWwiOiJFZGl0b3JpYWwgYmVhdXR5IHBvcnRyYWl0IiwidGFncyI6WyJiZWF1dHkiLCJlZGl0b3JpYWwiLCJwb3J0cmFpdCJdfX0sIm5ldy15b3JrLXdvbWVuLWp1bmUtcmFtYWRoYW4iOnsiaW1nXzA2NjAuanBnIjp7ImxhYmVsIjoiQ2xlYW4gaGVhZHNob3QiLCJ0YWdzIjpbImNsZWFuIiwicG9ydHJhaXQiLCJiZWF1dHkiLCJkaWdpdGFsIl19LCJpbWdfMDY1My5qcGciOnsibGFiZWwiOiJDbGVhbiBmdWxsLWJvZHkgZGlnaXRhbCIsInRhZ3MiOlsiY2xlYW4iLCJmdWxsIiwiZGlnaXRhbCIsInJ1bndheSJdfSwiaW1nXzA2NTEuanBnIjp7ImxhYmVsIjoiQ2xlYW4gcHJvZmlsZSBkaWdpdGFsIiwidGFncyI6WyJjbGVhbiIsImRpZ2l0YWwiLCJtaW5pbWFsIl19fSwibmV3LXlvcmstd29tZW4tbWFqYS1zdG9ja3dlbGwiOnsic2NyZWVuc2hvdCsyMDI2LTA0LTExK2F0KzQuMDcuMDIrcG0ucG5nIjp7ImxhYmVsIjoiR3JlZW4tdGludGVkIGZhc2hpb24gZWRpdG9yaWFsIiwidGFncyI6WyJlZGl0b3JpYWwiLCJjaGFyYWN0ZXIiLCJydW53YXkiXX0sInNjcmVlbnNob3QrMjAyNi0wNC0xMSthdCs0LjA0LjM0K3BtLnBuZyI6eyJsYWJlbCI6IlVyYmFuIGZ1bGwtYm9keSBlZGl0b3JpYWwiLCJ0YWdzIjpbImVkaXRvcmlhbCIsImZ1bGwiLCJzdHJlZXQiLCJydW53YXkiXX0sInNjcmVlbnNob3QrMjAyNi0wNC0xMSthdCs0LjA3LjIxK3BtLnBuZyI6eyJsYWJlbCI6IkZhc2hpb24gZWRpdG9yaWFsIiwidGFncyI6WyJlZGl0b3JpYWwiLCJjaGFyYWN0ZXIiLCJydW53YXkiXX19LCJuZXcteW9yay13b21lbi1tYXJ5LXRpbW1zIjp7Imhvc3NlYmVhY2guanBnIjp7ImxhYmVsIjoiRHJhbWF0aWMgc3RvcnkgZWRpdG9yaWFsIiwidGFncyI6WyJlZGl0b3JpYWwiLCJzdG9yeSIsImNoYXJhY3RlciJdfSwiYndzdHVkaW8uanBnIjp7ImxhYmVsIjoiU2N1bHB0dXJhbCBibGFjay1hbmQtd2hpdGUgZnVsbC1ib2R5IiwidGFncyI6WyJlZGl0b3JpYWwiLCJmdWxsIiwic2N1bHB0dXJhbCIsIm1pbmltYWwiXX0sImltZ185OTczLmpwZyI6eyJsYWJlbCI6IlBvcnRmb2xpbyBlZGl0b3JpYWwiLCJ0YWdzIjpbImVkaXRvcmlhbCIsImNoYXJhY3RlciJdfX0sIm5ldy15b3JrLXdvbWVuLW1vYi1lIjp7ImltZ18xMjcwLmpwZyI6eyJsYWJlbCI6IlBvcnRmb2xpbyBmYXNoaW9uIiwidGFncyI6WyJmYXNoaW9uIiwiZWRpdG9yaWFsIl19LCJpbWFnZV82NDgzNDQxLmpwZyI6eyJsYWJlbCI6IkFkaWRhcyBzcG9ydC1mYXNoaW9uIiwidGFncyI6WyJzcG9ydCIsIm1vdmVtZW50IiwiY29tbWVyY2lhbCIsInN0cmVldCJdfSwiaW1nXzg5MzQuanBnIjp7ImxhYmVsIjoiRWRpdG9yaWFsIHBvcnRmb2xpbyIsInRhZ3MiOlsiZWRpdG9yaWFsIiwiY2hhcmFjdGVyIl19fSwibmV3LXlvcmstd29tZW4tbW9sbHktZ2FyZGluZXIiOnsiaW1nXzcxMTIuanBlZyI6eyJsYWJlbCI6IkNsZWFuIHN0dWRpbyBlZGl0b3JpYWwiLCJ0YWdzIjpbImNsZWFuIiwiZWRpdG9yaWFsIiwicG9ydHJhaXQiLCJydW53YXkiXX0sImltZ183MTEzLmpwZWciOnsibGFiZWwiOiJXYXJtIGRvd250b3duIGVkaXRvcmlhbCIsInRhZ3MiOlsiZWRpdG9yaWFsIiwic29mdCIsImNoYXJhY3RlciJdfSwiaW1nXzcxMTQuanBlZyI6eyJsYWJlbCI6IlBvcnRmb2xpbyBmYXNoaW9uIiwidGFncyI6WyJlZGl0b3JpYWwiLCJmYXNoaW9uIl19fSwibmV3LXlvcmstd29tZW4tbmktc2ltb25lIjp7ImltZ18wODIwLmpwZyI6eyJsYWJlbCI6IlJlZmluZWQgc2VhdGVkIGZhc2hpb24gcG9ydHJhaXQiLCJ0YWdzIjpbImJlYXV0eSIsInBvcnRyYWl0IiwicmVmaW5lZCIsInBvbGlzaGVkIl19LCJpbWdfNTgwMi5qcGciOnsibGFiZWwiOiJDbGVhbiBmdWxsLXRocmVlLXF1YXJ0ZXIgZmFzaGlvbiIsInRhZ3MiOlsiY2xlYW4iLCJmdWxsIiwiZmFzaGlvbiIsInJ1bndheSJdfSwiaW1nXzQxOTMuanBnIjp7ImxhYmVsIjoiRWRpdG9yaWFsIGZhc2hpb24iLCJ0YWdzIjpbImVkaXRvcmlhbCIsImNoYXJhY3RlciJdfX0sIm5ldy15b3JrLXdvbWVuLXJhY2hlbC1zdG9uZSI6eyJzY3JlZW5zaG90KzIwMjUtMDUtMjcrMTkyNTE0LnBuZyI6eyJsYWJlbCI6IlZPR1VFIFJ1bndheSBjYXR3YWxrIGltYWdlIiwidGFncyI6WyJydW53YXkiLCJlZGl0b3JpYWwiLCJmdWxsIiwicG9saXNoZWQiXX0sImltZ182NzE3LmpwZyI6eyJsYWJlbCI6IlNvZnQgbGluZ2VyaWUgZWRpdG9yaWFsIiwidGFncyI6WyJzb2Z0Iiwic2Vuc3VhbCIsImVkaXRvcmlhbCIsImJlYXV0eSJdfSwiaW1nXzY3MTMuanBnIjp7ImxhYmVsIjoiU29mdCBmYXNoaW9uIGVkaXRvcmlhbCIsInRhZ3MiOlsic29mdCIsImVkaXRvcmlhbCIsImJlYXV0eSJdfX0sIm5ldy15b3JrLXdvbWVuLXNhbC1zb2xpbWFuIjp7InVudGl0bGVkLTEzMzMtOC5qcGciOnsibGFiZWwiOiJDbGVhbiBwcm9wb3J0aW9uIGZ1bGwtbGVuZ3RoIiwidGFncyI6WyJjbGVhbiIsImZ1bGwiLCJydW53YXkiLCJtaW5pbWFsIl19LCJ1bnRpdGxlZC0xNDYxLTQuanBnIjp7ImxhYmVsIjoiQ2xlYW4gc2VhdGVkIHBvcnRyYWl0IiwidGFncyI6WyJjbGVhbiIsInBvcnRyYWl0IiwibWluaW1hbCJdfSwidW50aXRsZWQtMTIxMC0xMC5qcGciOnsibGFiZWwiOiJTdHJvbmcgZnVsbC1ib2R5IGVkaXRvcmlhbCIsInRhZ3MiOlsiZnVsbCIsImVkaXRvcmlhbCIsInJ1bndheSJdfX0sIm5ldy15b3JrLXdvbWVuLXNldmVuLXdyaWdodCI6eyJ1bm5hbWVkLmpwZWciOnsibGFiZWwiOiJQcm92b2NhdGl2ZSBibGFjay1hbmQtd2hpdGUgZWRpdG9yaWFsIiwidGFncyI6WyJlZGl0b3JpYWwiLCJzZW5zdWFsIiwiY2hhcmFjdGVyIiwiYmVhdXR5Il19LCJpbWdfMjEwMi5qcGciOnsibGFiZWwiOiJFZGd5IGJsYWNrLWFuZC13aGl0ZSBzZWF0ZWQgZWRpdG9yaWFsIiwidGFncyI6WyJlZGl0b3JpYWwiLCJjaGFyYWN0ZXIiLCJzdHJlZXQiXX0sImltZ18yMDEyLmpwZyI6eyJsYWJlbCI6IlBvcnRmb2xpbyBlZGl0b3JpYWwiLCJ0YWdzIjpbImVkaXRvcmlhbCIsImNoYXJhY3RlciJdfX0sIm5ldy15b3JrLXdvbWVuLXNoYW5lbC1jaGVhdGhhbSI6eyJzaGFuZWxiZWF1dHkucG5nIjp7ImxhYmVsIjoiQmVhdXR5IGNsb3NlLXVwIiwidGFncyI6WyJiZWF1dHkiLCJwb3J0cmFpdCIsInBvbGlzaGVkIl19LCJtZXRhbGxpY2V5ZXMucG5nIjp7ImxhYmVsIjoiTWV0YWxsaWMgZXllIGJlYXV0eSBlZGl0b3JpYWwiLCJ0YWdzIjpbImJlYXV0eSIsImV4cGVyaW1lbnRhbCIsImVkaXRvcmlhbCIsInBvcnRyYWl0Il19LCJibHVlZXllcy5wbmciOnsibGFiZWwiOiJFeHRyZW1lIGJsdWUgZXllIG1ha2V1cCIsInRhZ3MiOlsiYmVhdXR5IiwiZXhwZXJpbWVudGFsIiwicG9ydHJhaXQiXX19LCJuZXcteW9yay13b21lbi10aW5pbiI6eyJpbWdfOTY4NS5qcGciOnsibGFiZWwiOiJCYWNrc3RhZ2UgcnVud2F5IGVkaXRvcmlhbCIsInRhZ3MiOlsicnVud2F5IiwiZWRpdG9yaWFsIiwiY2hhcmFjdGVyIl19LCJmYWNlZ2Vtcy5qcGciOnsibGFiZWwiOiJGYWNlLWdlbSBleHBlcmltZW50YWwgYmVhdXR5IiwidGFncyI6WyJiZWF1dHkiLCJ3aGltc2ljYWwiLCJleHBlcmltZW50YWwiLCJwb3J0cmFpdCJdfX0sIm5ldy15b3JrLWRldmVsb3BtZW50LWVtMC1zcGl0Ijp7ImZhY2V0dW5lXzA2LTAyLTIwMjMtMTktNDgtNTAuanBnIjp7ImxhYmVsIjoiRGlyZWN0aW9uYWwgZWRpdG9yaWFsIHBvcnRyYWl0IiwidGFncyI6WyJlZGl0b3JpYWwiLCJwb3J0cmFpdCIsImNoYXJhY3RlciJdfX0sIm5ldy15b3JrLWRldmVsb3BtZW50LXZpY3RvcmlhLXNlcGlhc2h2aWxpIjp7ImltZ184MjU0LmpwZyI6eyJsYWJlbCI6IkNsZWFuIGNvbW1lcmNpYWwgYmVhdXR5IiwidGFncyI6WyJjbGVhbiIsImJlYXV0eSIsInBvcnRyYWl0IiwiY29tbWVyY2lhbCJdfX0sIm5ldy15b3JrLW1lbi1qdXN0aW4tYmVsbCI6eyJwaG90by0yMDI1LTA2LTI3LTE5LTE2LTUzLmpwZyI6eyJsYWJlbCI6IlBvcnRmb2xpbyBmYXNoaW9uIiwidGFncyI6WyJmYXNoaW9uIiwiZWRpdG9yaWFsIl19fSwibmV3LXlvcmstbWVuLW1hdHQtcm9zc2kiOnsibDEyNTA1MDUtbWluLmpwZyI6eyJsYWJlbCI6IkNsZWFuIG1lbnN3ZWFyIGZ1bGwtbGVuZ3RoIiwidGFncyI6WyJjbGVhbiIsImZ1bGwiLCJydW53YXkiLCJtaW5pbWFsIl19LCJpbWdfMDAzMy5qcGciOnsibGFiZWwiOiJNZW5zd2VhciBwb3J0cmFpdCIsInRhZ3MiOlsicG9ydHJhaXQiLCJjbGVhbiIsImNvbW1lcmNpYWwiXX19LCJuZXcteW9yay1jdXJ2ZS1zYXJhaC1tZW5kZXoiOnsiaW1nXzQxODcuanBnIjp7ImxhYmVsIjoiQ2xlYW4gYm9keS1jb25maWRlbnQgZmFzaGlvbiIsInRhZ3MiOlsiY2xlYW4iLCJjb21tZXJjaWFsIiwiZnVsbCJdfX0sIm1pbGFuLXdvbWVuLWNhbWVsaWEtYm9jYSI6eyJpbWdfODIyNy5qcGciOnsibGFiZWwiOiJDbGVhbiBlZGl0b3JpYWwgcnVud2F5IGZ1bCIsInRhZ3MiOlsiY2xlYW4iLCJlZGl0b3JpYWwiLCJydW53YXkiLCJmdWxsIl19LCJpbWdfNTgwNyslMjUyNTI1MjglMjUyNTI1MjklLmpwZyI6eyJsYWJlbCI6IkVkaXRvcmlhbCBjaGFyYWN0ZXIiLCJ0YWdzIjpbImVkaXRvcmlhbCIsImNoYXJhY3RlciIsInJ1bndheSJdfSwiaW1nXzgyMjYuanBnIjp7ImxhYmVsIjoiQ2xlYW4gZnVsbC1sZW5ndGggcnVud2F5IiwidGFncyI6WyJjbGVhbiIsImZ1bGwiLCJtaW5pbWFsIiwicnVud2F5Il19fSwibWlhbWktd29tZW4tYW5hc3Rhc2lhIjp7ImltZ18wOTUwLmpwZyI6eyJsYWJlbCI6IkNsZWFuIGJlYXV0eSBwb3J0cmFpdCIsInRhZ3MiOlsiY2xlYW4iLCJiZWF1dHkiLCJwb3J0cmFpdCIsImNvbW1lcmNpYWwiXX0sImltZ18wOTUxLmpwZyI6eyJsYWJlbCI6IkNsZWFuIGZ1bGwtbGVuZ3RoIGZhc2hpb24iLCJ0YWdzIjpbImNsZWFuIiwiZnVsbCIsInJ1bndheSIsImNvbW1lcmNpYWwiXX0sImltZ18wOTUyLmpwZyI6eyJsYWJlbCI6IlNvZnQgYmVhdXR5IHBvcnRyYWl0IiwidGFncyI6WyJiZWF1dHkiLCJwb3J0cmFpdCIsInNvZnQiLCJjb21tZXJjaWFsIl19fX0=").decode("utf-8"))
-          BOARD_INFO={
-            "women":("New York","Women"),
-            "men-5":("New York","Men"),
-            "development":("New York","Development"),
-            "curve":("New York","Curve"),
-            "women-2":("London","Women"),
-            "men-2":("London","Men"),
-            "women-3":("Milan","Women"),
-            "women111":("Los Angeles","Women"),
-            "men-79":("Los Angeles","Men"),
-            "women-5":("Miami","Women"),
-            "men-1":("Miami","Men"),
-          }
-          EXPLICIT_SEEDS=[
-           "https://www.chezlesmannequins.com/development/ainoa",
-           "https://www.chezlesmannequins.com/women/anhelina",
-           "https://www.chezlesmannequins.com/women-2/dayana",
-           "https://www.chezlesmannequins.com/women-2/kaisha",
-           "https://www.chezlesmannequins.com/men-5/taino",
-          ]
-          DISCOVERY_ALIASES={
-           ("women","anhelina"):"new-york-women-anhelena-sobol",
-          }
-          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/142 Safari/537.36"
+          css='''\n/* Draft-native model presentation controls */\n.draft-model-card{border:1px solid var(--line);border-radius:10px;padding:10px;margin:0 0 10px;background:#fff}.draft-model-head{display:grid;grid-template-columns:84px 1fr;gap:10px;align-items:start}.draft-model-thumb{width:84px;height:112px;object-fit:cover;border-radius:7px;background:#eceeea}.draft-model-controls{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.draft-photo-strip{display:flex;gap:7px;overflow-x:auto;padding:8px 0 3px}.draft-photo-choice{flex:0 0 66px;border:2px solid transparent;border-radius:7px;padding:0;background:#fff}.draft-photo-choice.active{border-color:var(--accent)}.draft-photo-choice img{display:block;width:62px;height:82px;object-fit:cover;border-radius:5px}.draft-photo-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;margin-top:8px}.draft-photo-controls input[type=url]{width:100%;min-width:0;border:1px solid #bdc6bf;border-radius:7px;padding:8px}.draft-photo-upload{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px}.draft-photo-upload input[type=file]{max-width:100%;font-size:12px}.drag-hint{font-size:11px;color:var(--muted);margin:0 0 8px}@media(max-width:520px){.draft-model-head{grid-template-columns:72px 1fr}.draft-model-thumb{width:72px;height:96px}.draft-photo-controls{grid-template-columns:1fr}.draft-model-controls .btn{flex:1 1 auto}}\n'''
+          if '/* Draft-native model presentation controls */' not in s:
+              s=s.replace('</style>',css+'</style>',1)
 
-          def norm_text(v):
-              return re.sub(r"[^a-z0-9]+"," ",str(v or "").lower()).strip()
+          anchor="function selectedModels(){return selected.map(id=>db.models.find(m=>m.id===id)).filter(Boolean)}"
+          helpers=r'''function selectedModels(){return selected.map(id=>db.models.find(m=>m.id===id)).filter(Boolean)}
+function draftPhotoSelections(){db.draft=db.draft||structuredClone(seed.draft);db.draft.photoSelections=db.draft.photoSelections||{};return db.draft.photoSelections}
+function draftPhotoForModel(m){return draftPhotoSelections()[m.id]||(db.customPhotos||{})[m.id]||m.photo||m.photoUrl||''}
+function draftPhotoOptions(m){const out=[];const add=x=>{if(!x)return;const url=typeof x==='string'?x:(x.url||x.src||'');if(url&&!out.some(y=>y.url===url))out.push({url,label:typeof x==='string'?'Portfolio photo':(x.label||x.title||'Portfolio photo')})};if(typeof MODEL_PHOTO_LIBRARY!=='undefined'&&MODEL_PHOTO_LIBRARY[m.id])MODEL_PHOTO_LIBRARY[m.id].forEach(add);[m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(a=>Array.isArray(a)&&a.forEach(add));add((db.customPhotos||{})[m.id]);add(m.photo);add(m.photoUrl);return out.slice(0,12)}
+function persistDraftPresentation(){db.selected=[...selected];db.draft=db.draft||structuredClone(seed.draft);db.draft.modelIds=[...selected];localStorage.setItem(NEW_KEY,JSON.stringify(db))}
+function setDraftPhotoUrl(id,url){const v=String(url||'').trim(),photos=draftPhotoSelections();if(v)photos[id]=v;else delete photos[id];persistDraftPresentation();renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db));setStatus(v?'Draft photo updated. Click Update draft to save it to the package.':'Draft photo reset to the model default.')}
+function resetDraftPhoto(id){const photos=draftPhotoSelections();delete photos[id];persistDraftPresentation();renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db));setStatus('Draft photo reset to the model default. Click Update draft to save the package.')}
+async function fileToDraftPhoto(file){if(!file)return'';try{const raw=await fileToDataUrl(file);return await new Promise(resolve=>{const img=new Image();img.onload=()=>{const maxW=1200,maxH=1600,scale=Math.min(1,maxW/img.width,maxH/img.height),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale)),c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',.84))};img.onerror=()=>resolve(raw);img.src=raw})}catch{return''}}
+async function setDraftPhotoFile(id,input){const file=input?.files?.[0];if(!file)return;const data=await fileToDraftPhoto(file);if(!data)return setStatus('Could not read that image.');draftPhotoSelections()[id]=data;persistDraftPresentation();renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db));setStatus('Uploaded photo selected for this draft only. Click Update draft to save it.')}
+function moveSelectedModel(id,delta){const i=selected.indexOf(id);if(i<0)return;const j=Math.max(0,Math.min(selected.length-1,i+delta));if(i===j)return;selected.splice(i,1);selected.splice(j,0,id);persistDraftPresentation();renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db));setStatus('Model order changed. Click Update draft to save the package.')}
+let selectedDragId='';
+function dragSelectedModel(e,id){selectedDragId=id;if(e?.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id)}}
+function dropSelectedModel(e,targetId){if(e)e.preventDefault();const source=(e?.dataTransfer?.getData('text/plain')||selectedDragId);if(!source||source===targetId)return;const a=selected.indexOf(source),b=selected.indexOf(targetId);if(a<0||b<0)return;selected.splice(a,1);selected.splice(b,0,source);selectedDragId='';persistDraftPresentation();renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db));setStatus('Model order changed. Click Update draft to save the package.')}'''
+          if 'function draftPhotoSelections()' not in s:
+              if anchor not in s: raise SystemExit('selectedModels anchor not found')
+              s=s.replace(anchor,helpers,1)
 
-          def slugify(v):
-              return re.sub(r"[^a-z0-9]+","-",str(v or "").lower()).strip("-") or "model"
-
-          def canonical_url(u):
-              if not u: return ""
-              u=html.unescape(str(u)).replace("\\/","/")
-              if u.startswith("//"): u="https:"+u
-              sp=urlsplit(u)
-              path=re.sub(r"/+$","",sp.path)
-              return urlunsplit(("https","www.chezlesmannequins.com",path,"",""))
-
-          def board_from_url(u):
-              path=urlsplit(u).path.strip("/")
-              parts=path.split("/")
-              return parts[0] if len(parts)>=2 and parts[0] in BOARD_INFO else ""
-
-          def model_page_for_board(u,board):
-              sp=urlsplit(u)
-              if sp.netloc not in ("www.chezlesmannequins.com","chezlesmannequins.com"): return False
-              return bool(re.fullmatch(r"/"+re.escape(board)+r"/[^/]+/?",sp.path))
-
-          def fetch(u):
-              req=Request(u,headers={"User-Agent":UA,"Accept":"text/html,application/xhtml+xml"})
-              with urlopen(req,timeout=25) as r:
-                  raw=r.read().decode("utf-8","replace")
-                  final=canonical_url(r.geturl())
-              return final,raw
-
-          def strip_tags(raw):
-              x=re.sub(r"(?is)<script\b.*?</script>"," ",raw)
-              x=re.sub(r"(?is)<style\b.*?</style>"," ",x)
-              x=re.sub(r"(?s)<[^>]+>","\n",x)
-              x=html.unescape(x)
-              lines=[re.sub(r"\s+"," ",z).strip() for z in x.splitlines()]
-              return [z for z in lines if z]
-
-          def parse_name(raw):
-              lines=strip_tags(raw)
-              for i,line in enumerate(lines):
-                  if re.search(r"\bHeight\s*:",line,re.I):
-                      for cand in reversed(lines[max(0,i-8):i]):
-                          if len(cand)>70: continue
-                          if re.search(r"accept|cookie|previous|next|instagram|chez les mannequins|agent@",cand,re.I): continue
-                          if re.search(r"\b(?:height|bust|waist|hip|shoe|chest)\b",cand,re.I): continue
-                          if cand:
-                              return cand.strip("#* ")
-              mt=re.search(r"(?is)<title[^>]*>(.*?)</title>",raw)
-              if mt:
-                  title=html.unescape(re.sub(r"<[^>]+>","",mt.group(1))).split("—")[0].strip()
-                  chars=title.split()
-                  if chars and all(len(x)==1 for x in chars): return "".join(chars).title()
-                  return title
-              return ""
-
-          def parse_measurements(raw):
-              lines=strip_tags(raw)
-              for line in lines:
-                  if re.search(r"\bHeight\s*:",line,re.I) and re.search(r"\b(?:Bust|Chest)\s*:",line,re.I):
-                      return line.replace("\\.","." ).strip()
-              text=" | ".join(lines)
-              m=re.search(r"(Height\s*:\s*[^|]{1,30}(?:\s*\|\s*(?:Bust|Chest|Waist|Hip|Shoe|Dress)\s*:\s*[^|]{1,40}){3,8})",text,re.I)
-              return m.group(1).strip() if m else ""
-
-          def extract_links(raw,base,board):
-              vals=re.findall(r"(?i)\bhref\s*=\s*[\"']([^\"']+)[\"']",raw)
-              out=[]
-              for h in vals:
-                  h=html.unescape(h).replace("\\/","/")
-                  u=canonical_url(urljoin(base,h))
-                  if model_page_for_board(u,board): out.append(u)
-              return list(dict.fromkeys(out))
-
-          def clean_image_url(u):
-              u=html.unescape(u).replace("\\/","/")
-              u=re.sub(r"\\u002[fF]","/",u)
-              u=re.sub(r"\\u0026","&",u)
-              if u.startswith("//"): u="https:"+u
-              u=u.rstrip("\\,;)")
-              sp=urlsplit(u)
-              if "images.squarespace-cdn.com" not in sp.netloc: return ""
-              return urlunsplit(("https",sp.netloc,sp.path,"",""))
-
-          def extract_images(raw):
-              x=html.unescape(raw).replace("\\/","/")
-              x=re.sub(r"\\u002[fF]","/",x)
-              pats=[
-                r"https?://images\.squarespace-cdn\.com/content/v1/[^\"'<>\\\s,]+",
-                r"//images\.squarespace-cdn\.com/content/v1/[^\"'<>\\\s,]+"
-              ]
-              arr=[]
-              for pat in pats:
-                  for u in re.findall(pat,x,re.I):
-                      c=clean_image_url(u)
-                      if not c: continue
-                      low=urlsplit(c).path.lower()
-                      if not re.search(r"\.(?:jpe?g|png|webp|gif|heic)$",low): continue
-                      if c not in arr: arr.append(c)
-              return arr[:16]
-
-          def filename_key(u):
-              b=urlsplit(u).path.rsplit("/",1)[-1]
-              for _ in range(4):
-                  nb=unquote(b)
-                  if nb==b: break
-                  b=nb
-              return b.lower()
-
-          def generic_annotation(url,idx):
-              key=filename_key(url)
-              tags=["portfolio"]
-              label="Portfolio image"
-              if idx==0: tags+=["editorial","clean"]; label="Primary portfolio image"
-              elif idx==1: tags+=["portrait","clean"]; label="Portfolio portrait"
-              elif idx==2: tags+=["full","runway"]; label="Full-length / runway option"
-              elif idx==3: tags+=["editorial","character"]; label="Editorial character option"
-              if any(x in key for x in ["beauty","head","face","close"]): tags+=["beauty","portrait"]
-              if any(x in key for x in ["polaroid","digital","digitals"]): tags+=["clean","digital","full","minimal"]
-              if any(x in key for x in ["runway","catwalk","vogue"]): tags+=["runway","editorial","full"]
-              if any(x in key for x in ["adidas","nike","sport"]): tags+=["sport","movement","street"]
-              if "screen" in key or "screenshot" in key: tags+=["editorial"]
-              return {"label":label,"tags":list(dict.fromkeys(tags))}
-
-          global_analysis={}
-          for mid,rows in ANALYSIS.items():
-              for fn,ann in rows.items():
-                  global_analysis.setdefault(fn.lower(),ann)
-
-          m=re.search(r"const BASE_ROSTER=(\[.*?\]);\s*const NICHE_MAP=",s,re.S)
-          if not m: raise SystemExit("BASE_ROSTER marker not found")
-          base=json.loads(m.group(1))
-
-          existing_by_url={}
-          existing_by_board_name={}
-          for model in base:
-              u=canonical_url(model.get("profileUrl",""))
-              if u and board_from_url(u):
-                  existing_by_url[u]=model["id"]
-                  existing_by_board_name[(board_from_url(u),norm_text(model.get("name")))] = model["id"]
-
-          queues=defaultdict(deque)
-          for model in base:
-              if model.get("activeBoard") is False: continue
-              u=canonical_url(model.get("profileUrl",""))
-              board=board_from_url(u)
-              if board in BOARD_INFO: queues[board].append(u)
-          for u in EXPLICIT_SEEDS:
-              u=canonical_url(u); b=board_from_url(u)
-              if b: queues[b].append(u)
-
-          pages={}
-          for board,q in queues.items():
-              seen=set()
-              while q and len(seen)<60:
-                  u=q.popleft()
-                  if not u or u in seen: continue
-                  seen.add(u)
-                  try:
-                      final,raw=fetch(u)
-                  except Exception as e:
-                      print("WARN fetch",u,type(e).__name__,str(e)[:120])
-                      continue
-                  if not model_page_for_board(final,board): continue
-                  name=parse_name(raw)
-                  measurements=parse_measurements(raw)
-                  imgs=extract_images(raw)
-                  if not name or not measurements:
-                      continue
-                  pages[final]={"url":final,"board":board,"name":name,"measurements":measurements,"images":imgs}
-                  for v in extract_links(raw,final,board):
-                      if v not in seen: q.append(v)
-                  time.sleep(0.08)
-
-          print("Crawled model pages:",len(pages))
-
-          discovered=[]
-          enrich={}
-          photo_library={}
-          known_ids={x["id"] for x in base}
-          used_new_ids=set()
-
-          def model_id_for_page(pg):
-              u=pg["url"]; board=pg["board"]; name=pg["name"]; n=norm_text(name)
-              if u in existing_by_url: return existing_by_url[u],False
-              if (board,n) in existing_by_board_name: return existing_by_board_name[(board,n)],False
-              if (board,n) in DISCOVERY_ALIASES: return DISCOVERY_ALIASES[(board,n)],False
-              first=n.split()[0] if n else ""
-              cands=[]
-              for model in base:
-                  bu=canonical_url(model.get("profileUrl",""))
-                  if board_from_url(bu)!=board and not (model["id"]=="new-york-women-anhelena-sobol" and board=="women"):
-                      continue
-                  mn=norm_text(model.get("name",""))
-                  if mn and mn.split()[0]==first: cands.append(model["id"])
-              if len(cands)==1: return cands[0],False
-              loc,division=BOARD_INFO[board]
-              iid=f"{slugify(loc)}-{slugify(division)}-{slugify(name.split()[0] if name else urlsplit(u).path.rsplit('/',1)[-1])}"
-              baseid=iid; k=2
-              while iid in known_ids or iid in used_new_ids:
-                  iid=f"{baseid}-{k}"; k+=1
-              used_new_ids.add(iid)
-              return iid,True
-
-          for u,pg in sorted(pages.items()):
-              mid,is_new=model_id_for_page(pg)
-              imgs=pg["images"]
-              enrich[mid]={
-                "profileUrl":u,
-                "measurements":pg["measurements"],
-                "primaryPhoto":imgs[0] if imgs else "",
-                "websiteName":pg["name"],
-              }
-              if is_new:
-                  loc,division=BOARD_INFO[pg["board"]]
-                  display=pg["name"]
-                  if norm_text(display) not in ("maja stockwell","sophia pippen"):
-                      display=display.split()[0]
-                  if division=="Development":
-                      niche,secondary="Development","High Fashion / Editorial"
-                  elif division=="Curve":
-                      niche,secondary="Curve / Body","Fashion-Commercial"
-                  else:
-                      niche,secondary="Fashion-Commercial","High Fashion / Editorial"
-                  discovered.append({
-                    "id":mid,"name":display,"sourceName":pg["name"],"location":loc,"division":division,
-                    "measurements":pg["measurements"],"profileUrl":u,
-                    "photoUrl":imgs[0] if imgs else "","photoFilename":filename_key(imgs[0]) if imgs else "",
-                    "source":"Chez Les Mannequins · discovered 2026-09-16","activeBoard":True,
-                    "niche":niche,"secondaryNiche":secondary
-                  })
-              annotations=[]
-              for idx,img in enumerate(imgs):
-                  key=filename_key(img)
-                  ann=ANALYSIS.get(mid,{}).get(key) or global_analysis.get(key) or generic_annotation(img,idx)
-                  annotations.append({"url":img,"label":ann["label"],"tags":ann["tags"],"sourceFile":key})
-              if annotations: photo_library[mid]=annotations
-
-          name_to_ids=defaultdict(list)
-          for model in base:
-              name_to_ids[norm_text(model.get("name"))].append(model["id"])
-          for model in discovered:
-              name_to_ids[norm_text(model.get("sourceName") or model.get("name"))].append(model["id"])
-          for n,ids in name_to_ids.items():
-              source=next((photo_library[i] for i in ids if i in photo_library and photo_library[i]),None)
-              if source:
-                  for mid in ids:
-                      if mid not in photo_library:
-                          photo_library[mid]=source
-
-          for model in base:
-              mid=model["id"]
-              if mid not in photo_library:
-                  u=model.get("photoUrl") or ""
-                  if "images.squarespace-cdn.com" in u:
-                      photo_library[mid]=[{"url":u,"label":"Primary website image","tags":["portfolio","clean"],"sourceFile":filename_key(u)}]
-                      enrich.setdefault(mid,{})
-                      enrich[mid].setdefault("primaryPhoto",u)
-
-          newmap={x["id"]:x for x in discovered}
-          discovered=sorted(newmap.values(),key=lambda x:(x["location"],x["division"],x["name"]))
-          print("New models:",len(discovered),[x["name"] for x in discovered])
-          print("Library models:",len(photo_library),"images:",sum(len(v) for v in photo_library.values()))
-
-          generated = (
-          "/* MODEL_PHOTO_LIBRARY_START */\n"
-          +"const PHOTO_SELECTION_VERSION='2026-09-16-brand-fit-v1';\n"
-          +"const DISCOVERED_CHEZ_MODELS="+json.dumps(discovered,ensure_ascii=False,separators=(",",":"))+";\n"
-          +"const CHEZ_PROFILE_ENRICHMENTS="+json.dumps(enrich,ensure_ascii=False,separators=(",",":"))+";\n"
-          +"const MODEL_PHOTO_LIBRARY="+json.dumps(photo_library,ensure_ascii=False,separators=(",",":"))+";\n"
-          +r'''function applyChezProfileEnrichment(m){const e=CHEZ_PROFILE_ENRICHMENTS[m.id]||{},raw=m.stats||m.measurements||'',replaceStats=!raw||/pending|not listed|profile sync/i.test(raw),stats=replaceStats&&e.measurements?e.measurements:raw;return {...m,profileUrl:m.profileUrl||m.profile||e.profileUrl||'',profile:m.profile||m.profileUrl||e.profileUrl||'',photoUrl:m.photoUrl||m.photo||e.primaryPhoto||'',photo:m.photo||m.photoUrl||e.primaryPhoto||'',stats:stats||m.stats||m.measurements||'',measurements:stats||m.measurements||m.stats||''}}
-          function seedModelsWithChezLibrary(){return [...BASE_ROSTER,...DISCOVERED_CHEZ_MODELS].map(m=>{const x=applyChezProfileEnrichment(m);return applyModelIdentity({...x,niche:x.niche||NICHE_MAP[x.name]||'Development',secondaryNiche:x.secondaryNiche||SECONDARY_NICHE_MAP[x.name]||'',stats:x.stats||x.measurements,profile:x.profile||x.profileUrl,photo:x.photo||x.photoUrl,sourceDate:SOURCE_DATE,availabilityStatus:x.availabilityStatus||'Unknown',statusFrom:x.statusFrom||'',statusTo:x.statusTo||'',holdProject:x.holdProject||'',availabilityNotes:x.availabilityNotes||''})})}
-          function websitePhotosFor(m){return (m&&MODEL_PHOTO_LIBRARY[m.id])||[]}
-          function photoContextText(d){const brand=d?.brandProject||d?.company||d?.subject||'',profile=inferBrandProfile(brand)||{},bits=[brand,d?.brief,d?.selectionRationale,profile.look,profile.why,...(profile.niches||[]),...(d?.parsedBrief?.nicheClues||[])];return bits.filter(Boolean).join(' ').toLowerCase()}
-          function desiredPhotoTags(d){const t=photoContextText(d),tags=[];const add=(...x)=>x.forEach(v=>{if(!tags.includes(v))tags.push(v)});if(/beauty|hair|cosmetic|feminine|romantic|ethereal|soft|glamour|sensual/.test(t))add('beauty','portrait','soft','glamour','polished');if(/minimal|severe|quiet|precise|architectural|refined|timeless|restrained|clean|luxury/.test(t))add('clean','minimal','runway','full','polished');if(/directional|experimental|deconstruct|punk|eccentric|whimsical|conceptual|story|raw|street|character|avant/.test(t))add('editorial','character','street','experimental','runway');if(/sport|athletic|performance|movement|energetic|youth/.test(t))add('sport','movement','street','full');if(/runway|fashion week|editorial|couture/.test(t))add('runway','editorial','full');if(!tags.length)add('editorial','runway','clean');return tags}
-          function photoSelectionContext(d){return normalizeName([d?.brandProject,d?.company,d?.subject,d?.brief,d?.selectionRationale,d?.parsedBrief?.project].filter(Boolean).join(' '))}
-          function bestPhotoChoiceForDraft(m,d){const photos=websitePhotosFor(m),want=desiredPhotoTags(d);if(!photos.length)return {url:m?.photo||m?.photoUrl||'',reason:'Primary model image; no additional Chez gallery image is cached.'};let best=null;photos.forEach((p,i)=>{const tags=p.tags||[],hits=want.filter(x=>tags.includes(x)),score=hits.length*12+Math.max(0,8-i)+(tags.includes('clean')?1:0)+(tags.includes('editorial')?1:0);if(!best||score>best.score)best={...p,score,hits}});const matched=best.hits?.length?best.hits.slice(0,4).join(', '):'portfolio composition';return {url:best.url,reason:`${best.label||'Portfolio image'} · matched ${matched}`}}
-          function escapeRegex(v){return String(v||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
-          function replaceDraftHtmlPhotos(raw,d,models){if(!raw||!d?.photoSelections)return raw;let out=raw;for(const [id,url] of Object.entries(d.photoSelections)){if(!url)continue;const m=models.find(x=>x.id===id);if(!m)continue;const names=[m.name,m.sourceName,...Object.keys(MODEL_NAME_ALIASES).filter(k=>MODEL_NAME_ALIASES[k]===m.name)].filter(Boolean);for(const name of [...new Set(names)]){const re=new RegExp('<img\\b[^>]*\\balt=(["\\\'])'+escapeRegex(name)+'\\1[^>]*>','gi');out=out.replace(re,tag=>tag.replace(/\bsrc=(["\\\'])[^"\\\']*\1/i,'src="'+url+'"'))}}return out}
-          function refreshDraftPhotos(d,models,idsOverride){if(!d||typeof d!=='object')return d;const out={...d},ids=(idsOverride||out.modelIds||[]).filter(Boolean),sig=photoSelectionContext(out),contextChanged=out.photoSelectionVersion!==PHOTO_SELECTION_VERSION||out.photoSelectionContext!==sig,selections={...(out.photoSelections||{})},reasons={...(out.photoSelectionReasons||{})},manual={...(out.manualPhotoSelections||{})};for(const id of ids){const m=models.find(x=>x.id===id);if(!m)continue;if(manual[id]){selections[id]=manual[id];reasons[id]='Manual photo library choice';continue}if(contextChanged||!selections[id]){const choice=bestPhotoChoiceForDraft(m,out);if(choice.url){selections[id]=choice.url;reasons[id]=choice.reason}}}out.photoSelections=selections;out.photoSelectionReasons=reasons;out.manualPhotoSelections=manual;out.photoSelectionVersion=PHOTO_SELECTION_VERSION;out.photoSelectionContext=sig;if(out.html)out.html=replaceDraftHtmlPhotos(out.html,out,models);return out}
-          ''' +
-          "/* MODEL_PHOTO_LIBRARY_END */\n"
-          )
-
-          start="/* MODEL_PHOTO_LIBRARY_START */"
-          end="/* MODEL_PHOTO_LIBRARY_END */"
-          if start in s and end in s:
-              a=s.index(start); b=s.index(end,a)+len(end)
-              s=s[:a]+generated.rstrip("\n")+s[b:]
-          else:
-              marker="const seed={models:"
-              if marker not in s: raise SystemExit("seed marker not found")
-              s=s.replace(marker,generated+marker,1)
-
-          old="const seed={models:BASE_ROSTER.map(m=>applyModelIdentity({...m,niche:NICHE_MAP[m.name]||'Development',secondaryNiche:SECONDARY_NICHE_MAP[m.name]||'',stats:m.measurements,profile:m.profileUrl,photo:m.photoUrl,sourceDate:SOURCE_DATE,availabilityStatus:'Unknown',statusFrom:'',statusTo:'',holdProject:'',availabilityNotes:''})),contacts:"
-          new="const seed={models:seedModelsWithChezLibrary(),contacts:"
-          if old in s: s=s.replace(old,new,1)
-          elif new not in s: raise SystemExit("seed model expression not found")
-
-          old="data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>applyModelIdentity"
-          new="data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(applyChezProfileEnrichment).map(m=>applyModelIdentity"
-          if old in s: s=s.replace(old,new,1)
-          elif new not in s: raise SystemExit("applyRecovered model marker not found")
-
-          contact_marker="data.contacts=mergeContacts([...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS],data.contacts||[])"
-          if "data.draft=refreshDraftPhotos(data.draft,data.models" not in s:
-              if contact_marker not in s: raise SystemExit("contacts marker not found")
-              s=s.replace(contact_marker,"data.draft=refreshDraftPhotos(data.draft,data.models,data.draft?.modelIds||incoming.selected||data.selected||[]);"+contact_marker,1)
-
-          old="data.drafts=mergeRecovered([...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS],data.drafts||[]).map(normalizeRecordModelNames);"
-          new="data.drafts=mergeRecovered([...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS],data.drafts||[]).map(normalizeRecordModelNames).map(d=>refreshDraftPhotos(d,data.models));"
-          if old in s: s=s.replace(old,new,1)
-          elif new not in s: raise SystemExit("draft merge marker not found")
-
-          photo_section='<section id="view-photos" class="view"><div class="panel"><div class="toolbar"><input id="photoLibrarySearch" placeholder="Search model, market, photo label or tag"/></div><div id="photoLibraryStats" class="muted" style="margin-bottom:12px"></div><div id="photoLibrary"></div></div></section>'
-          if 'id="view-photos"' not in s:
-              marker='<section id="view-contacts" class="view">'
-              if marker not in s: raise SystemExit("contacts view marker not found")
-              s=s.replace(marker,photo_section+"\n"+marker,1)
-
-          if "/* Photo library */" not in s:
-              css='\n/* Photo library */\n.photo-library-model{border:1px solid var(--line);border-radius:10px;margin:0 0 12px;background:#fff;padding:0}.photo-library-model summary{cursor:pointer;padding:12px 14px;font-weight:800}.photo-library-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px;padding:0 14px 14px}.photo-tile{border:1px solid var(--line);border-radius:9px;padding:8px;background:#fff}.photo-tile img{width:100%;height:220px;object-fit:cover;border-radius:6px;background:#eceeea}.photo-tile.active-pick{box-shadow:0 0 0 2px var(--accent) inset}.photo-tile .tiny{margin-top:5px}@media(max-width:600px){.photo-library-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding-inline:9px}.photo-tile img{height:48vw}}\n'
-              s=s.replace("</style>",css+"</style>",1)
-
-          old="({today:'Today',models:'Models',contacts:'Contacts',submissions:'Submissions',bookings:'Bookings',tasks:'Tasks',email:'Packages & Leads',data:'Data'})"
-          new="({today:'Today',models:'Models',photos:'Photo Library',contacts:'Contacts',submissions:'Submissions',bookings:'Bookings',tasks:'Tasks',email:'Packages & Leads',data:'Data'})"
-          if old in s: s=s.replace(old,new,1)
-          elif new not in s: raise SystemExit("page title map not found")
-          old="const views=[['today','Today'],['models','Models'],['contacts','Contacts'],['submissions','Submissions'],['bookings','Bookings'],['tasks','Tasks'],['email','Packages & Leads'],['data','Data']];"
-          new="const views=[['today','Today'],['models','Models'],['photos','Photo Library'],['contacts','Contacts'],['submissions','Submissions'],['bookings','Bookings'],['tasks','Tasks'],['email','Packages & Leads'],['data','Data']];"
-          if old in s: s=s.replace(old,new,1)
-          elif new not in s: raise SystemExit("views marker not found")
-
-          get_old="function getPhoto(m){return (db.customPhotos||{})[m.id]||m.photo||m.photoUrl||''}"
-          runtime=r'''function getPhoto(m){return (db.customPhotos||{})[m.id]||m.photo||m.photoUrl||''}
-          function draftPhotoForModel(m){return db.draft?.photoSelections?.[m.id]||(db.customPhotos||{})[m.id]||m.photo||m.photoUrl||''}
-          function setDraftLibraryPhoto(modelId,url){if(!db.draft||!url)return;db.draft.photoSelections={...(db.draft.photoSelections||{}),[modelId]:url};db.draft.photoSelectionReasons={...(db.draft.photoSelectionReasons||{}),[modelId]:'Manual photo library choice'};db.draft.manualPhotoSelections={...(db.draft.manualPhotoSelections||{}),[modelId]:url};db.draft.photoSelectionVersion=PHOTO_SELECTION_VERSION;if(db.activeDraftId){const i=db.drafts.findIndex(x=>x.id===db.activeDraftId);if(i>=0)db.drafts[i]={...db.drafts[i],photoSelections:{...(db.drafts[i].photoSelections||{}),[modelId]:url},photoSelectionReasons:{...(db.drafts[i].photoSelectionReasons||{}),[modelId]:'Manual photo library choice'},manualPhotoSelections:{...(db.drafts[i].manualPhotoSelections||{}),[modelId]:url},photoSelectionVersion:PHOTO_SELECTION_VERSION,html:replaceDraftHtmlPhotos(db.drafts[i].html||'',{...db.drafts[i],photoSelections:{...(db.drafts[i].photoSelections||{}),[modelId]:url}},db.models)}}localStorage.setItem(NEW_KEY,JSON.stringify(db));renderAll();if(active==='email')setStatus('Photo updated for this draft.')}
-          function renderPhotoLibrary(){const root=$('#photoLibrary');if(!root)return;const q=($('#photoLibrarySearch')?.value||'').trim().toLowerCase(),rows=db.models.map(m=>({m,photos:websitePhotosFor(m)})).filter(x=>x.photos.length).filter(x=>!q||[x.m.name,x.m.location,x.m.division,...x.photos.flatMap(p=>[p.label,...(p.tags||[])])].join(' ').toLowerCase().includes(q));const count=rows.reduce((n,x)=>n+x.photos.length,0);$('#photoLibraryStats').textContent=`${rows.length} models · ${count} Chez Les website photos cached · ${DISCOVERED_CHEZ_MODELS.length} newly discovered roster profiles added`;root.innerHTML=rows.map(({m,photos})=>`<details class="photo-library-model"><summary>${esc(m.name)} · ${esc(m.location)} / ${esc(m.division)} · ${photos.length} photos</summary><div style="padding:0 14px 9px">${m.profile?`<a href="${esc(m.profile)}" target="_blank" rel="noopener">Chez Les profile</a>`:''}</div><div class="photo-library-grid">${photos.map((p,i)=>{const activePick=db.draft?.photoSelections?.[m.id]===p.url;return `<div class="photo-tile ${activePick?'active-pick':''}"><img loading="lazy" src="${esc(p.url)}" alt="${esc(m.name)} portfolio image ${i+1}"><div class="tiny"><b>${esc(p.label||'Portfolio image')}</b></div><div class="muted tiny">${esc((p.tags||[]).join(' · '))}</div>${activePick?'<div class="pill">ACTIVE DRAFT PICK</div>':''}<button class="btn" type="button" style="margin-top:6px;width:100%" onclick="setDraftLibraryPhoto('${m.id}',${JSON.stringify(p.url)})">Use for open draft</button></div>`}).join('')}</div></details>`).join('')||'<div class="empty">No matching website photos.</div>'}'''
-          if get_old in s: s=s.replace(get_old,runtime,1)
-          elif "function renderPhotoLibrary()" not in s: raise SystemExit("getPhoto marker not found")
-
-          a=s.find("function renderEmailSelection(){")
-          b=s.find("function normalizedBrandName()",a)
-          if a<0 or b<0: raise SystemExit("renderEmailSelection bounds not found")
-          replacement=r'''function renderEmailSelection(){if(!$('#selectedModels'))return;const date=briefPrimaryDate();$('#selectedModels').innerHTML=selectedModels().map(m=>{const pick=draftPhotoForModel(m),reason=db.draft?.photoSelectionReasons?.[m.id]||'';return `<div class="selected-model">${pick?`<img src="${esc(pick)}" alt="${esc(m.name)} selected draft photo" style="width:96px;height:126px;object-fit:cover;float:right;margin:0 0 8px 10px;border-radius:6px">`:''}<b>${esc(m.name)}</b> · ${esc(m.location)} / ${esc(m.division)}<div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div>${reason?`<div class="muted tiny"><b>Draft photo:</b> ${esc(reason)}</div>`:''}<div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div><button class="btn" onclick="removeFromEmail('${m.id}')">Remove</button><div style="clear:both"></div></div>`}).join('')||'<div class="empty">No models selected.</div>';renderSubmissionWarnings()}
-          '''
+          a=s.find('function renderEmailSelection(){')
+          b=s.find('function normalizedBrandName()',a)
+          if a<0 or b<0: raise SystemExit('renderEmailSelection bounds not found')
+          replacement=r'''function renderEmailSelection(){if(!$('#selectedModels'))return;const date=briefPrimaryDate(),picked=selectedModels();$('#selectedModels').innerHTML=(picked.length?'<div class="drag-hint">Email order follows this list. Drag models on desktop or use Move up / Move down. Each photo selection is draft-specific.</div>':'')+picked.map((m,index)=>{const pick=draftPhotoForModel(m),override=draftPhotoSelections()[m.id]||'',urlValue=override&&!override.startsWith('data:')?override:'',options=draftPhotoOptions(m);return `<div class="draft-model-card" draggable="true" ondragstart="dragSelectedModel(event,'${m.id}')" ondragover="event.preventDefault()" ondrop="dropSelectedModel(event,'${m.id}')"><div class="draft-model-head">${pick?`<img class="draft-model-thumb" src="${esc(pick)}" alt="${esc(m.name)} draft photo">`:`<div class="draft-model-thumb placeholder" style="display:flex;align-items:center;justify-content:center">${esc(initials(m.name))}</div>`}<div><div><b>${index+1}. ${esc(m.name)}</b> · ${esc(m.location)} / ${esc(m.division)}</div><div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div><div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div><div class="draft-model-controls"><button class="btn" type="button" onclick="moveSelectedModel('${m.id}',-1)" ${index===0?'disabled':''}>↑ Move up</button><button class="btn" type="button" onclick="moveSelectedModel('${m.id}',1)" ${index===picked.length-1?'disabled':''}>↓ Move down</button><button class="btn danger" type="button" onclick="removeFromEmail('${m.id}')">Remove</button></div></div></div>${options.length>1?`<div class="draft-photo-strip">${options.map((p,i)=>`<button class="draft-photo-choice ${pick===p.url?'active':''}" type="button" title="${esc(p.label)}" onclick="setDraftPhotoUrl('${m.id}',${JSON.stringify(p.url)})"><img src="${esc(p.url)}" alt="${esc(m.name)} photo option ${i+1}"></button>`).join('')}</div>`:''}<div class="draft-photo-controls"><input type="url" value="${esc(urlValue)}" placeholder="Paste a photo URL for this draft" onchange="setDraftPhotoUrl('${m.id}',this.value)"><button class="btn" type="button" onclick="resetDraftPhoto('${m.id}')">Use default</button></div><div class="draft-photo-upload"><input type="file" accept="image/*" onchange="setDraftPhotoFile('${m.id}',this)"><span class="muted tiny">Upload is compressed and stored only with this working draft.</span></div></div>`}).join('')||'<div class="empty">No models selected.</div>';renderSubmissionWarnings()}\n'''
           s=s[:a]+replacement+s[b:]
 
-          a=s.find("function emailHtml(){")
-          b=s.find("function openInWorkGmail(){",a)
-          if a<0 or b<0: raise SystemExit("emailHtml bounds not found")
-          old_email=s[a:b]
-          new_email=old_email.replace("d.photos&&getPhoto(m)?`<div><img src=\"${esc(getPhoto(m))}\"","d.photos&&draftPhotoForModel(m)?`<div><img src=\"${esc(draftPhotoForModel(m))}\"")
-          if new_email==old_email: raise SystemExit("email photo expression not found")
-          s=s[:a]+new_email+s[b:]
+          a=s.find('function emailHtml(){')
+          b=s.find('function openInWorkGmail(){',a)
+          if a<0 or b<0: raise SystemExit('emailHtml bounds not found')
+          block=s[a:b]
+          block2=block.replace('d.photos&&getPhoto(m)?`<div><img src="${esc(getPhoto(m))}"','d.photos&&draftPhotoForModel(m)?`<div><img src="${esc(draftPhotoForModel(m))}"')
+          if block2==block and 'draftPhotoForModel(m)' not in block: raise SystemExit('email photo expression not found')
+          s=s[:a]+block2+s[b:]
 
-          old="function renderEmail(){if(!$('#emailPreview'))return;captureDraft();$('#emailPreview').innerHTML=emailHtml();renderEmailSelection();renderBrandAdvisor();renderBriefSummary();renderSubmissionWarnings();renderDraftScope()}"
-          new="function renderEmail(){if(!$('#emailPreview'))return;captureDraft();db.draft=refreshDraftPhotos({...db.draft,modelIds:[...selected]},db.models,[...selected]);$('#emailPreview').innerHTML=emailHtml();renderEmailSelection();renderBrandAdvisor();renderBriefSummary();renderSubmissionWarnings();renderDraftScope()}"
+          old="function captureDraft(){db.draft={...(db.draft||{}),purpose:$('#emailPurpose').value,contactId:$('#emailContact').value,contactName:$('#emailContactName').value,company:$('#emailCompany').value,recipientEmail:$('#emailRecipient').value,brandProject:$('#emailBrand').value,packageLink:$('#emailLink').value,brief:$('#emailContext').value,castingBriefRaw:$('#castingBriefRaw')?.value||db.draft?.castingBriefRaw||'',parsedBrief:db.draft?.parsedBrief||null,subject:$('#emailSubject').value,includeStats:$('#includeStats').checked,includePhotos:$('#includePhotos').checked,includeSources:$('#includeSources').checked}}"
+          new="function captureDraft(){db.draft={...(db.draft||{}),purpose:$('#emailPurpose').value,contactId:$('#emailContact').value,contactName:$('#emailContactName').value,company:$('#emailCompany').value,recipientEmail:$('#emailRecipient').value,brandProject:$('#emailBrand').value,packageLink:$('#emailLink').value,brief:$('#emailContext').value,castingBriefRaw:$('#castingBriefRaw')?.value||db.draft?.castingBriefRaw||'',parsedBrief:db.draft?.parsedBrief||null,subject:$('#emailSubject').value,includeStats:$('#includeStats').checked,includePhotos:$('#includePhotos').checked,includeSources:$('#includeSources').checked,modelIds:[...selected]}}"
           if old in s: s=s.replace(old,new,1)
-          elif new not in s: raise SystemExit("renderEmail marker not found")
+          elif 'modelIds:[...selected]' not in s[s.find('function captureDraft(){'):s.find('function hydrateDraft(){')]: raise SystemExit('captureDraft marker not found')
 
-          old="function saveDraft(){captureDraft();const currentId=db.activeDraftId||'';"
-          new="function saveDraft(){captureDraft();db.draft=refreshDraftPhotos({...db.draft,modelIds:[...selected]},db.models,[...selected]);const currentId=db.activeDraftId||'';"
-          if old in s: s=s.replace(old,new,1)
-          elif new not in s: raise SystemExit("saveDraft marker not found")
+          p.write_text(s,encoding='utf-8')
 
-          old="renderStats();setupFilters();renderModels();renderContactOptions();"
-          new="renderStats();setupFilters();renderModels();renderPhotoLibrary();renderContactOptions();"
-          if old in s: s=s.replace(old,new,1)
-          elif new not in s: raise SystemExit("renderAll marker not found")
-          old="$('#modelSearch').oninput=renderModels;"
-          new="$('#modelSearch').oninput=renderModels;if($('#photoLibrarySearch'))$('#photoLibrarySearch').oninput=renderPhotoLibrary;"
-          if old in s: s=s.replace(old,new,1)
-          elif new not in s: raise SystemExit("photo search binding marker not found")
-
-          if "photoLibraryUpdatedOn:'2026-09-16'" not in s:
-              marker="modelAppearanceReviewedOn:'2026-09-16'"
-              if marker in s:
-                  s=s.replace(marker,marker+",photoLibraryUpdatedOn:'2026-09-16',photoLibraryModelCount:Object.keys(MODEL_PHOTO_LIBRARY).length,discoveredChezModelCount:DISCOVERED_CHEZ_MODELS.length",1)
-
-          p.write_text(s,encoding="utf-8")
-      - name: Validate and commit
+      - name: Validate and push
         shell: bash
         run: |
-          grep -q "const MODEL_PHOTO_LIBRARY=" index.html
-          grep -q "function renderPhotoLibrary" index.html
-          grep -q "function bestPhotoChoiceForDraft" index.html
-          grep -q "photoSelections" index.html
-          grep -q "view-photos" index.html
-          python - <<'PY'
-          import re, json
-          s=open('index.html',encoding='utf-8').read()
-          m=re.search(r"const MODEL_PHOTO_LIBRARY=(\{.*?\});\nfunction applyChezProfileEnrichment",s,re.S)
-          if not m: raise SystemExit("photo library constant missing")
-          lib=json.loads(m.group(1))
-          total=sum(len(v) for v in lib.values())
-          print("photo library models",len(lib),"images",total)
-          if len(lib)<20 or total<50: raise SystemExit("photo library unexpectedly small")
-          d=re.search(r"const DISCOVERED_CHEZ_MODELS=(\[.*?\]);\nconst CHEZ_PROFILE_ENRICHMENTS",s,re.S)
-          if not d: raise SystemExit("discovered model constant missing")
-          new=json.loads(d.group(1))
-          print("discovered models",[(x['name'],x['location'],x['division']) for x in new])
-          if not any(x.get('name')=='Ainoa' for x in new): raise SystemExit("Ainoa not added")
-          PY
+          set -euo pipefail
+          grep -q "function draftPhotoForModel" index.html
+          grep -q "function moveSelectedModel" index.html
+          grep -q "draft-photo-choice" index.html
+          grep -q "draftPhotoForModel(m)" index.html
           python - <<'PY'
           import re
           s=open('index.html',encoding='utf-8').read()
           js=re.search(r'<script>(.*)</script>',s,re.S).group(1)
           open('/tmp/crm.js','w',encoding='utf-8').write(js)
+          assert s.count('function draftPhotoForModel')==1
+          assert s.count('function moveSelectedModel')==1
           PY
           node --check /tmp/crm.js
           git config user.name "ChatGPT CRM Update"
           git config user.email "actions@users.noreply.github.com"
           git add index.html
-          git commit -m "Build model photo library and refresh draft imagery"
+          git commit -m "Add native draft photo and model ordering controls"
           git push origin HEAD:main
