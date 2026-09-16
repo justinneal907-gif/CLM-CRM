@@ -1,0 +1,93 @@
+name: Update verified Milan casting contacts
+
+on:
+  push:
+    paths:
+      - '.github/workflows/update-milan-verified-contacts.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-contacts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Fill verified public casting contact emails
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          # Public professional contact routes verified 2026-09-16.
+          # These fill only the specific Milan S/S 2027 drafts whose stored
+          # casting contact is the person/agency represented by the address.
+          contacts = {
+              'milan-ss27-rest-jil-sander': 'studio@bengrimescasting.com',
+              'milan-ss27-rest-fendi': 'julia.lange@me.com',
+              'milan-ss27-rest-vivetta': 'ibanaudi@thegreatestmagazine.com',
+              'milan-ss27-rest-missoni': 'studio@bengrimescasting.com',
+              'milan-ss27-rest-mm6-maison-margiela': 'studio@bengrimescasting.com',
+              'milan-ss27-rest-etro': 'giorgina@jollycollective.com',
+              'milan-ss27-rest-onitsuka-tiger': 'hello@mmxxartists.com',
+              'milan-ss27-rest-max-mara': 'regina@thecastingagency.com',
+              'milan-ss27-rest-genny': 'hello@mmxxartists.com',
+              'milan-ss27-rest-marni': 'regina@thecastingagency.com',
+              'milan-ss27-rest-roberto-cavalli': 'hello@mmxxartists.com',
+              'milan-ss27-rest-tod-s': 'regina@thecastingagency.com',
+              'milan-ss27-rest-institution-by-galib-gassanoff': 'hello@mmxxartists.com',
+              'milan-ss27-rest-sportmax': 'regina@thecastingagency.com',
+              'milan-ss27-rest-blumarine': 'studio@bengrimescasting.com',
+              'milan-ss27-rest-gucci': 'regina@thecastingagency.com',
+              'milan-ss27-rest-elisabetta-franchi': 'caterina@cmcasting.it',
+              'milan-ss27-rest-moschino': 'julia.lange@me.com',
+              'milan-ss27-rest-ermanno-scervino': 'caterina@cmcasting.it',
+              'milan-ss27-rest-ferragamo': 'hello@driverepresents.com',
+              'milan-ss27-rest-dolce-and-gabbana': 'regina@thecastingagency.com',
+              'milan-ss27-rest-msgm': 'hello@mmxxartists.com',
+              'milan-ss27-rest-act-n1': 'contact@thecastlog.com',
+              'milan-ss27-rest-marco-rambaldi': 'info@hbcreativeagency.com',
+          }
+
+          changed = 0
+          for draft_id, email in contacts.items():
+              # MILAN_REST_DRAFTS is JSON-shaped JS, so target the recipientEmail
+              # belonging to this exact object and stop before the next object id.
+              start = text.find(f'"id":"{draft_id}"')
+              if start < 0:
+                  raise SystemExit(f'Missing draft id: {draft_id}')
+              next_id = text.find('},{"id":"', start + 1)
+              if next_id < 0:
+                  next_id = text.find('];', start)
+              segment = text[start:next_id]
+              m = re.search(r'"recipientEmail":"([^"]*)"', segment)
+              if not m:
+                  raise SystemExit(f'Missing recipientEmail field: {draft_id}')
+              old = m.group(1)
+              if old == email:
+                  continue
+              if old and old != email:
+                  raise SystemExit(f'Refusing to overwrite nonblank recipient for {draft_id}: {old}')
+              segment = segment[:m.start()] + f'"recipientEmail":"{email}"' + segment[m.end():]
+              text = text[:start] + segment + text[next_id:]
+              changed += 1
+
+          path.write_text(text, encoding='utf-8')
+          print(f'Updated {changed} Milan draft recipient emails.')
+          PY
+      - name: Commit and push verified contacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Add verified Milan Fashion Week casting emails"
+          git push origin HEAD:main
