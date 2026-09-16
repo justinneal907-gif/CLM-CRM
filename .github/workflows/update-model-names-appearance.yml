@@ -1,0 +1,168 @@
+name: Update CRM model names and appearance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/update-model-names-appearance.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch roster identities, appearance, and drafts
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          marker = 'const MODEL_IDENTITY_OVERRIDES='
+          if marker in s:
+              print('Identity/appearance patch already present.')
+          else:
+              identities = {
+                'new-york-women-agang': {'name':'Agang','hair':'Black','eyes':'Dark Brown'},
+                'new-york-women-claudia-lucchini': {'name':'Claudia','hair':'Brown','eyes':'Blue-Green'},
+                'new-york-women-callie-steg': {'name':'Callie','hair':'Copper Brown','eyes':'Blue'},
+                'new-york-women-dr-nialah-wilson-small': {'name':'Nialah','hair':'Black','eyes':'Brown'},
+                'new-york-women-hadiyah-lawal': {'name':'Hadiyah','hair':'Black','eyes':'Brown'},
+                'new-york-women-janel-cheatham': {'name':'Janel','hair':'Black','eyes':'Brown'},
+                'new-york-women-june-ramadhan': {'name':'June','hair':'Black','eyes':'Brown'},
+                'new-york-women-maja-stockwell': {'name':'Maja Stockwell','hair':'Blonde','eyes':'Green'},
+                'new-york-women-mary-timms': {'name':'Mary','hair':'Black','eyes':'Brown'},
+                'new-york-women-mob-e': {'name':'Mobée','hair':'Black','eyes':'Brown'},
+                'new-york-women-molly-gardiner': {'name':'Molly','hair':'Auburn','eyes':'Blue'},
+                'new-york-women-ni-simone': {'name':'Ni','hair':'Black','eyes':'Brown'},
+                'new-york-women-rachel-stone': {'name':'Rachel','hair':'Blonde','eyes':'Blue'},
+                'new-york-women-sal-soliman': {'name':'Sal','hair':'Black','eyes':'Brown'},
+                'new-york-women-seven-wright': {'name':'Seven','hair':'Dark Brown','eyes':'Brown'},
+                'new-york-women-shanel-cheatham': {'name':'Shanel','hair':'Black','eyes':'Brown'},
+                'new-york-women-tinin': {'name':'Tinin','hair':'Dark Brown','eyes':'Brown'},
+                'new-york-men-justin-bell': {'name':'Justin','hair':'Black','eyes':'Brown'},
+                'new-york-men-matt-rossi': {'name':'Matt','hair':'Bald','eyes':'Blue'},
+                'new-york-curve-sarah-mendez': {'name':'Sarah','hair':'Brown','eyes':'Brown'},
+                'new-york-development-em0-spit': {'name':'Em0','hair':'Dark Brown','eyes':'Brown'},
+                'new-york-development-victoria-sepiashvili': {'name':'Victoria','hair':'Brown','eyes':'Brown'},
+                'london-women-aj-raubunch': {'name':'AJ','hair':'Brown','eyes':'Brown'},
+                'london-women-ambre-prognitz': {'name':'Ambre','hair':'Brown','eyes':'Hazel'},
+                'london-women-amy-allison': {'name':'Amy','hair':'Black','eyes':'Brown'},
+                'london-women-daisy-ibi': {'name':'Daisy','hair':'Black','eyes':'Brown'},
+                'london-women-molly-gardiner': {'name':'Molly','hair':'Auburn','eyes':'Blue'},
+                'london-men-alex-connor': {'name':'Alex','hair':'Brown','eyes':'Blue'},
+                'london-men-harry': {'name':'Harry','hair':'Brown','eyes':'Brown'},
+                'london-men-mikael': {'name':'Mikael','hair':'Black','eyes':'Brown'},
+                'milan-women-camelia-boca': {'name':'Camelia','hair':'Brown','eyes':'Brown'},
+                'milan-women-molly-gardiner': {'name':'Molly','hair':'Auburn','eyes':'Blue'},
+                'los-angeles-women-elle-pickens': {'name':'Elle','hair':'Dark Brown','eyes':'Brown'},
+                'los-angeles-women-florencia-gordon': {'name':'Florencia','hair':'Dark Brown','eyes':'Brown'},
+                'los-angeles-women-malia': {'name':'Malia','hair':'Brown','eyes':'Brown'},
+                'los-angeles-men-justice-harper': {'name':'Justice','hair':'Black','eyes':'Brown'},
+                'miami-women-alaina': {'name':'Alaina','hair':'Brown','eyes':'Brown'},
+                'miami-women-anastasia': {'name':'Anastasia','hair':'Brown','eyes':'Brown'},
+                'miami-women-ann-neika': {'name':'Ann-Neika','hair':'Dark Brown','eyes':'Brown'},
+                'miami-women-darian': {'name':'Darian','hair':'Dark Brown','eyes':'Brown'},
+                'miami-women-fianna-mchale': {'name':'Fianna','hair':'Brown','eyes':'Brown'},
+                'miami-women-hadiyah-lawal': {'name':'Hadiyah','hair':'Black','eyes':'Brown'},
+                'miami-women-merhoodjie-denaut': {'name':'Merhoodjie','hair':'Black','eyes':'Brown'},
+                'miami-women-norma-huembes': {'name':'Norma','hair':'Brown','eyes':'Green'},
+                'miami-women-phara-joseph': {'name':'Phara','hair':'Black','eyes':'Brown'},
+                'miami-women-raquel': {'name':'Raquel','hair':'Dark Brown','eyes':'Dark Brown'},
+                'miami-men-khafre-franklin': {'name':'Khafre','hair':'Black','eyes':'Brown'},
+                'miami-men-stevenson-jean': {'name':'Stevenson','hair':'Black','eyes':'Brown'},
+                'paris-women-legacy-kalaba': {'name':'Kalaba','hair':'Black','eyes':'Brown'},
+                'paris-women-legacy-raquel-pelissier': {'name':'Raquel','hair':'Black','eyes':'Brown'},
+                'new-york-women-sophia-pippen': {'name':'Sophia Pippen','hair':'Dark Brown','eyes':'Dark Brown'},
+                'new-york-women-anhelena-sobol': {'name':'Anhelena','hair':'Brown','eyes':'Brown'}
+              }
+              aliases = {
+                'Claudia Lucchini':'Claudia','Callie Steg':'Callie','Dr. Nialah Wilson-Small':'Nialah',
+                'Hadiyah Lawal':'Hadiyah','Janel Cheatham':'Janel','June Ramadhan':'June','Mary Timms':'Mary',
+                'Molly Gardiner':'Molly','Ni Simone':'Ni','Rachel Stone':'Rachel','Sal Soliman':'Sal',
+                'Seven Wright':'Seven','Shanel Cheatham':'Shanel','Justin Bell':'Justin','Matt Rossi':'Matt',
+                'Sarah Mendez':'Sarah','Em0 Spit':'Em0','Victoria Sepiashvili':'Victoria','AJ Raubunch':'AJ',
+                'Ambre Prognitz':'Ambre','Amy Allison':'Amy','Daisy Ibi':'Daisy','Alex Connor':'Alex',
+                'Camelia Boca':'Camelia','Elle Pickens':'Elle','Florencia Gordon':'Florencia','Justice Harper':'Justice',
+                'Ann Neika':'Ann-Neika','Fianna McHale':'Fianna','Merhoodjie Denaut':'Merhoodjie',
+                'Norma Huembes':'Norma','Phara Joseph':'Phara','Khafre Franklin':'Khafre','Stevenson Jean':'Stevenson',
+                'Raquel Pélissier':'Raquel','Anhelena Sobol':'Anhelena'
+              }
+              js = 'const MODEL_IDENTITY_OVERRIDES=' + json.dumps(identities, ensure_ascii=False, separators=(',',':')) + ';\n'
+              js += 'const MODEL_NAME_ALIASES=' + json.dumps(aliases, ensure_ascii=False, separators=(',',':')) + ';\n'
+              js += "function stripAppearanceStats(v){return String(v||'').split('|').map(x=>x.trim()).filter(Boolean).filter(x=>!/^hair\\s*:/i.test(x)&&!/^eyes?\\s*:/i.test(x)).join(' | ')}\n"
+              js += "function mergeAppearanceStats(v,hair,eyes){const base=stripAppearanceStats(v),parts=[base,hair?'Hair: '+hair:'',eyes?'Eyes: '+eyes:''].filter(Boolean);return parts.join(' | ')}\n"
+              js += "function applyModelIdentity(m){const o=MODEL_IDENTITY_OVERRIDES[m.id]||{};const hair=o.hair||m.hair||'',eyes=o.eyes||m.eyes||'';const stats=mergeAppearanceStats(m.stats||m.measurements||'',hair,eyes);return {...m,name:o.name||MODEL_NAME_ALIASES[m.name]||m.name,hair,eyes,appearanceReviewed:'2026-09-16',appearanceBasis:'Portfolio imagery / agency profile research',stats,measurements:stats}}\n"
+              js += "function shortModelName(n){return MODEL_NAME_ALIASES[n]||n}\n"
+              js += "function normalizeRecordModelNames(r){if(!r||typeof r!=='object')return r;const out={...r};if(Array.isArray(out.models))out.models=out.models.map(shortModelName);if(typeof out.model==='string')out.model=shortModelName(out.model);return out}\n"
+
+              anchor = "const WORK_GMAIL_CONTACTS=["
+              if anchor not in s:
+                  raise SystemExit('Could not locate identity insertion point')
+              s = s.replace(anchor, js + anchor, 1)
+
+              old = "const seed={models:BASE_ROSTER.map(m=>({...m,niche:NICHE_MAP[m.name]||'Development',secondaryNiche:SECONDARY_NICHE_MAP[m.name]||'',stats:m.measurements,profile:m.profileUrl,photo:m.photoUrl,sourceDate:SOURCE_DATE,availabilityStatus:'Unknown',statusFrom:'',statusTo:'',holdProject:'',availabilityNotes:''})),"
+              new = "const seed={models:BASE_ROSTER.map(m=>applyModelIdentity({...m,niche:NICHE_MAP[m.name]||'Development',secondaryNiche:SECONDARY_NICHE_MAP[m.name]||'',stats:m.measurements,profile:m.profileUrl,photo:m.photoUrl,sourceDate:SOURCE_DATE,availabilityStatus:'Unknown',statusFrom:'',statusTo:'',holdProject:'',availabilityNotes:''})),"
+              if old not in s:
+                  raise SystemExit('Could not patch seeded models')
+              s = s.replace(old,new,1)
+
+              old = "data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>({...m,availabilityStatus:m.availabilityStatus||'Unknown',statusFrom:m.statusFrom||'',statusTo:m.statusTo||'',holdProject:m.holdProject||'',availabilityNotes:m.availabilityNotes||''}));"
+              new = "data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>applyModelIdentity({...m,availabilityStatus:m.availabilityStatus||'Unknown',statusFrom:m.statusFrom||'',statusTo:m.statusTo||'',holdProject:m.holdProject||'',availabilityNotes:m.availabilityNotes||''}));"
+              if old not in s:
+                  raise SystemExit('Could not patch model recovery')
+              s = s.replace(old,new,1)
+
+              old = "data.submissions=mergeRecovered([...RECOVERED_SUBMISSIONS,...WORK_GMAIL_SUBMISSIONS],data.submissions||[]);data.drafts=mergeRecovered([...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS],data.drafts||[]);"
+              new = "data.submissions=mergeRecovered([...RECOVERED_SUBMISSIONS,...WORK_GMAIL_SUBMISSIONS],data.submissions||[]).map(normalizeRecordModelNames);data.drafts=mergeRecovered([...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS],data.drafts||[]).map(normalizeRecordModelNames);data.bookings=(data.bookings||[]).map(normalizeRecordModelNames);"
+              if old not in s:
+                  raise SystemExit('Could not patch record-name recovery')
+              s = s.replace(old,new,1)
+
+              old = "m.stats=$('#modalStats').value;m.measurements=m.stats;"
+              new = "m.hair=$('#modalHair').value.trim();m.eyes=$('#modalEyes').value.trim();m.stats=mergeAppearanceStats($('#modalStats').value,m.hair,m.eyes);m.measurements=m.stats;"
+              if old not in s:
+                  raise SystemExit('Could not patch model save')
+              s = s.replace(old,new,1)
+
+              old = "<div class=\"field\"><label>Measurements</label><textarea id=\"modalStats\" rows=\"4\">${esc(m.stats||m.measurements||'')}</textarea></div><div class=\"field\"><label>Primary photo URL</label>"
+              new = "<div class=\"field\"><label>Measurements</label><textarea id=\"modalStats\" rows=\"4\">${esc(m.stats||m.measurements||'')}</textarea></div><div class=\"split\" style=\"grid-template-columns:1fr 1fr\"><div class=\"field\"><label>Hair</label><input id=\"modalHair\" value=\"${esc(m.hair||'')}\"></div><div class=\"field\"><label>Eyes</label><input id=\"modalEyes\" value=\"${esc(m.eyes||'')}\"></div></div><div class=\"field\"><label>Primary photo URL</label>"
+              if old not in s:
+                  raise SystemExit('Could not add model appearance fields')
+              s = s.replace(old,new,1)
+
+              old = "const rows=[['Name','Location','Division','Main Niche','Secondary Niche','Availability','Status From','Status To','Hold / Booking Project','Measurements','Profile URL','Photo URL','Active Board'],...db.models.map(m=>[m.name,m.location,m.division,m.niche||'',m.secondaryNiche||'',m.availabilityStatus||'Unknown',m.statusFrom||'',m.statusTo||'',m.holdProject||'',m.stats||m.measurements,m.profile||m.profileUrl,getPhoto(m),m.activeBoard!==false])];"
+              new = "const rows=[['Name','Location','Division','Main Niche','Secondary Niche','Hair','Eyes','Availability','Status From','Status To','Hold / Booking Project','Measurements','Profile URL','Photo URL','Active Board'],...db.models.map(m=>[m.name,m.location,m.division,m.niche||'',m.secondaryNiche||'',m.hair||'',m.eyes||'',m.availabilityStatus||'Unknown',m.statusFrom||'',m.statusTo||'',m.holdProject||'',m.stats||m.measurements,m.profile||m.profileUrl,getPhoto(m),m.activeBoard!==false])];"
+              if old not in s:
+                  raise SystemExit('Could not patch roster export')
+              s = s.replace(old,new,1)
+
+              old = "workGmailSubmissionCount:WORK_GMAIL_SUBMISSIONS.length,milanFirstDayDraftsAddedOn:'2026-09-16',milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length};return data}"
+              new = "workGmailSubmissionCount:WORK_GMAIL_SUBMISSIONS.length,milanFirstDayDraftsAddedOn:'2026-09-16',milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,modelIdentityUpdatedOn:'2026-09-16',modelAppearanceReviewedOn:'2026-09-16'};return data}"
+              if old not in s:
+                  raise SystemExit('Could not patch recovery metadata')
+              s = s.replace(old,new,1)
+
+              p.write_text(s,encoding='utf-8')
+              print('Updated model names, appearance data, and stored record names.')
+
+      - name: Validate and push
+        shell: bash
+        run: |
+          grep -q "const MODEL_IDENTITY_OVERRIDES=" index.html
+          grep -q "Maja Stockwell" index.html
+          grep -q "Sophia Pippen" index.html
+          grep -q "modelAppearanceReviewedOn:'2026-09-16'" index.html
+          grep -q "includePhotos:true" index.html
+          git config user.name "ChatGPT CRM Update"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Update roster names and model appearance data"
+          git push origin HEAD:main
