@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add Bianca to roster seed
+      - name: Normalize Bianca roster record
         shell: python
         run: |
           from pathlib import Path
@@ -23,46 +23,54 @@ jobs:
 
           path = Path('index.html')
           text = path.read_text(encoding='utf-8')
-          model_id = 'europe-women-bianca-eigenfeld-own'
 
-          if model_id in text:
-              print('Bianca is already present; no patch needed.')
-          else:
-              model = {
-                  'id': model_id,
-                  'name': 'Bianca Eigenfeld Own',
-                  'location': 'Europe',
-                  'division': 'Women',
-                  'measurements': 'Height: 180cm | Bust: 85cm | Waist: 62cm | Hip: 90cm | Shoe: 41EU | Hair: Chestnut Brown | Eyes: Blue',
-                  'profileUrl': 'https://www.chezlesmannequins.com/search?q=Bianca',
-                  'photoUrl': '',
-                  'photoFilename': '',
-                  'source': 'Chez Les Mannequins site search',
-                  'activeBoard': True,
-                  'notes': 'Official Chez Les Mannequins site search returns Bianca Eigenfeld Own. Direct profile slug and market are not exposed by the current public result; market is recorded conservatively as Europe.'
-              }
+          def replace_json_const(src, name, next_marker, transform):
+              prefix = f'const {name}='
+              start = src.index(prefix)
+              value_start = start + len(prefix)
+              end = src.index(';\n' + next_marker, value_start)
+              value = json.loads(src[value_start:end])
+              value = transform(value)
+              return src[:value_start] + json.dumps(value, ensure_ascii=False, separators=(',', ':')) + src[end:]
 
-              base_marker = '];\nconst NICHE_MAP='
-              base_start = text.index('const BASE_ROSTER=[')
-              base_end = text.index(base_marker, base_start)
-              text = text[:base_end] + ',' + json.dumps(model, ensure_ascii=False, separators=(',', ':')) + text[base_end:]
+          canonical_id = 'germany-women-bianca-eigenfeld-own'
+          canonical_model = {
+              'id': canonical_id,
+              'name': 'Bianca Eigenfeld Own',
+              'location': 'Germany',
+              'division': 'Women',
+              'measurements': 'Height: 180cm | Bust: 85cm | Waist: 62cm | Hip: 90cm | Shoe: 41EU | Hair: Chestnut Brown | Eyes: Blue',
+              'profileUrl': 'https://www.chezlesmannequins.com/search?q=Bianca',
+              'photoUrl': '',
+              'photoFilename': '',
+              'source': 'Chez Les Mannequins public site search',
+              'activeBoard': True,
+              'notes': 'Official Chez Les Mannequins site search returns Bianca Eigenfeld Own. The canonical profile slug and exact agency market are not exposed by the public result; Germany is retained from the existing CRM record.'
+          }
 
-              def add_object_entry(src, const_name, next_marker, key, value):
-                  start = src.index(f'const {const_name}={{')
-                  end = src.index('};\n' + next_marker, start)
-                  entry = ',' + json.dumps(key, ensure_ascii=False) + ':' + json.dumps(value, ensure_ascii=False, separators=(',', ':'))
-                  return src[:end] + entry + src[end:]
+          def roster_transform(items):
+              cleaned = [m for m in items if m.get('name') != 'Bianca Eigenfeld Own' and 'bianca-eigenfeld-own' not in m.get('id','')]
+              cleaned.append(canonical_model)
+              return cleaned
 
-              text = add_object_entry(text, 'NICHE_MAP', 'const SECONDARY_NICHE_MAP=', 'Bianca Eigenfeld Own', 'Fashion-Commercial')
-              text = add_object_entry(text, 'SECONDARY_NICHE_MAP', 'const NICHE_ORDER=', 'Bianca Eigenfeld Own', 'Beauty')
-              text = add_object_entry(text, 'MODEL_IDENTITY_OVERRIDES', 'const MODEL_NAME_ALIASES=', model_id, {'name':'Bianca','hair':'Chestnut Brown','eyes':'Blue'})
-              text = add_object_entry(text, 'MODEL_NAME_ALIASES', 'function stripAppearanceStats', 'Bianca Eigenfeld Own', 'Bianca')
+          text = replace_json_const(text, 'BASE_ROSTER', 'const NICHE_MAP=', roster_transform)
+          text = replace_json_const(text, 'NICHE_MAP', 'const SECONDARY_NICHE_MAP=', lambda m: {**m, 'Bianca Eigenfeld Own':'Fashion-Commercial'})
+          text = replace_json_const(text, 'SECONDARY_NICHE_MAP', 'const NICHE_ORDER=', lambda m: {**m, 'Bianca Eigenfeld Own':'Beauty'})
 
-              if "newModels:['Anhelena']" in text:
-                  text = text.replace("newModels:['Anhelena']", "newModels:['Anhelena','Bianca']", 1)
+          def identity_transform(m):
+              out = {k:v for k,v in m.items() if 'bianca-eigenfeld-own' not in k}
+              out[canonical_id] = {'name':'Bianca','hair':'Chestnut Brown','eyes':'Blue'}
+              return out
 
-              path.write_text(text, encoding='utf-8')
-              print('Bianca roster seed added.')
+          text = replace_json_const(text, 'MODEL_IDENTITY_OVERRIDES', 'const MODEL_NAME_ALIASES=', identity_transform)
+          text = replace_json_const(text, 'MODEL_NAME_ALIASES', 'function stripAppearanceStats', lambda m: {**m, 'Bianca Eigenfeld Own':'Bianca'})
+
+          text = text.replace("newModels:['Anhelena','Bianca','Bianca']", "newModels:['Anhelena','Bianca']")
+          if "newModels:['Anhelena']" in text:
+              text = text.replace("newModels:['Anhelena']", "newModels:['Anhelena','Bianca']", 1)
+
+          path.write_text(text, encoding='utf-8')
+          print('Bianca normalized to one active CRM record.')
 
       - name: Commit CRM update
         run: |
@@ -73,5 +81,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Add Bianca to CRM roster"
+          git commit -m "Normalize Bianca CRM record"
           git push
