@@ -1,10 +1,11 @@
-name: Add draft model presentation controls
+name: Apply draft model controls
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
-      - '.github/workflows/build-model-photo-library.yml'
+      - .github/workflows/build-model-photo-library.yml
 
 permissions:
   contents: write
@@ -17,73 +18,16 @@ jobs:
         with:
           fetch-depth: 0
       - name: Patch CRM
-        shell: python
+        run: python tools/patch_draft_controls.py
+      - name: Validate JavaScript
         run: |
-          from pathlib import Path
-
-          p=Path('index.html')
-          s=p.read_text(encoding='utf-8')
-
-          css='''\n/* Draft-native model presentation controls */\n.draft-model-card{border:1px solid var(--line);border-radius:10px;padding:10px;margin:0 0 10px;background:#fff}.draft-model-head{display:grid;grid-template-columns:84px 1fr;gap:10px;align-items:start}.draft-model-thumb{width:84px;height:112px;object-fit:cover;border-radius:7px;background:#eceeea}.draft-model-controls{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.draft-photo-strip{display:flex;gap:7px;overflow-x:auto;padding:8px 0 3px}.draft-photo-choice{flex:0 0 66px;border:2px solid transparent;border-radius:7px;padding:0;background:#fff}.draft-photo-choice.active{border-color:var(--accent)}.draft-photo-choice img{display:block;width:62px;height:82px;object-fit:cover;border-radius:5px}.draft-photo-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;margin-top:8px}.draft-photo-controls input[type=url]{width:100%;min-width:0;border:1px solid #bdc6bf;border-radius:7px;padding:8px}.draft-photo-upload{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px}.draft-photo-upload input[type=file]{max-width:100%;font-size:12px}.drag-hint{font-size:11px;color:var(--muted);margin:0 0 8px}@media(max-width:520px){.draft-model-head{grid-template-columns:72px 1fr}.draft-model-thumb{width:72px;height:96px}.draft-photo-controls{grid-template-columns:1fr}.draft-model-controls .btn{flex:1 1 auto}}\n'''
-          if '/* Draft-native model presentation controls */' not in s:
-              s=s.replace('</style>',css+'</style>',1)
-
-          anchor="function selectedModels(){return selected.map(id=>db.models.find(m=>m.id===id)).filter(Boolean)}"
-          helpers=r'''function selectedModels(){return selected.map(id=>db.models.find(m=>m.id===id)).filter(Boolean)}
-function draftPhotoSelections(){db.draft=db.draft||structuredClone(seed.draft);db.draft.photoSelections=db.draft.photoSelections||{};return db.draft.photoSelections}
-function draftPhotoForModel(m){return draftPhotoSelections()[m.id]||(db.customPhotos||{})[m.id]||m.photo||m.photoUrl||''}
-function draftPhotoOptions(m){const out=[];const add=x=>{if(!x)return;const url=typeof x==='string'?x:(x.url||x.src||'');if(url&&!out.some(y=>y.url===url))out.push({url,label:typeof x==='string'?'Portfolio photo':(x.label||x.title||'Portfolio photo')})};if(typeof MODEL_PHOTO_LIBRARY!=='undefined'&&MODEL_PHOTO_LIBRARY[m.id])MODEL_PHOTO_LIBRARY[m.id].forEach(add);[m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(a=>Array.isArray(a)&&a.forEach(add));add((db.customPhotos||{})[m.id]);add(m.photo);add(m.photoUrl);return out.slice(0,12)}
-function persistDraftPresentation(){db.selected=[...selected];db.draft=db.draft||structuredClone(seed.draft);db.draft.modelIds=[...selected];localStorage.setItem(NEW_KEY,JSON.stringify(db))}
-function setDraftPhotoUrl(id,url){const v=String(url||'').trim(),photos=draftPhotoSelections();if(v)photos[id]=v;else delete photos[id];persistDraftPresentation();renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db));setStatus(v?'Draft photo updated. Click Update draft to save it to the package.':'Draft photo reset to the model default.')}
-function resetDraftPhoto(id){const photos=draftPhotoSelections();delete photos[id];persistDraftPresentation();renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db));setStatus('Draft photo reset to the model default. Click Update draft to save the package.')}
-async function fileToDraftPhoto(file){if(!file)return'';try{const raw=await fileToDataUrl(file);return await new Promise(resolve=>{const img=new Image();img.onload=()=>{const maxW=1200,maxH=1600,scale=Math.min(1,maxW/img.width,maxH/img.height),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale)),c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',.84))};img.onerror=()=>resolve(raw);img.src=raw})}catch{return''}}
-async function setDraftPhotoFile(id,input){const file=input?.files?.[0];if(!file)return;const data=await fileToDraftPhoto(file);if(!data)return setStatus('Could not read that image.');draftPhotoSelections()[id]=data;persistDraftPresentation();renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db));setStatus('Uploaded photo selected for this draft only. Click Update draft to save it.')}
-function moveSelectedModel(id,delta){const i=selected.indexOf(id);if(i<0)return;const j=Math.max(0,Math.min(selected.length-1,i+delta));if(i===j)return;selected.splice(i,1);selected.splice(j,0,id);persistDraftPresentation();renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db));setStatus('Model order changed. Click Update draft to save the package.')}
-let selectedDragId='';
-function dragSelectedModel(e,id){selectedDragId=id;if(e?.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id)}}
-function dropSelectedModel(e,targetId){if(e)e.preventDefault();const source=(e?.dataTransfer?.getData('text/plain')||selectedDragId);if(!source||source===targetId)return;const a=selected.indexOf(source),b=selected.indexOf(targetId);if(a<0||b<0)return;selected.splice(a,1);selected.splice(b,0,source);selectedDragId='';persistDraftPresentation();renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db));setStatus('Model order changed. Click Update draft to save the package.')}'''
-          if 'function draftPhotoSelections()' not in s:
-              if anchor not in s: raise SystemExit('selectedModels anchor not found')
-              s=s.replace(anchor,helpers,1)
-
-          a=s.find('function renderEmailSelection(){')
-          b=s.find('function normalizedBrandName()',a)
-          if a<0 or b<0: raise SystemExit('renderEmailSelection bounds not found')
-          replacement=r'''function renderEmailSelection(){if(!$('#selectedModels'))return;const date=briefPrimaryDate(),picked=selectedModels();$('#selectedModels').innerHTML=(picked.length?'<div class="drag-hint">Email order follows this list. Drag models on desktop or use Move up / Move down. Each photo selection is draft-specific.</div>':'')+picked.map((m,index)=>{const pick=draftPhotoForModel(m),override=draftPhotoSelections()[m.id]||'',urlValue=override&&!override.startsWith('data:')?override:'',options=draftPhotoOptions(m);return `<div class="draft-model-card" draggable="true" ondragstart="dragSelectedModel(event,'${m.id}')" ondragover="event.preventDefault()" ondrop="dropSelectedModel(event,'${m.id}')"><div class="draft-model-head">${pick?`<img class="draft-model-thumb" src="${esc(pick)}" alt="${esc(m.name)} draft photo">`:`<div class="draft-model-thumb placeholder" style="display:flex;align-items:center;justify-content:center">${esc(initials(m.name))}</div>`}<div><div><b>${index+1}. ${esc(m.name)}</b> · ${esc(m.location)} / ${esc(m.division)}</div><div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div><div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div><div class="draft-model-controls"><button class="btn" type="button" onclick="moveSelectedModel('${m.id}',-1)" ${index===0?'disabled':''}>↑ Move up</button><button class="btn" type="button" onclick="moveSelectedModel('${m.id}',1)" ${index===picked.length-1?'disabled':''}>↓ Move down</button><button class="btn danger" type="button" onclick="removeFromEmail('${m.id}')">Remove</button></div></div></div>${options.length>1?`<div class="draft-photo-strip">${options.map((p,i)=>`<button class="draft-photo-choice ${pick===p.url?'active':''}" type="button" title="${esc(p.label)}" onclick="setDraftPhotoUrl('${m.id}',${JSON.stringify(p.url)})"><img src="${esc(p.url)}" alt="${esc(m.name)} photo option ${i+1}"></button>`).join('')}</div>`:''}<div class="draft-photo-controls"><input type="url" value="${esc(urlValue)}" placeholder="Paste a photo URL for this draft" onchange="setDraftPhotoUrl('${m.id}',this.value)"><button class="btn" type="button" onclick="resetDraftPhoto('${m.id}')">Use default</button></div><div class="draft-photo-upload"><input type="file" accept="image/*" onchange="setDraftPhotoFile('${m.id}',this)"><span class="muted tiny">Upload is compressed and stored only with this working draft.</span></div></div>`}).join('')||'<div class="empty">No models selected.</div>';renderSubmissionWarnings()}\n'''
-          s=s[:a]+replacement+s[b:]
-
-          a=s.find('function emailHtml(){')
-          b=s.find('function openInWorkGmail(){',a)
-          if a<0 or b<0: raise SystemExit('emailHtml bounds not found')
-          block=s[a:b]
-          block2=block.replace('d.photos&&getPhoto(m)?`<div><img src="${esc(getPhoto(m))}"','d.photos&&draftPhotoForModel(m)?`<div><img src="${esc(draftPhotoForModel(m))}"')
-          if block2==block and 'draftPhotoForModel(m)' not in block: raise SystemExit('email photo expression not found')
-          s=s[:a]+block2+s[b:]
-
-          old="function captureDraft(){db.draft={...(db.draft||{}),purpose:$('#emailPurpose').value,contactId:$('#emailContact').value,contactName:$('#emailContactName').value,company:$('#emailCompany').value,recipientEmail:$('#emailRecipient').value,brandProject:$('#emailBrand').value,packageLink:$('#emailLink').value,brief:$('#emailContext').value,castingBriefRaw:$('#castingBriefRaw')?.value||db.draft?.castingBriefRaw||'',parsedBrief:db.draft?.parsedBrief||null,subject:$('#emailSubject').value,includeStats:$('#includeStats').checked,includePhotos:$('#includePhotos').checked,includeSources:$('#includeSources').checked}}"
-          new="function captureDraft(){db.draft={...(db.draft||{}),purpose:$('#emailPurpose').value,contactId:$('#emailContact').value,contactName:$('#emailContactName').value,company:$('#emailCompany').value,recipientEmail:$('#emailRecipient').value,brandProject:$('#emailBrand').value,packageLink:$('#emailLink').value,brief:$('#emailContext').value,castingBriefRaw:$('#castingBriefRaw')?.value||db.draft?.castingBriefRaw||'',parsedBrief:db.draft?.parsedBrief||null,subject:$('#emailSubject').value,includeStats:$('#includeStats').checked,includePhotos:$('#includePhotos').checked,includeSources:$('#includeSources').checked,modelIds:[...selected]}}"
-          if old in s: s=s.replace(old,new,1)
-          elif 'modelIds:[...selected]' not in s[s.find('function captureDraft(){'):s.find('function hydrateDraft(){')]: raise SystemExit('captureDraft marker not found')
-
-          p.write_text(s,encoding='utf-8')
-
-      - name: Validate and push
-        shell: bash
-        run: |
-          set -euo pipefail
+          python -c "import re; s=open('index.html',encoding='utf-8').read(); open('/tmp/crm.js','w',encoding='utf-8').write(re.search(r'<script>(.*)</script>',s,re.S).group(1))"
+          node --check /tmp/crm.js
           grep -q "function draftPhotoForModel" index.html
           grep -q "function moveSelectedModel" index.html
           grep -q "draft-photo-choice" index.html
-          grep -q "draftPhotoForModel(m)" index.html
-          python - <<'PY'
-          import re
-          s=open('index.html',encoding='utf-8').read()
-          js=re.search(r'<script>(.*)</script>',s,re.S).group(1)
-          open('/tmp/crm.js','w',encoding='utf-8').write(js)
-          assert s.count('function draftPhotoForModel')==1
-          assert s.count('function moveSelectedModel')==1
-          PY
-          node --check /tmp/crm.js
+      - name: Push CRM update
+        run: |
           git config user.name "ChatGPT CRM Update"
           git config user.email "actions@users.noreply.github.com"
           git add index.html
