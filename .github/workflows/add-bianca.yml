@@ -1,0 +1,71 @@
+name: Add Bianca to CRM
+
+on:
+  push:
+    paths:
+      - .github/workflows/add-bianca.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-crm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add Bianca roster record
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          model_id = 'germany-women-bianca-eigenfeld-own'
+          if model_id not in text:
+              model = '{"id":"germany-women-bianca-eigenfeld-own","name":"Bianca Eigenfeld Own","location":"Germany","division":"Women","measurements":"Height: 180cm | Bust: 85cm | Waist: 62cm | Hip: 90cm | Shoe: 41EU | Hair: Brown | Eyes: Blue","profileUrl":"https://www.chezlesmannequins.com/search?q=Bianca","photoUrl":"","photoFilename":"","source":"Chez Les Mannequins public site search","activeBoard":false,"notes":"Public Chez profile is discoverable in site search as Bianca Eigenfeld Own. Canonical profile URL and profile photo were not exposed by the public search index when checked 2026-09-16."}'
+              anchor = '];\nconst NICHE_MAP='
+              if anchor not in text:
+                  raise SystemExit('BASE_ROSTER anchor not found')
+              text = text.replace(anchor, ',' + model + '];\nconst NICHE_MAP=', 1)
+
+          if '"Bianca Eigenfeld Own":"Fashion-Commercial"' not in text:
+              anchor = '"Anhelena Sobol":"Development"'
+              if anchor not in text:
+                  raise SystemExit('NICHE_MAP anchor not found')
+              text = text.replace(anchor, anchor + ',"Bianca Eigenfeld Own":"Fashion-Commercial"', 1)
+
+          if '"Bianca Eigenfeld Own":"Beauty"' not in text:
+              anchor = '"Sophia Pippen":"Beauty"'
+              if anchor not in text:
+                  raise SystemExit('SECONDARY_NICHE_MAP anchor not found')
+              text = text.replace(anchor, anchor + ',"Bianca Eigenfeld Own":"Beauty"', 1)
+
+          if '"germany-women-bianca-eigenfeld-own":{"name":"Bianca"' not in text:
+              anchor = '"new-york-women-anhelena-sobol":{"name":"Anhelena","hair":"Brown","eyes":"Brown"}'
+              if anchor not in text:
+                  raise SystemExit('MODEL_IDENTITY_OVERRIDES anchor not found')
+              text = text.replace(anchor, anchor + ',"germany-women-bianca-eigenfeld-own":{"name":"Bianca","hair":"Brown","eyes":"Blue"}', 1)
+
+          if '"Bianca Eigenfeld Own":"Bianca"' not in text:
+              anchor = '"Anhelena Sobol":"Anhelena"'
+              if anchor not in text:
+                  raise SystemExit('MODEL_NAME_ALIASES anchor not found')
+              text = text.replace(anchor, anchor + ',"Bianca Eigenfeld Own":"Bianca"', 1)
+
+          text = text.replace("newModels:['Anhelena']", "newModels:['Anhelena','Bianca']")
+          path.write_text(text, encoding='utf-8')
+          PY
+      - name: Commit CRM update
+        shell: bash
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No CRM change needed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add Bianca to CRM roster"
+          git push
