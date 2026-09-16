@@ -1,0 +1,143 @@
+name: Update Milan draft opener closer data
+
+on:
+  push:
+    paths:
+      - '.github/workflows/update-milan-drafts.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Milan drafts
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          mapping=json.loads(Path('.github/milan-open-close.json').read_text(encoding='utf-8'))
+          data=json.dumps(mapping,ensure_ascii=False,separators=(',',':'))
+          block="""/* MILAN OPEN/CLOSE OVERRIDES START */
+          const MILAN_OPEN_CLOSE_OVERRIDES=__DATA__;
+          function applyMilanOpenCloseResearch(data){
+            if(data.recovery?.milanOpenCloseVersion===1)return data;
+            const sourceDrafts=[...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS];
+            const byId=new Map((data.drafts||[]).map(d=>[d.id,d]));
+            const normalizeBrand=d=>String(d.brandProject||d.company||'').split(' — ')[0].trim();
+            const modelName=id=>shortModelName((data.models||[]).find(m=>m.id===id)?.name||'');
+            const touched=new Set();
+            for(const template of sourceDrafts){
+              const brand=normalizeBrand(template);
+              if(brand==='Jil Sander'||brand==='Gucci')continue;
+              const draft=byId.get(template.id);
+              if(!draft)continue;
+              const o=MILAN_OPEN_CLOSE_OVERRIDES[brand]||null;
+              let season='',opener='',closer='',researchUrl='',status='No verified Models.com opener/closer; package retained';
+              if(o){
+                [season,opener,closer,researchUrl]=o;
+                status=o[5]||'Models.com opener/closer verified';
+                const desired=o[4].length;
+                const pool=[...o[4],...(MILAN_PACKAGE_CANDIDATES[template.id]||[]),...(draft.modelIds||[])];
+                const modelIds=[];
+                for(const id of pool){
+                  if(!id||modelIds.includes(id)||isMilanUnavailable(id,data.models))continue;
+                  modelIds.push(id);
+                  if(modelIds.length>=desired)break;
+                }
+                draft.modelIds=modelIds;
+                draft.models=modelIds.map(modelName).filter(Boolean);
+                draft.photoSelections=Object.fromEntries(Object.entries(draft.photoSelections||{}).filter(([id])=>modelIds.includes(id)));
+                draft.html='';
+                if(researchUrl)draft.researchUrl=researchUrl;
+                if(opener&&closer)draft.selectionRationale=`Models.com ${season}: ${opener} opened and ${closer} closed. Roster selections were rebuilt around the opening/closing casting profile.`;
+                else if(opener)draft.selectionRationale=`Models.com ${season}: ${opener} is tagged as opener; no closer was verified on the page. Roster selections follow the opener and the broader cast.`;
+                else if(closer)draft.selectionRationale=`Models.com ${season}: ${closer} is tagged as closer; no opener was verified on the page. Roster selections follow the closer and the broader cast.`;
+              }else{
+                draft.selectionRationale='No comparable recent Models.com runway page with explicit opening/closing tags was verified in this review. Existing brand-fit package retained rather than inventing a bookend match.';
+              }
+              draft.openCloseResearch={season,opener,closer,source:researchUrl,checked:'2026-09-16',status};
+              draft.source=String(draft.source||'').replace(/\s*·\s*Models\.com opener\/closer review 2026-09-16/g,'')+' · Models.com opener/closer review 2026-09-16';
+              touched.add(draft.id);
+            }
+            const activeId=data.activeDraftId||data.draft?.id||'';
+            if(activeId&&touched.has(activeId)&&byId.has(activeId)){
+              data.draft=structuredClone(byId.get(activeId));
+              data.selected=[...(data.draft.modelIds||[])];
+            }
+            data.recovery={...(data.recovery||{}),milanOpenCloseVersion:1,milanOpenCloseUpdatedOn:'2026-09-16'};
+            return data;
+          }
+          /* MILAN OPEN/CLOSE OVERRIDES END */""".replace('__DATA__',data)
+
+          start='/* MILAN OPEN/CLOSE OVERRIDES START */'
+          end='/* MILAN OPEN/CLOSE OVERRIDES END */'
+          if start in s and end in s:
+              a=s.index(start); b=s.index(end,a)+len(end)
+              s=s[:a]+block+s[b:]
+          else:
+              marker='const MILAN_REST_BRAND_PROFILES='
+              if marker not in s: raise SystemExit('Milan insertion marker missing')
+              s=s.replace(marker,block+'\n'+marker,1)
+
+          old='return expandMilanPackages(applyMilanAvailability(data))}'
+          new='return applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data)))}'
+          if old in s: s=s.replace(old,new,1)
+          elif new not in s: raise SystemExit('applyRecovered return marker missing')
+          p.write_text(s,encoding='utf-8')
+
+          # Existing tests cover separate migrations; mark the new migration as already applied there.
+          p=Path('tests/milan-availability.cjs'); t=p.read_text(encoding='utf-8')
+          t=t.replace('recovery:{milanPackageDepthVersion:1}', 'recovery:{milanPackageDepthVersion:1,milanOpenCloseVersion:1}')
+          p.write_text(t,encoding='utf-8')
+
+          p=Path('tests/milan-package-depth.cjs'); t=p.read_text(encoding='utf-8')
+          t=t.replace("const old=structuredClone(seed);old.drafts=", "const old=structuredClone(seed);old.recovery={milanOpenCloseVersion:1};old.drafts=")
+          p.write_text(t,encoding='utf-8')
+
+          Path('tests/milan-open-close.cjs').write_text(r'''const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+          const html=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');
+          const js=html.match(/<script>([\s\S]*?)<\/script>/)[1];new vm.Script(js);
+          const c={structuredClone,console,Intl,localStorage:{getItem:()=>null,setItem(){}},document:{querySelector:()=>null}};vm.createContext(c);
+          vm.runInContext(js.slice(0,js.indexOf('initNav();setupFilters();hydrateDraft();renderAll();')),c);
+          const run=s=>JSON.parse(vm.runInContext(`JSON.stringify(${s})`,c));
+          vm.runInContext(`const before=structuredClone(seed);before.recovery={milanPackageDepthVersion:1};before.drafts=structuredClone([...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS]);const result=applyRecovered(before);`,c);
+          const result=run('result'),before=run('before');
+          const get=id=>result.drafts.find(d=>d.id===id),old=id=>before.drafts.find(d=>d.id===id);
+          assert.equal(result.recovery.milanOpenCloseVersion,1);
+          assert.deepEqual(get('milan-ss27-day1-prada').modelIds,['new-york-women-claudia-lucchini','new-york-women-rachel-stone','new-york-women-agang','london-women-daisy-ibi']);
+          assert.equal(get('milan-ss27-day1-prada').openCloseResearch.opener,'Julia Nobis');
+          assert.equal(get('milan-ss27-day1-prada').openCloseResearch.closer,'Qin Lei');
+          assert.deepEqual(get('milan-ss27-rest-jil-sander').modelIds,old('milan-ss27-rest-jil-sander').modelIds);
+          assert.deepEqual(get('milan-ss27-rest-gucci').modelIds,old('milan-ss27-rest-gucci').modelIds);
+          assert.equal(get('milan-ss27-rest-jil-sander').openCloseResearch,undefined);
+          assert.equal(get('milan-ss27-rest-gucci').openCloseResearch,undefined);
+          assert.match(get('milan-ss27-rest-luisa-beccaria').openCloseResearch.status,/No verified Models\.com opener\/closer/);
+          const reviewed=result.drafts.filter(d=>d.id.startsWith('milan-ss27-')&&!['milan-ss27-rest-jil-sander','milan-ss27-rest-gucci'].includes(d.id));
+          assert.equal(reviewed.length,59);assert.ok(reviewed.every(d=>d.openCloseResearch));
+          assert.ok(reviewed.every(d=>(d.modelIds||[]).every(id=>!run(`isMilanUnavailable(${JSON.stringify(id)},result.models)`))));
+          assert.deepEqual(run('applyRecovered(result)'),result);
+          console.log('PASS: 59 Milan drafts reviewed from Models.com bookends; Jil Sander and Gucci untouched; fallback drafts explicitly flagged; migration idempotent.');
+          ''',encoding='utf-8')
+          PY
+      - name: Run CRM tests
+        shell: bash
+        run: |
+          node tests/milan-availability.cjs
+          node tests/milan-package-depth.cjs
+          node tests/milan-open-close.cjs
+      - name: Commit updated CRM
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html tests/milan-availability.cjs tests/milan-package-depth.cjs tests/milan-open-close.cjs
+          git diff --cached --quiet && exit 0
+          git commit -m "Refresh Milan SS27 drafts from runway bookends"
+          git push
