@@ -1,0 +1,53 @@
+name: Update package builder template
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/update-package-builder-template.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch CRM
+        shell: bash
+        run: |
+          python - <<'PY'
+          import base64
+          payload = 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgpwPVBhdGgoJ2luZGV4Lmh0bWwnKQpzPXAucmVhZF90ZXh0KGVuY29kaW5nPSd1dGYtOCcpCgpkZWYgbXVzdF9yZXBsYWNlKG9sZCxuZXcsY291bnQ9MSxsYWJlbD0ncmVwbGFjZW1lbnQnKToKICAgIGdsb2JhbCBzCiAgICBpZiBvbGQgbm90IGluIHM6CiAgICAgICAgcmFpc2UgU3lzdGVtRXhpdChmJ3tsYWJlbH0gbWFya2VyIG5vdCBmb3VuZCcpCiAgICBzPXMucmVwbGFjZShvbGQsbmV3LGNvdW50KQoKZGVmIHJlcGxhY2VfYmV0d2VlbihzdGFydCxlbmQsbmV3LGxhYmVsKToKICAgIGdsb2JhbCBzCiAgICBhPXM uZmluZChzdGFydCkKICAgIGlmIGE8MDoKICAgICAgICByYWlzZSBTeXN0ZW1FeGl0KGYne2xhYmVsfSBzdGFydCBub3QgZm91bmQnKQogICAgYj1zLmZpbmQoZW5kLGErbGVuKHN0YXJ0KSkKICAgIGlmIGI8MDoKICAgICAgICByYWlzZSBTeXN0ZW1FeGl0KGYne2xhYmVsfSBlbmQgbm90IGZvdW5kJykKICAgIHM9c1s6YV0rbmV3K3NbYjpdCgppZiAnLyogUGVyc2lzdGVudCBwYWNrYWdlIHBob3RvIGxpYnJhcnkgKi8nIG5vdCBpbiBzOgogICAgY3NzPXInJwonLyogUGVyc2lzdGVudCBwYWNrYWdlIHBob3RvIGxpYnJhcnkgKi8KLnBhY2thZ2UtcGhvdG8tbGlicmFyeXti b3JkZXI6MXB4IHNvbGlkIHZhcigtLWxpbmUpO2JvcmRlci1yYWRpdXM6MTBweDtwYWRkaW5nOjEycHg7YmFja2dyb3VuZDojZmFmYmY5fQoucGhvdG8tbGlicmFyeS10b29sYmFye2Rpc3BsYXk6Z3JpZDtncmlkLXRlbXBsYXRlLWNvbHVtbnM6bWlubWF4KDE3MHB4LC44ZnIpIG1pbm1heCgyMjBweCwxLjVmcikgYXV0byBhdXRvO2dhcDo3cHg7YWxpZ24taXRlbXM6Y2VudGVyO21hcmdpbi10b3A6OHB4fQoucGhvdG8tbGlicmFyeS10b29sYmFyIHNlbGVjdCwucGhvdG8tbGlicmFyeS10b29sYmFyIGlucHV0e3dpZHRoOjEwMCU7bWluLXdpZHRoOjA7Ym9yZGVyOjFweCBzb2xpZCAjYmRjNmJmO2JvcmRlci1yYWRpdXM6N3B4O3BhZGRpbmc6OXB4O2JhY2tncm91bmQ6d2hpdGV9Ci5waG90by1saWJyYXJ5LWdyaWR7ZGlzcGxheTpncmlkO2dyaWQtdGVtcGxhdGUtY29sdW1uczpyZXBlYXQoYXV0by1maWxsLG1pbm1heCgxMjVweCwxZnIpKTtnYXA6OXB4O21hcmdpbi10b3A6MTBweH0KLnBob3RvLWxpYnJhcnktaXRlbXtiaG9yZGVyOjFweCBzb2xpZCB2YXIoLS1saW5lKTtib3JkZXItcmFkaXVzOjlweDtwYWRkaW5nOjdweDtiYWNrZ3JvdW5kOndoaXRlfQoucGhvdG8tbGlicmFyeS1pdGVtLnNlbGVjdGVke291dGxpbmU6MnB4IHNvbGlkIHZhcigtLWFjY2VudCk7b3V0bGluZS1vZmZzZXQ6MXB4fQoucGhvdG8tbGlicmFyeS1pdGVtIGltZ3tkaXNwbGF5OmJsb2NrO3dpZHRoOjEwMCU7aGVpZ2h0OjE2NXB4O29iamVjdC1maXQ6Y292ZXI7Ym9yZGVyLXJhZGl1czo2cHg7YmFja2dyb3VuZDojZWNlZWVhO21hcmdpbjowIDAgNnB4fQoucGhvdG8tbGlicmFyeS1pdGVtIC5idG57d2lkdGg6MTAwJTtwYWRkaW5nOjZweCA3cHg7bWluLWhlaWdodDozNHB4O21hcmdpbi10b3A6NHB4fQoucGhvdG8tbGlicmFyeS1lbXB0e3BhZGRpbmc6MTJweDtib3JkZXI6MXB4IGRhc2hlZCB2YXIoLS1saW5lKTtib3JkZXItcmFkaXVzOjhweDtjb2xvcjp2YXIoLS1tdXRlZCk7bWFyZ2luLXRvcDoxMHB4fQoucHJpdmF0ZS1ub3RlLWhpbnR7Zm9udC1zaXplOjExcHg7Y29sb3I6dmFyKC0tbXV0ZWQpO21hcmdpbi10b3A6NXB4fQpAbWVkaWEobWF4LXdpZHRoOjc2MHB4KXsgLnBob3RvLWxpYnJhcnktdG9vbGJhcntncmlkLXRlbXBsYXRlLWNvbHVtbnM6MWZyfS5waG90by1saWJyYXJ5LWdyaWR7Z3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCgyLG1pbm1heCgwLDFmcikpfX0KJyc nCiAgICBzPXMucmVwbGFjZSgnPC9zdHlsZT4nLGNzcycrPC9zdHlsZT4nLDEpCgpzdGFydD0nPGRpdiBjbGFzcz0iZmllbGQiPjxsYWJlbD5BZGQgYSByb3N0ZXIgZ3JvdXAgYnkgbWFpbiBuaWNoZTwvbGFiZWw+JwplbmQ9JzxkaXYgaWQ9InN1Ym1pc3Npb25XYXJuaW5nIicKYT1zLmZpbmQoc3RhcnQpCmlmIGE8MDoKICAgIHJhaXNlIFN5c3RlbUV4aXQoJ25pY2hlIGdyb3VwIHNlY3Rpb24gbm90IGZvdW5kJykKYj1zLmZpbmQoZW5kLGEpCmlmIGI8MDoKICAgIHJhaXNlIFN5c3RlbUV4aXQoJ3N1Ym1pc3Npb24gd2FybmluZyBhZnRlciBuaWNoZS92YXJpYW50IG5vdCBmb3VuZCcpCnM9c1s6YV0rc1tiOl0KCm9sZF9jb250ZXh0PSc8ZGl2IGNsYXNzPSJmaWVsZCI+PGxhYmVsPlJlbGV2YW50IGJyaWVmIC8gbm90ZXM8L2xhYmVsPjx0ZXh0YXJlYSBpZD0iZW1haWxDb250ZXh0IiByb3dzPSI0IiBwbGFjZWhvbGRlcj0iQ2FzdGluZyBmaXQsIGRhdGVzLCB1c2FnZSwgcmF0ZSwgbG9jYXRpb24sIG9yIG90aGVyIHJlbGV2YW50IGluZm9ybWF0aW9uLiI+PC90ZXh0YXJlYT48L2Rpdj4nCm5ld19jb250ZXh0PW9sZF9jb250ZXh0Kyc8ZGl2IGNsYXNzPSJmaWVsZCI+PGxhYmVsPlByaXZhdGUgbm90ZXM8L2xhYmVsPjx0ZXh0YXJlYSBpZD0iZW1haWxQcml2YXRlTm90ZXMiIHJvd3M9IjQiIHBsYWNlaG9sZGVyPSJJbnRlcm5hbCBub3RlcyBmb3IgdGhpcyBwYWNrYWdlIG9ubHkuIFRoZXNlIGFyZSBzYXZlZCBpbiB0aGUgQ1JNIGFuZCBuZXZlciBpbmNsdWRlZCBpbiB0aGUgY29waWVkIGVtYWlsIGRyYWZ0LiI+PC90ZXh0YXJlYT48ZGl2IGNsYXNzPSJwcml2YXRlLW5vdGUtaGludCI+U2F2ZWQgd2l0aCB0aGUgcGFja2FnZSDCtSBuZXZlciBpbmNsdWRlZCBpbiB0aGUgZW1haWwgcHJldmlldywgY29waWVkIGVtYWlsLCBvciBHbWFpbCBjb21wb3NlIGJvZHkuPC9kaXY+PC9kaXY+Jwp...TRUNCATED_FOR_DISPLAY...'
+          open('/tmp/patch_crm.py','wb').write(base64.b64decode(payload))
+          PY
+          python /tmp/patch_crm.py
+
+      - name: Validate package builder
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -q "Add a roster group by main niche" index.html
+          ! grep -q "<label>Package variant</label>" index.html
+          grep -q "Private notes" index.html
+          grep -q "Photo library" index.html
+          grep -q "famous 90s model from Sweden" index.html
+          grep -q "We preselected a few models and put them below" index.html
+          grep -q "draftPhotosForModel" index.html
+          grep -q "photoLibrary:{}" index.html
+          python -c "import re; s=open('index.html',encoding='utf-8').read(); m=re.search(r'<script>(.*)</script>',s,re.S); assert m; open('/tmp/crm.js','w',encoding='utf-8').write(m.group(1))"
+          node --check /tmp/crm.js
+
+      - name: Commit CRM update
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "ChatGPT CRM Update"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Match package drafts to submission format and add photo library"
+          git push origin HEAD:main
