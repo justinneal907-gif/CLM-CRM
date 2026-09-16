@@ -1,0 +1,80 @@
+name: Fix Packages & Leads draft scope
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-package-draft-scope.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch Packages & Leads draft scoping
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+
+          old="""function createPackage(id){if(!selected.includes(id))selected.push(id);const m=db.models.find(x=>x.id===id);db.draft=db.draft||structuredClone(seed.draft);if(!db.draft.subject||db.draft.subject==='Model Package')db.draft.subject='Model Package';save();go('email');$('#emailModelSearch').value=m?.name||'';renderEmailMatches()}"""
+          new="""function resetDraftUtilityControls(){if($('#emailModelSearch'))$('#emailModelSearch').value='';if($('#emailNicheSelect'))$('#emailNicheSelect').value='';if($('#packageVariant'))$('#packageVariant').value='';if($('#emailNicheMarket'))$('#emailNicheMarket').value='New York'}
+function startBlankPackage(modelId=''){db.activeDraftId='';db.draft=structuredClone(seed.draft);selected=modelId&&db.models.some(m=>m.id===modelId)?[modelId]:[];db.selected=[...selected];resetDraftUtilityControls();localStorage.setItem(NEW_KEY,JSON.stringify(db));go('email');setStatus(modelId?'Started a new package with the selected model.':'Started a new unsaved package.')}
+function createPackage(id){const m=db.models.find(x=>x.id===id);startBlankPackage(id);if($('#emailModelSearch'))$('#emailModelSearch').value=m?.name||'';renderEmailMatches()}"""
+          if old not in s: raise SystemExit('createPackage pattern not found')
+          s=s.replace(old,new,1)
+
+          old="""function renderEmail(){if(!$('#emailPreview'))return;captureDraft();$('#emailPreview').innerHTML=emailHtml();renderEmailSelection();renderBrandAdvisor();renderBriefSummary();renderSubmissionWarnings()}"""
+          new="""function renderEmail(){if(!$('#emailPreview'))return;captureDraft();$('#emailPreview').innerHTML=emailHtml();renderEmailSelection();renderBrandAdvisor();renderBriefSummary();renderSubmissionWarnings();renderDraftScope()}"""
+          if old not in s: raise SystemExit('renderEmail pattern not found')
+          s=s.replace(old,new,1)
+
+          old="""function saveDraft(){captureDraft();db.drafts.push({id:uid(),date:nyDate(),...db.draft,models:selectedModels().map(m=>m.name),modelIds:[...selected],html:emailHtml()});save();setStatus('Draft saved in CRM.')}
+function loadDraft(id){const d=db.drafts.find(x=>x.id===id);if(!d)return;db.draft={...seed.draft,...d};selected=(d.modelIds||[]).filter(id=>db.models.some(m=>m.id===id));save();go('email')}
+function deleteDraft(id){db.drafts=db.drafts.filter(x=>x.id!==id);save()}
+function renderDrafts(){if(!$('#savedDrafts'))return;$('#savedDrafts').innerHTML=db.drafts.slice().reverse().map(d=>`<div class=\"draft-card\"><b>${esc(d.subject||'Untitled draft')}</b><div class=\"muted\">${esc(d.date||'')} · ${esc(d.brandProject||d.recipientEmail||'')} · ${esc((d.models||[]).join(', '))}${d.source?` · ${esc(d.source)}`:''}</div><div class=\"actions\" style=\"margin-top:8px\"><button class=\"btn\" onclick=\"loadDraft('${d.id}')\">Open</button>${d.gmailUrl?`<a class=\"btn\" href=\"${esc(d.gmailUrl)}\" target=\"_blank\" rel=\"noopener\">Gmail</a>`:''}<button class=\"btn danger\" onclick=\"deleteDraft('${d.id}')\">Delete</button></div></div>`).join('')||'<div class=\"empty\">No saved drafts.</div>'}"""
+          new="""function saveDraft(){captureDraft();const currentId=db.activeDraftId||'';const existingIndex=currentId?db.drafts.findIndex(x=>x.id===currentId):-1;const snapshot={date:nyDate(),...db.draft,models:selectedModels().map(m=>m.name),modelIds:[...selected],html:emailHtml()};if(existingIndex>=0){db.drafts[existingIndex]={...db.drafts[existingIndex],...snapshot,id:currentId};db.activeDraftId=currentId}else{const id=uid();db.drafts.push({id,...snapshot});db.activeDraftId=id}db.selected=[...selected];save();setStatus(existingIndex>=0?'Draft updated in CRM.':'Draft saved in CRM.')}
+function loadDraft(id){const d=db.drafts.find(x=>x.id===id);if(!d)return;db.activeDraftId=id;db.draft={...structuredClone(seed.draft),...structuredClone(d)};selected=(d.modelIds||[]).filter(modelId=>db.models.some(m=>m.id===modelId));if(!selected.length&&Array.isArray(d.models)){for(const name of d.models){const m=db.models.find(x=>normalizeName(x.name)===normalizeName(name));if(m&&!selected.includes(m.id))selected.push(m.id)}}db.selected=[...selected];resetDraftUtilityControls();localStorage.setItem(NEW_KEY,JSON.stringify(db));go('email');setStatus(`Loaded ${d.brandProject||d.company||d.subject||'saved package'}.`)}
+function deleteDraft(id){db.drafts=db.drafts.filter(x=>x.id!==id);if(db.activeDraftId===id)db.activeDraftId='';save()}
+function renderDrafts(){if(!$('#savedDrafts'))return;$('#savedDrafts').innerHTML=db.drafts.slice().reverse().map(d=>{const activeDraft=d.id===db.activeDraftId;return `<div class=\"draft-card\" style=\"${activeDraft?'border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset':''}\"><b>${esc(d.subject||'Untitled draft')}</b>${activeDraft?' <span class=\"pill\">OPEN</span>':''}<div class=\"muted\">${esc(d.date||'')} · ${esc(d.brandProject||d.recipientEmail||'')} · ${esc((d.models||[]).join(', '))}${d.source?` · ${esc(d.source)}`:''}</div><div class=\"actions\" style=\"margin-top:8px\"><button class=\"btn${activeDraft?' primary':''}\" onclick=\"loadDraft('${d.id}')\">${activeDraft?'Reload':'Open'}</button>${d.gmailUrl?`<a class=\"btn\" href=\"${esc(d.gmailUrl)}\" target=\"_blank\" rel=\"noopener\">Gmail</a>`:''}<button class=\"btn danger\" onclick=\"deleteDraft('${d.id}')\">Delete</button></div></div>`}).join('')||'<div class=\"empty\">No saved drafts.</div>'}"""
+          if old not in s: raise SystemExit('draft functions pattern not found')
+          s=s.replace(old,new,1)
+
+          marker="""function recordSubmission(){if(!selected.length)return setStatus('Select at least one model first.');captureDraft();const pb=db.draft.parsedBrief||{};const s={id:uid(),date:nyDate(),contact:db.draft.contactName||contactObj()?.name||'',company:db.draft.company||contactObj()?.company||'',email:db.draft.recipientEmail||contactObj()?.email||'',project:db.draft.brandProject||db.draft.subject,models:selectedModels().map(m=>m.name),modelIds:[...selected],status:'Submitted',subject:db.draft.subject,shootDate:pb.shootDate||'',shootText:pb.shootText||pb.dateText||'',castingDate:'',castingText:pb.castingText||'',rate:pb.rate||'',usage:pb.usage||'',location:pb.location||'',briefRaw:db.draft.castingBriefRaw||''};db.submissions.push(s);autoFollowUpForSubmission(s);save();setStatus('Submission recorded and follow-up task created.')}"""
+          replacement="""function activeDraftRecord(){return db.activeDraftId?db.drafts.find(x=>x.id===db.activeDraftId)||null:null}
+let historicalCastingLeadsHtml='';
+function renderDraftScope(){const view=$('#view-email');if(!view)return;const panel=$('#castingLeadsPanel');if(panel&&!historicalCastingLeadsHtml)historicalCastingLeadsHtml=panel.innerHTML;const saved=activeDraftRecord();const d=db.draft||saved||seed.draft;const label=d.brandProject||d.company||d.subject||'Unsaved package';let banner=$('#draftScopeBanner');if(!banner){banner=document.createElement('div');banner.id='draftScopeBanner';banner.className='panel';banner.style.marginBottom='14px';const split=view.querySelector('.split');view.insertBefore(banner,split||view.firstChild)}const state=saved?'Saved package open':'Unsaved package';banner.innerHTML=`<div class=\"eyebrow\">${esc(state)}</div><div style=\"display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap\"><div><h2 style=\"margin:4px 0\">${esc(label)}</h2><div class=\"muted\">Every package-builder section below is scoped to this ${saved?'saved draft':'working draft'}.</div></div><button class=\"btn\" type=\"button\" onclick=\"startBlankPackage()\">New blank package</button></div>`;const headings=view.querySelectorAll('.split>.panel>h2');if(headings[0])headings[0].textContent='Model package builder · '+label;if(headings[1])headings[1].textContent='Email preview · '+label;const jump=$('#jumpToCastingLeadsBtn');if(jump)jump.textContent=saved?(d.company||label)+' lead context':'Casting leads';const saveBtn=$('#saveDraftBtn');if(saveBtn)saveBtn.textContent=saved?'Update draft':'Save draft';if(panel){if(saved){const c=db.contacts.find(x=>x.id===d.contactId)||null;const email=d.recipientEmail||c?.email||'';const projectKey=normalizeName(d.brandProject||d.company||'');const related=db.submissions.filter(x=>{if(x.draftId&&x.draftId===db.activeDraftId)return true;const hay=normalizeName([x.project,x.company,x.email,x.contact].filter(Boolean).join(' '));return projectKey&&hay.includes(projectKey)});const pb=d.parsedBrief||{};const modelNames=selectedModels().map(m=>m.name);panel.innerHTML=`<summary>${esc(label)} · lead context</summary><h2>${esc(label)}</h2><p><b>Contact:</b> ${esc(d.contactName||c?.name||'Not assigned')}${d.company||c?.company?` · ${esc(d.company||c?.company||'')}`:''}<br><b>Email:</b> ${esc(email||'Not verified / not entered')}</p>${d.brief?`<p><b>Package notes:</b> ${esc(d.brief)}</p>`:''}<p><b>Selected models:</b> ${esc(modelNames.join(', ')||'None selected')}</p>${pb.dateText||pb.shootDate||pb.location?`<p><b>Brief context:</b> ${esc([pb.dateText||pb.shootDate,pb.location].filter(Boolean).join(' · '))}</p>`:''}${d.source?`<p class=\"muted\"><b>Source:</b> ${esc(d.source)}</p>`:''}<h3>Related submission history</h3>${related.length?`<div class=\"table-wrap\"><table><thead><tr><th>Date</th><th>Project</th><th>Models</th><th>Status</th></tr></thead><tbody>${related.map(x=>`<tr><td>${esc(x.date||'')}</td><td>${esc(x.project||x.company||'')}</td><td>${esc((x.models||[]).join(', '))}</td><td>${esc(x.status||'')}</td></tr>`).join('')}</tbody></table></div>`:'<div class=\"empty\">No recorded submissions are linked to this draft yet.</div>'}`;panel.open=false}else if(historicalCastingLeadsHtml&&panel.innerHTML!==historicalCastingLeadsHtml){panel.innerHTML=historicalCastingLeadsHtml;panel.open=false}}}
+function recordSubmission(){if(!selected.length)return setStatus('Select at least one model first.');captureDraft();const pb=db.draft.parsedBrief||{};const s={id:uid(),date:nyDate(),draftId:db.activeDraftId||'',contact:db.draft.contactName||contactObj()?.name||'',company:db.draft.company||contactObj()?.company||'',email:db.draft.recipientEmail||contactObj()?.email||'',project:db.draft.brandProject||db.draft.subject,models:selectedModels().map(m=>m.name),modelIds:[...selected],status:'Submitted',subject:db.draft.subject,shootDate:pb.shootDate||'',shootText:pb.shootText||pb.dateText||'',castingDate:'',castingText:pb.castingText||'',rate:pb.rate||'',usage:pb.usage||'',location:pb.location||'',briefRaw:db.draft.castingBriefRaw||''};db.submissions.push(s);autoFollowUpForSubmission(s);save();setStatus('Submission recorded and follow-up task created.')}"""
+          if marker not in s: raise SystemExit('recordSubmission marker not found')
+          s=s.replace(marker,replacement,1)
+
+          old="""function renderAll(){if(maintenanceSweep())localStorage.setItem(NEW_KEY,JSON.stringify(db));renderStats();setupFilters();renderModels();renderContactOptions();renderEmailSelection();renderDrafts();renderTables();renderToday();if(active==='email')renderEmail()}"""
+          new="""function renderAll(){if(maintenanceSweep())localStorage.setItem(NEW_KEY,JSON.stringify(db));renderStats();setupFilters();renderModels();renderContactOptions();renderEmailSelection();renderDrafts();renderTables();renderToday();if(active==='email')renderEmail();else renderDraftScope()}"""
+          if old not in s: raise SystemExit('renderAll pattern not found')
+          s=s.replace(old,new,1)
+
+          # Persist activeDraftId through migrations without resetting any existing records.
+          old="""data.draft={...structuredClone(seed.draft),...(incoming.draft||{})};data.models="""
+          new="""data.draft={...structuredClone(seed.draft),...(incoming.draft||{})};data.activeDraftId=incoming.activeDraftId||data.activeDraftId||'';data.models="""
+          if old not in s: raise SystemExit('applyRecovered active draft insertion point not found')
+          s=s.replace(old,new,1)
+
+          p.write_text(s,encoding='utf-8')
+      - name: Validate and commit
+        shell: bash
+        run: |
+          grep -q "function renderDraftScope" index.html
+          grep -q "db.activeDraftId=id" index.html
+          grep -q "Every package-builder section below is scoped" index.html
+          grep -q "draftId:db.activeDraftId" index.html
+          git config user.name "ChatGPT CRM Update"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Scope Packages & Leads to the active draft"
+          git push origin HEAD:main
