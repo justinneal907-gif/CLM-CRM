@@ -1,0 +1,226 @@
+name: Migrate CRM storage to IndexedDB
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch CRM storage layer
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path=Path('index.html')
+          text=path.read_text(encoding='utf-8')
+          if 'CRM INDEXEDDB STORAGE V1' in text:
+              raise SystemExit('IndexedDB migration already present')
+
+          # 1) Stop synchronous startup from reading localStorage directly.
+          old_init="let db=loadWorkspace();let selected=[...(db.selected||[])];let active='today';let modalType=null;let modalEditId=null;"
+          new_init="let db=structuredClone(seed);let selected=[];let active='today';let modalType=null;let modalEditId=null;"
+          if old_init not in text:
+              raise SystemExit('Initial workspace declaration not found')
+          text=text.replace(old_init,new_init,1)
+
+          # 2) Replace the old localStorage loader with a legacy reader + IndexedDB layer.
+          start=text.find('function loadWorkspace(){')
+          end=text.find('function save(){',start)
+          if start<0 or end<0:
+              raise SystemExit('Workspace loader block not found')
+
+          storage=r'''/* CRM INDEXEDDB STORAGE V1 */
+const IDB_DB_NAME='jn-agency-crm';
+const IDB_DB_VERSION=1;
+const IDB_STORE='workspace';
+const IDB_STATE_KEY='primary';
+const IDB_MIGRATION_MARKER='jn-agency-crm-indexeddb-migrated-v1';
+let idbWriteQueue=Promise.resolve();
+let idbUnavailable=false;
+
+function openCRMDatabase(){
+  return new Promise((resolve,reject)=>{
+    if(!('indexedDB' in window))return reject(new Error('IndexedDB is unavailable in this browser.'));
+    const req=indexedDB.open(IDB_DB_NAME,IDB_DB_VERSION);
+    req.onupgradeneeded=()=>{
+      const database=req.result;
+      if(!database.objectStoreNames.contains(IDB_STORE))database.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error('Could not open IndexedDB.'));
+    req.onblocked=()=>reject(new Error('IndexedDB upgrade was blocked by another open CRM tab.'));
+  });
+}
+function idbReadWorkspace(){
+  return openCRMDatabase().then(database=>new Promise((resolve,reject)=>{
+    const tx=database.transaction(IDB_STORE,'readonly');
+    const req=tx.objectStore(IDB_STORE).get(IDB_STATE_KEY);
+    req.onsuccess=()=>resolve(req.result||null);
+    req.onerror=()=>reject(req.error||new Error('Could not read CRM data from IndexedDB.'));
+    tx.oncomplete=()=>database.close();
+    tx.onerror=()=>{database.close();reject(tx.error||new Error('IndexedDB read transaction failed.'))};
+  }));
+}
+function idbWriteWorkspace(snapshot){
+  return openCRMDatabase().then(database=>new Promise((resolve,reject)=>{
+    const tx=database.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).put(snapshot,IDB_STATE_KEY);
+    tx.oncomplete=()=>{database.close();resolve(true)};
+    tx.onerror=()=>{database.close();reject(tx.error||new Error('IndexedDB write transaction failed.'))};
+    tx.onabort=()=>{database.close();reject(tx.error||new Error('IndexedDB write transaction was aborted.'))};
+  }));
+}
+function loadLegacyWorkspace(){
+  try{
+    const v2=localStorage.getItem(NEW_KEY);
+    if(v2)return applyRecovered(JSON.parse(v2));
+    const copy=localStorage.getItem(COPY_V1_KEY);
+    const orig=localStorage.getItem(ORIGINAL_KEY);
+    let migrated=structuredClone(seed);
+    if(orig)migrated=migrateLegacy(JSON.parse(orig));
+    if(copy){const c=JSON.parse(copy);migrated={...migrated,...c,models:mergeModels(migrated.models,c.models||[])}}
+    try{migrated.customPhotos={...JSON.parse(localStorage.getItem(ORIGINAL_PHOTO_KEY)||'{}'),...(migrated.customPhotos||{})}}catch{}
+    return applyRecovered(migrated);
+  }catch(err){
+    console.warn('Legacy CRM migration read failed',err);
+    return applyRecovered(structuredClone(seed));
+  }
+}
+function clearLegacyWorkspaceAfterMigration(){
+  for(const key of [NEW_KEY,COPY_V1_KEY,ORIGINAL_KEY,ORIGINAL_PHOTO_KEY]){
+    try{localStorage.removeItem(key)}catch{}
+  }
+  try{localStorage.setItem(IDB_MIGRATION_MARKER,new Date().toISOString())}catch{}
+}
+async function loadWorkspaceIndexedDB(){
+  try{
+    const stored=await idbReadWorkspace();
+    if(stored){
+      idbUnavailable=false;
+      return applyRecovered(stored);
+    }
+  }catch(err){
+    console.warn('IndexedDB read unavailable; attempting legacy migration/fallback.',err);
+    idbUnavailable=true;
+  }
+
+  const migrated=loadLegacyWorkspace();
+  try{
+    await idbWriteWorkspace(structuredClone(migrated));
+    idbUnavailable=false;
+    clearLegacyWorkspaceAfterMigration();
+    try{navigator.storage?.persist?.()}catch{}
+  }catch(err){
+    idbUnavailable=true;
+    console.error('IndexedDB migration failed; keeping legacy browser storage intact.',err);
+  }
+  return migrated;
+}
+function writeLocalStorageFallback(snapshot,showError=true){
+  try{localStorage.setItem(NEW_KEY,JSON.stringify(snapshot));return true}
+  catch(err){
+    console.error('CRM fallback storage write failed',err);
+    if(showError&&typeof setStatus==='function')setStatus('Could not save this change. IndexedDB is unavailable and local browser storage is full. Export a backup before clearing browser data.');
+    return false;
+  }
+}
+function queueIndexedDBWrite(snapshot,showError=true){
+  if(idbUnavailable)return writeLocalStorageFallback(snapshot,showError);
+  idbWriteQueue=idbWriteQueue.catch(()=>{}).then(()=>idbWriteWorkspace(snapshot)).then(()=>{
+    idbUnavailable=false;
+    try{localStorage.removeItem(NEW_KEY)}catch{}
+  }).catch(err=>{
+    console.error('IndexedDB save failed; using localStorage fallback.',err);
+    idbUnavailable=true;
+    writeLocalStorageFallback(snapshot,showError);
+  });
+  return true;
+}
+/* END CRM INDEXEDDB STORAGE V1 */
+'''
+          text=text[:start]+storage+'\n'+text[end:]
+
+          # 3) Route all remaining full-workspace localStorage writes through the storage adapter.
+          text=text.replace('localStorage.setItem(NEW_KEY,JSON.stringify(db))','persistWorkspaceSafe(false)')
+
+          # 4) Async refresh from IndexedDB.
+          old_refresh="$('#refreshBtn').onclick=()=>{db=loadWorkspace();selected=[...(db.selected||[])];hydrateDraft();renderAll()};"
+          new_refresh="$('#refreshBtn').onclick=async()=>{db=await loadWorkspaceIndexedDB();selected=[...(db.selected||[])];hydrateDraft();renderAll()};"
+          if old_refresh not in text:
+              raise SystemExit('Refresh handler not found')
+          text=text.replace(old_refresh,new_refresh,1)
+
+          # 5) Final function declarations intentionally override old localStorage-era helpers.
+          old_boot='initNav();setupFilters();hydrateDraft();renderAll();'
+          if old_boot not in text:
+              raise SystemExit('Initial render marker not found')
+          runtime=r'''/* INDEXEDDB RUNTIME OVERRIDES */
+function persistWorkspaceSafe(showError=true){
+  db.selected=[...selected];
+  if(typeof compactDraftCachesForStorage==='function')compactDraftCachesForStorage();
+  let snapshot;
+  try{snapshot=structuredClone(db)}catch{snapshot=JSON.parse(JSON.stringify(db))}
+  return queueIndexedDBWrite(snapshot,showError);
+}
+function save(){
+  db.selected=[...selected];
+  persistWorkspaceSafe(true);
+  renderAll();
+  return true;
+}
+function persistDraftPresentation(){
+  db.selected=[...selected];
+  db.draft=db.draft||structuredClone(seed.draft);
+  db.draft.modelIds=[...selected];
+  persistWorkspaceSafe(false);
+}
+async function bootstrapWorkspace(){
+  db=await loadWorkspaceIndexedDB();
+  selected=[...(db.selected||[])];
+  initNav();
+  setupFilters();
+  hydrateDraft();
+  renderAll();
+  persistWorkspaceSafe(false);
+}
+bootstrapWorkspace();
+/* END INDEXEDDB RUNTIME OVERRIDES */'''
+          text=text.replace(old_boot,runtime,1)
+
+          path.write_text(text,encoding='utf-8')
+          PY
+      - name: Validate migration
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html=Path('index.html').read_text(encoding='utf-8')
+          assert 'CRM INDEXEDDB STORAGE V1' in html
+          assert 'loadWorkspaceIndexedDB' in html
+          assert "indexedDB.open(IDB_DB_NAME" in html
+          assert 'let db=structuredClone(seed);let selected=[];' in html
+          assert "$('#refreshBtn').onclick=async()=>" in html
+          assert 'localStorage.setItem(NEW_KEY,JSON.stringify(db))' not in html
+          scripts=re.findall(r'<script(?:\\s[^>]*)?>(.*?)</script>',html,re.S|re.I)
+          Path('/tmp/app.js').write_text('\n'.join(scripts),encoding='utf-8')
+          PY
+          node --check /tmp/app.js
+      - name: Commit migration
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Migrate CRM persistence to IndexedDB"
+          git pull --rebase origin main
+          git push
