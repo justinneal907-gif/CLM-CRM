@@ -375,14 +375,14 @@ function removeEm0FromDrafts(data){
   return data;
 }
 const SOPHIA_ALL_DRAFTS_ID='new-york-women-sophia-pippen';
-const SOPHIA_PACKAGE_PHOTOS=['https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg','https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-2.jpg'];
+const SOPHIA_PACKAGE_PHOTOS=['https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2','https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-2.jpg?v=2'];
 function addSophiaToDraftRecord(record){
   if(!record||typeof record!=='object')return record;
   const out={...record};
   out.modelIds=[...new Set([...(Array.isArray(out.modelIds)?out.modelIds:[]),SOPHIA_ALL_DRAFTS_ID])];
   if(Array.isArray(out.models)&&!out.models.some(n=>normalizeName(n)==='sophia pippen'))out.models=[...out.models,'Sophia Pippen'];
   if(Array.isArray(out.modelNames)&&!out.modelNames.some(n=>normalizeName(n)==='sophia pippen'))out.modelNames=[...out.modelNames,'Sophia Pippen'];
-  out.photoSelections={...(out.photoSelections||{}),[SOPHIA_ALL_DRAFTS_ID]:SOPHIA_PACKAGE_PHOTOS[0]};
+  out.photoSelections={...(out.photoSelections||{})};if(!Object.prototype.hasOwnProperty.call(out.photoSelections,SOPHIA_ALL_DRAFTS_ID))out.photoSelections[SOPHIA_ALL_DRAFTS_ID]=SOPHIA_PACKAGE_PHOTOS[0];
   out.html='';
   return out;
 }
@@ -407,14 +407,12 @@ function addSophiaToAllDrafts(data){
   return data;
 }
 function modelDraftPhotosHtml(m){
-  if(m?.id===SOPHIA_ALL_DRAFTS_ID){
-    return SOPHIA_PACKAGE_PHOTOS.map((url,i)=>`<div style="text-align:left"><img src="${esc(url)}" width="440" style="max-width:100%;height:auto;margin:8px 0 0" alt="Sophia Pippen photo ${i+1}"></div>`).join('');
-  }
   const url=draftPhotoForModel(m);
   return url?`<div style="text-align:left"><img src="${esc(url)}" width="440" style="max-width:100%;height:auto;margin:8px 0 0" alt="${esc(m.name)}"></div>`:'';
 }
+
 function mergeContacts(recovered,current){const contacts=(current||[]).map(c=>({...c}));for(const c of (recovered||[])){const email=String(c.email||'').trim().toLowerCase();if(!contacts.some(existing=>(c.id&&existing.id===c.id)||(email&&String(existing.email||'').trim().toLowerCase()===email)))contacts.push({...c})}return contacts}
-function applyRecovered(data){const incoming=data||{};data={...structuredClone(seed),...incoming};data.settings={...structuredClone(seed.settings),...(incoming.settings||{})};data.draft={...structuredClone(seed.draft),...(incoming.draft||{})};data.activeDraftId=incoming.activeDraftId||data.activeDraftId||'';data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>applyModelIdentity({...m,availabilityStatus:m.availabilityStatus||'Unknown',statusFrom:m.statusFrom||'',statusTo:m.statusTo||'',holdProject:m.holdProject||'',availabilityNotes:m.availabilityNotes||''}));data.contacts=mergeContacts([...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS],data.contacts||[]).map(c=>({...c,relationship:c.relationship||'Developing',preferredNiches:c.preferredNiches||''}));data.submissions=mergeRecovered([...RECOVERED_SUBMISSIONS,...WORK_GMAIL_SUBMISSIONS],data.submissions||[]).map(normalizeRecordModelNames);data.drafts=mergeRecovered([...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS],data.drafts||[]).map(normalizeRecordModelNames);data.bookings=(data.bookings||[]).map(normalizeRecordModelNames);data.recovery={...(data.recovery||{}),gmailRecoveredOn:'2026-09-14',submissionCount:RECOVERED_SUBMISSIONS.length,draftCount:RECOVERED_DRAFTS.length,tasksRecovered:0,rosterCheckedOn:'2026-09-14',supplementalModels:['Sophia Pippen'],newModels:['Anhelena','Bianca'],nicheSystemVersion:2,nicheTaxonomy:'standard-no-specialty-story',workflowSystemVersion:3,workGmail:WORK_EMAIL,workGmailSyncedOn:'2026-09-14',workGmailSubmissionCount:WORK_GMAIL_SUBMISSIONS.length,milanFirstDayDraftsAddedOn:'2026-09-16',milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,milanRestDraftsAddedOn:'2026-09-16',milanRestDraftCount:MILAN_REST_DRAFTS.length,modelIdentityUpdatedOn:'2026-09-16',modelAppearanceReviewedOn:'2026-09-16'};return addSophiaToAllDrafts(removeEm0FromDrafts(applySophiaDescription(applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data)))))))}
+function applyRecovered(data){const incoming=data||{};data={...structuredClone(seed),...incoming};data.settings={...structuredClone(seed.settings),...(incoming.settings||{})};data.draft={...structuredClone(seed.draft),...(incoming.draft||{})};data.activeDraftId=incoming.activeDraftId||data.activeDraftId||'';data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>applyModelIdentity({...m,availabilityStatus:m.availabilityStatus||'Unknown',statusFrom:m.statusFrom||'',statusTo:m.statusTo||'',holdProject:m.holdProject||'',availabilityNotes:m.availabilityNotes||''}));data.contacts=mergeContacts([...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS],data.contacts||[]).map(c=>({...c,relationship:c.relationship||'Developing',preferredNiches:c.preferredNiches||''}));data.submissions=mergeRecovered([...RECOVERED_SUBMISSIONS,...WORK_GMAIL_SUBMISSIONS],data.submissions||[]).map(normalizeRecordModelNames);data.drafts=mergeRecovered([...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS],data.drafts||[]).map(normalizeRecordModelNames);data.bookings=(data.bookings||[]).map(normalizeRecordModelNames);data.recovery={...(data.recovery||{}),gmailRecoveredOn:'2026-09-14',submissionCount:RECOVERED_SUBMISSIONS.length,draftCount:RECOVERED_DRAFTS.length,tasksRecovered:0,rosterCheckedOn:'2026-09-14',supplementalModels:['Sophia Pippen'],newModels:['Anhelena','Bianca'],nicheSystemVersion:2,nicheTaxonomy:'standard-no-specialty-story',workflowSystemVersion:3,workGmail:WORK_EMAIL,workGmailSyncedOn:'2026-09-14',workGmailSubmissionCount:WORK_GMAIL_SUBMISSIONS.length,milanFirstDayDraftsAddedOn:'2026-09-16',milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,milanRestDraftsAddedOn:'2026-09-16',milanRestDraftCount:MILAN_REST_DRAFTS.length,modelIdentityUpdatedOn:'2026-09-16',modelAppearanceReviewedOn:'2026-09-16'};return applyPhotoManagement(addSophiaToAllDrafts(removeEm0FromDrafts(applySophiaDescription(applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data))))))))}
 /* CRM INDEXEDDB STORAGE V1 */
 const IDB_DB_NAME='jn-agency-crm';
 const IDB_DB_VERSION=1;
@@ -572,14 +570,14 @@ async function saveModel(id){const m=db.models.find(x=>x.id===id);m.niche=$('#mo
 function resetDraftUtilityControls(){if($('#emailModelSearch'))$('#emailModelSearch').value='';if($('#emailNicheSelect'))$('#emailNicheSelect').value='';if($('#packageVariant'))$('#packageVariant').value='';if($('#emailNicheMarket'))$('#emailNicheMarket').value='New York'}
 function startBlankPackage(modelId=''){db.activeDraftId='';db.draft=structuredClone(seed.draft);selected=modelId&&db.models.some(m=>m.id===modelId)?[modelId]:[];db.selected=[...selected];resetDraftUtilityControls();persistWorkspaceSafe(false);go('email');setStatus(modelId?'Started a new package with the selected model.':'Started a new unsaved package.')}
 function createPackage(id){const m=db.models.find(x=>x.id===id);startBlankPackage(id);if($('#emailModelSearch'))$('#emailModelSearch').value=m?.name||'';renderEmailMatches()}
-function selectedModels(){return selected.map(id=>db.models.find(m=>m.id===id)).filter(Boolean)}
+function selectedModels(){return [...new Set(selected)].map(id=>db.models.find(m=>m.id===id)).filter(Boolean)}
 function draftPhotoSelections(){db.draft=db.draft||structuredClone(seed.draft);db.draft.photoSelections=db.draft.photoSelections||{};return db.draft.photoSelections}
 function draftPhotoForModel(m){return draftPhotoSelections()[m.id]||(db.customPhotos||{})[m.id]||m.photo||m.photoUrl||''}
 function draftPhotoOptions(m){const out=[];const add=x=>{if(!x)return;const url=typeof x==='string'?x:(x.url||x.src||'');if(url&&!out.some(y=>y.url===url))out.push({url,label:typeof x==='string'?'Portfolio photo':(x.label||x.title||'Portfolio photo')})};if(typeof MODEL_PHOTO_LIBRARY!=='undefined'&&MODEL_PHOTO_LIBRARY[m.id])MODEL_PHOTO_LIBRARY[m.id].forEach(add);[m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(a=>Array.isArray(a)&&a.forEach(add));add((db.customPhotos||{})[m.id]);add(m.photo);add(m.photoUrl);return out.slice(0,12)}
 function persistDraftPresentation(){db.selected=[...selected];db.draft=db.draft||structuredClone(seed.draft);db.draft.modelIds=[...selected];persistWorkspaceSafe(false)}
 function setDraftPhotoUrl(id,url){const v=String(url||'').trim(),photos=draftPhotoSelections();if(v)photos[id]=v;else delete photos[id];persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);setStatus(v?'Draft photo updated. Click Update draft to save it to the package.':'Draft photo reset to the model default.')}
 function resetDraftPhoto(id){const photos=draftPhotoSelections();delete photos[id];persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);setStatus('Draft photo reset to the model default. Click Update draft to save the package.')}
-async function fileToDraftPhoto(file){if(!file)return'';try{const raw=await fileToDataUrl(file);return await new Promise(resolve=>{const img=new Image();img.onload=()=>{const maxW=1200,maxH=1600,scale=Math.min(1,maxW/img.width,maxH/img.height),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale)),c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',.84))};img.onerror=()=>resolve(raw);img.src=raw})}catch{return''}}
+async function fileToDraftPhoto(file){if(!file)return'';try{const raw=await fileToDataUrl(file);return await new Promise(resolve=>{const img=new Image();img.onload=()=>{const maxW=2400,maxH=2400,scale=Math.min(1,maxW/img.width,maxH/img.height),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale)),c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',.92))};img.onerror=()=>resolve(raw);img.src=raw})}catch{return''}}
 async function setDraftPhotoFile(id,input){const file=input?.files?.[0];if(!file)return;const data=await fileToDraftPhoto(file);if(!data)return setStatus('Could not read that image.');draftPhotoSelections()[id]=data;persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);setStatus('Uploaded photo selected for this draft only. Click Update draft to save it.')}
 function moveSelectedModel(id,delta){const i=selected.indexOf(id);if(i<0)return;const j=Math.max(0,Math.min(selected.length-1,i+delta));if(i===j)return;selected.splice(i,1);selected.splice(j,0,id);persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);setStatus('Model order changed. Click Update draft to save the package.')}
 let selectedDragId='';
@@ -650,7 +648,7 @@ function setDraftPhotoUrl(id,url){url=String(url||'').trim();if(url){addPackageP
 async function setDraftPhotoFile(id,input){const f=input?.files?.[0];if(!f)return;const data=await fileToDraftPhoto(f);if(!data)return setStatus('Could not read that image.');addPackagePhoto(id,data,f.name||'Uploaded photo');draftPhotoSelections()[id]=data;persistDraftPresentation();renderEmail();setStatus('Uploaded photo saved to library and selected.')}
 function choosePackagePhoto(id,i){const m=db.models.find(x=>x.id===id),p=m&&draftPhotoOptions(m)[i];if(!p)return;if(!selected.includes(id))selected.push(id);draftPhotoSelections()[id]=p.url;persistDraftPresentation();renderEmail();setStatus('Library photo selected.')}
 function removePackagePhoto(id,i){const m=db.models.find(x=>x.id===id),p=m&&draftPhotoOptions(m)[i],l=packagePhotoLibrary();if(!p||!(l[id]||[]).some(x=>(typeof x==='string'?x:x.url)===p.url))return;l[id]=l[id].filter(x=>(typeof x==='string'?x:x.url)!==p.url);if(draftPhotoSelections()[id]===p.url)delete draftPhotoSelections()[id];persistDraftPresentation();renderEmail()}
-function renderPhotoLibrary(){const s=$('#photoLibraryModel'),g=$('#photoLibraryGrid');if(!s||!g)return;const cur=s.value;s.innerHTML=db.models.map(m=>`<option value="${esc(m.id)}">${esc(m.name)} · ${esc(m.location)}</option>`).join('');s.value=db.models.some(m=>m.id===cur)?cur:(selected[0]||db.models[0]?.id||'');const m=db.models.find(x=>x.id===s.value);if(!m)return g.innerHTML='<div class="photo-library-empty">Choose a model.</div>';const p=draftPhotoOptions(m),pick=draftPhotoForModel(m),saved=packagePhotoLibrary()[m.id]||[];g.innerHTML=p.length?p.map((x,i)=>`<div class="photo-library-card ${pick===x.url?'active':''}"><img src="${esc(x.url)}" alt="${esc(m.name)} photo"><div class="tiny"><b>${esc(x.label)}</b></div><button class="btn ${pick===x.url?'primary':''}" type="button" onclick="choosePackagePhoto('${m.id}',${i})">${pick===x.url?'Selected':'Use in draft'}</button>${saved.some(y=>(typeof y==='string'?y:y.url)===x.url)?`<button class="btn danger" type="button" onclick="removePackagePhoto('${m.id}',${i})">Remove</button>`:''}</div>`).join(''):'<div class="photo-library-empty">No photos yet. Add a URL or upload photos.</div>'}
+function renderPhotoLibrary(){const s=$('#photoLibraryModel'),g=$('#photoLibraryGrid');if(!s||!g)return;const cur=s.value;s.innerHTML=db.models.map(m=>`<option value="${esc(m.id)}">${esc(m.name)} · ${esc(m.location)}</option>`).join('');s.value=db.models.some(m=>m.id===cur)?cur:(selected[0]||db.models[0]?.id||'');const m=db.models.find(x=>x.id===s.value);if(!m)return g.innerHTML='<div class="photo-library-empty">Choose a model.</div>';const p=draftPhotoOptions(m),pick=draftPhotoForModel(m),saved=packagePhotoLibrary()[m.id]||[];g.innerHTML=p.length?p.map((x,i)=>`<div class="photo-library-card ${pick===x.url?'active':''}"><img src="${esc(x.url)}" alt="${esc(m.name)} photo"><div class="tiny"><b>${esc(x.label)}</b></div><button class="btn ${pick===x.url?'primary':''}" type="button" onclick="choosePackagePhoto('${m.id}',${i})">${pick===x.url?'Selected':'Use in draft'}</button><button class="btn danger" type="button" onclick="removePackagePhoto('${m.id}',${i})">Delete from CRM</button></div>`).join(''):'<div class="photo-library-empty">No photos yet. Add a URL or upload photos.</div>'}
 function addPhotoLibraryUrl(){const id=$('#photoLibraryModel')?.value,u=$('#photoLibraryUrl')?.value.trim();if(!id||!u)return setStatus('Choose a model and enter a photo URL.');addPackagePhoto(id,u,'Saved URL');$('#photoLibraryUrl').value='';persistWorkspaceSafe(false);renderPhotoLibrary();setStatus('Photo added to library.')}
 async function addPhotoLibraryFiles(input){const id=$('#photoLibraryModel')?.value;if(!id)return;for(const f of [...(input?.files||[])]){const d=await fileToDraftPhoto(f);if(d)addPackagePhoto(id,d,f.name||'Uploaded photo')}input.value='';persistWorkspaceSafe(false);renderPhotoLibrary();setStatus('Photos added to library.')}
 function modelDraftCredentialHtml(m,ui=false){let body='';if(m?.id==='new-york-women-sophia-pippen')body='<b>(Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian)</b>';else if(m?.id==='new-york-women-maja-stockwell')body=`<b><a href="https://www.instagram.com/maddestockwell?stkn=MXdqbnhzd2R3dnlkMw=="${ui?' target="_blank" rel="noopener"':''}>Mom</a></b> is famous 90s model from Sweden`;else if(m?.id==='new-york-women-mary-timms')body='<b>Partook in Vogue World with DVF, Former Miss Nigeria, over 1M followers on Instagram.</b>';else if(m?.id==='new-york-women-claudia-lucchini')body='<b>Walked for Mugler and Rick Owens.</b>';else return'';return ui?`<div class="credential-note" style="color:#ff0000">${body}</div>`:`<div style="color:#ff0000;margin:2px 0 8px">${body}</div>`}
@@ -691,6 +689,85 @@ async function copyEmail(){
   const area=document.createElement('textarea');area.value=plain;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();try{if(document.execCommand('copy'))setStatus('Email copied as plain text.');else setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}catch(err){console.error(err);setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}finally{area.remove()}
 }
 /* END EMAIL DRAFT BUILDER STABILITY FIX */
+
+/* Persistent photo management. Tombstones prevent seed/roster merges restoring deleted images. */
+function photoURL(value){return typeof value==='string'?value:(value?.url||value?.src||'')}
+function photoKey(value){
+  const url=photoURL(value).replace(/[?#].*$/,'');let a=2166136261,b=5381;
+  for(let i=0;i<url.length;i++){a=Math.imul(a^url.charCodeAt(i),16777619);b=Math.imul(b,33)^url.charCodeAt(i)}
+  return url.length+':'+(a>>>0).toString(16)+':'+(b>>>0).toString(16);
+}
+function isDeletedPhoto(data,id,url){return !!url&&(data.deletedPhotoKeys?.[id]||[]).includes(photoKey(url))}
+function upgradedPhotoURL(url){
+  if(typeof url!=='string')return url;
+  return url.replace(/(https:\/\/raw\.githubusercontent\.com\/justinneal907-gif\/CLM-CRM\/main\/assets\/models\/sophia-pippen-[12]\.jpg)(?:\?[^#]*)?$/,'$1?v=2');
+}
+function applyPhotoManagement(data){
+  const upgrade=x=>typeof x==='string'?upgradedPhotoURL(x):x&&typeof x==='object'?{...x,...(x.url?{url:upgradedPhotoURL(x.url)}:{}),...(x.src?{src:upgradedPhotoURL(x.src)}:{})}:x;
+  for(const m of data.models||[]){
+    for(const k of ['photo','photoUrl']){m[k]=upgradedPhotoURL(m[k]);if(isDeletedPhoto(data,m.id,m[k]))m[k]=''}
+    for(const k of ['photos','photoLibrary','portfolioPhotos','images'])if(Array.isArray(m[k]))m[k]=m[k].map(upgrade).filter(x=>!isDeletedPhoto(data,m.id,photoURL(x)));
+  }
+  for(const [id,list] of Object.entries(data.photoLibrary||{}))if(Array.isArray(list))data.photoLibrary[id]=list.map(upgrade).filter(x=>!isDeletedPhoto(data,id,photoURL(x)));
+  for(const [id,url] of Object.entries(data.customPhotos||{})){data.customPhotos[id]=upgradedPhotoURL(url);if(isDeletedPhoto(data,id,url))delete data.customPhotos[id]}
+  for(const d of [data.draft,...(data.drafts||[])].filter(Boolean)){
+    for(const [id,url] of Object.entries(d.photoSelections||{})){
+      const single=Array.isArray(url)?url[0]:url;
+      d.photoSelections[id]=isDeletedPhoto(data,id,single)?'':upgradedPhotoURL(single);
+    }
+    for(const [id,list] of Object.entries(d.packagePhotos||{}))if(Array.isArray(list)){
+      d.packagePhotos[id]=list.map(upgradedPhotoURL).filter(url=>!isDeletedPhoto(data,id,url));
+      if(id===SOPHIA_ALL_DRAFTS_ID)d.packagePhotos[id]=d.packagePhotos[id].slice(0,1);
+    }
+    // The email preview always rebuilds from the model selection, never from stale multi-image HTML.
+    if((d.modelIds||[]).includes(SOPHIA_ALL_DRAFTS_ID))d.html='';
+  }
+  return data;
+}
+function draftPhotoOptions(m){
+  const list=[],add=(x,label)=>{const url=upgradedPhotoURL(photoURL(x));if(url&&!isDeletedPhoto(db,m.id,url)&&!list.some(p=>photoKey(p.url)===photoKey(url)))list.push({url,label:label||x?.label||'Photo'})};
+  (db.photoLibrary?.[m.id]||[]).forEach(x=>add(x,x.label||'Saved photo'));
+  [m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(a=>Array.isArray(a)&&a.forEach(x=>add(x,'Portfolio photo')));
+  if(typeof MODEL_PHOTO_LIBRARY!=='undefined')(MODEL_PHOTO_LIBRARY[m.id]||[]).forEach(x=>add(x,'Agency photo'));
+  add(db.customPhotos?.[m.id],'Custom photo');add(m.photo,'Primary photo');add(m.photoUrl,'Agency photo');
+  for(const d of [db.draft,...(db.drafts||[])].filter(Boolean)){
+    const chosen=d.photoSelections?.[m.id];(Array.isArray(chosen)?chosen:[chosen]).forEach(x=>add(x,'Draft photo'));
+    (d.packagePhotos?.[m.id]||[]).forEach(x=>add(x,'Draft photo'));
+  }
+  return list;
+}
+function getPhoto(m){return [db.customPhotos?.[m.id],m.photo,m.photoUrl].map(upgradedPhotoURL).find(url=>url&&!isDeletedPhoto(db,m.id,url))||''}
+function draftPhotoForModel(m){
+  const photos=draftPhotoSelections();
+  if(Object.prototype.hasOwnProperty.call(photos,m.id)){
+    const url=upgradedPhotoURL(Array.isArray(photos[m.id])?photos[m.id][0]:photos[m.id]);
+    return url&&!isDeletedPhoto(db,m.id,url)?url:'';
+  }
+  const legacy=db.draft?.packagePhotos?.[m.id];if(Array.isArray(legacy))return legacy.map(upgradedPhotoURL).find(url=>url&&!isDeletedPhoto(db,m.id,url))||'';
+  return getPhoto(m);
+}
+function deletePhotoFromWorkspace(data,id,url){
+  data.deletedPhotoKeys=data.deletedPhotoKeys||{};
+  data.deletedPhotoKeys[id]=[...new Set([...(data.deletedPhotoKeys[id]||[]),photoKey(url)])];
+  applyPhotoManagement(data);
+  // Remove the cached copy in every affected saved draft too.
+  for(const d of [data.draft,...(data.drafts||[])].filter(Boolean))if((d.modelIds||[]).includes(id))d.html='';
+  return data;
+}
+function removePackagePhoto(id,i){
+  const model=db.models.find(m=>m.id===id),photo=model&&draftPhotoOptions(model)[i];if(!photo)return;
+  if(!confirm('Delete this image from the CRM and all saved draft photo selections?'))return;
+  deletePhotoFromWorkspace(db,id,photo.url);persistWorkspaceSafe(true);renderAll();
+  setStatus('Image deleted from the CRM and saved drafts.');
+}
+function addPackagePhoto(id,url,label='Saved photo'){
+  url=upgradedPhotoURL(String(url||'').trim());if(!url)return;
+  if(db.deletedPhotoKeys?.[id])db.deletedPhotoKeys[id]=db.deletedPhotoKeys[id].filter(k=>k!==photoKey(url));
+  const library=packagePhotoLibrary();library[id]=library[id]||[];
+  if(!library[id].some(x=>photoKey(x)===photoKey(url)))library[id].push({url,label});
+}
+/* End persistent photo management. */
+
 /* INDEXEDDB RUNTIME OVERRIDES */
 function persistWorkspaceSafe(showError=true){
   db.selected=[...selected];
