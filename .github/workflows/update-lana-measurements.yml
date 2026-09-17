@@ -1,0 +1,63 @@
+name: Update Lana measurements
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update Lana seed and migrate existing workspace
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          text=p.read_text(encoding='utf-8')
+          old='{"id":"agency-women-lana","name":"Lana","location":"","division":"Women","measurements":"Measurements pending","profileUrl":"","photoUrl":"","photoFilename":"","source":"User request","sourceDate":"2026-09-17","activeBoard":true,"notes":"Added to CRM September 17, 2026 at user request. Public profile, measurements, market and primary photo were not verified when added."}'
+          new='{"id":"agency-women-lana","name":"Lana","location":"","division":"Women","measurements":"Height: 5’8’’ | Bust: 31.5’’ | Waist: 24.4’’ | Hip: 32.3’’ | Shoe: 8.5 US | Hair: Ash Blonde | Eyes: Light Blue","hair":"Ash Blonde","eyes":"Light Blue","profileUrl":"","photoUrl":"","photoFilename":"","source":"User-provided measurements","sourceDate":"2026-09-17","activeBoard":true,"notes":"Added to CRM September 17, 2026 at user request. Measurements and appearance updated from user-provided agency information on September 17, 2026. Market, public profile and primary photo remain unverified."}'
+          if old not in text:
+              if new not in text: raise SystemExit('Lana seed record not found')
+          else:
+              text=text.replace(old,new,1)
+
+          marker='function mergeRecovered(recovered,current){const map=new Map((recovered||[]).map(x=>[x.id,x]));for(const x of (current||[]))map.set(x.id,x);return [...map.values()]}'
+          migration='''\nfunction applyLanaMeasurements(data){\n  const m=(data.models||[]).find(x=>x.id==='agency-women-lana'||normalizeName(x.name)==='lana');\n  if(m){\n    const stats='Height: 5’8’’ | Bust: 31.5’’ | Waist: 24.4’’ | Hip: 32.3’’ | Shoe: 8.5 US | Hair: Ash Blonde | Eyes: Light Blue';\n    m.measurements=stats;m.stats=stats;m.hair='Ash Blonde';m.eyes='Light Blue';\n    m.source='User-provided measurements';m.sourceDate='2026-09-17';\n    m.notes='Added to CRM September 17, 2026 at user request. Measurements and appearance updated from user-provided agency information on September 17, 2026. Market, public profile and primary photo remain unverified.';\n  }\n  data.recovery={...(data.recovery||{}),lanaMeasurementsVersion:1};\n  return data;\n}\n'''
+          if 'function applyLanaMeasurements(data)' not in text:
+              if marker not in text: raise SystemExit('Migration insertion point not found')
+              text=text.replace(marker,marker+migration,1)
+
+          old_return='return applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data)))}'
+          new_return='return applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data))))}'
+          if old_return in text:text=text.replace(old_return,new_return,1)
+          elif new_return not in text:raise SystemExit('applyRecovered return not found')
+
+          p.write_text(text,encoding='utf-8')
+          PY
+      - name: Validate CRM JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html=Path('index.html').read_text(encoding='utf-8')
+          assert 'Height: 5’8’’ | Bust: 31.5’’ | Waist: 24.4’’ | Hip: 32.3’’ | Shoe: 8.5 US | Hair: Ash Blonde | Eyes: Light Blue' in html
+          assert 'function applyLanaMeasurements(data)' in html
+          scripts=re.findall(r'<script(?:\\s[^>]*)?>(.*?)</script>',html,re.S|re.I)
+          Path('/tmp/app.js').write_text('\\n'.join(scripts),encoding='utf-8')
+          PY
+          node --check /tmp/app.js
+      - name: Commit update
+        run: |
+          if git diff --quiet -- index.html; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add Lana measurements to CRM"
+          git pull --rebase origin main
+          git push
