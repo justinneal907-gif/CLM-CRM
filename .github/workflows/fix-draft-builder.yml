@@ -1,0 +1,149 @@
+name: Repair email draft builder
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Repair package builder responsiveness and persistence
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path=Path('index.html')
+          text=path.read_text(encoding='utf-8')
+          marker='initNav();setupFilters();hydrateDraft();renderAll();'
+          if marker not in text:
+              raise SystemExit('CRM initialization marker not found')
+
+          fix=r'''
+/* EMAIL DRAFT BUILDER STABILITY FIX 2026-09-17 */
+let emailDraftRenderTimer=0;
+function compactDraftCachesForStorage(){
+  if(Array.isArray(db?.drafts))for(const d of db.drafts)if(d&&Object.prototype.hasOwnProperty.call(d,'html'))d.html='';
+  if(db?.draft&&Object.prototype.hasOwnProperty.call(db.draft,'html'))db.draft.html='';
+}
+function persistWorkspaceSafe(showError=true){
+  db.selected=[...selected];
+  compactDraftCachesForStorage();
+  try{localStorage.setItem(NEW_KEY,JSON.stringify(db));return true}
+  catch(err){
+    console.error('CRM storage write failed',err);
+    if(showError)setStatus('Could not save this change because browser storage is full. Existing CRM data is still intact; remove large uploaded draft photos or export a backup.');
+    return false;
+  }
+}
+function save(){db.selected=[...selected];if(!persistWorkspaceSafe())return false;renderAll();return true}
+function persistDraftPresentation(){db.selected=[...selected];db.draft=db.draft||structuredClone(seed.draft);db.draft.modelIds=[...selected];persistWorkspaceSafe()}
+function renderEmail(){
+  if(!$('#emailPreview'))return;
+  captureDraft();
+  $('#emailPreview').innerHTML=emailHtml();
+  renderEmailSelection();
+  renderBrandAdvisor();
+  renderBriefSummary();
+  renderDraftScope();
+}
+function renderEmailPreviewOnly(){
+  if(!$('#emailPreview'))return;
+  captureDraft();
+  $('#emailPreview').innerHTML=emailHtml();
+  renderBriefSummary();
+  renderSubmissionWarnings();
+  renderDraftScope();
+}
+function queueEmailDraftRender(){
+  captureDraft();
+  clearTimeout(emailDraftRenderTimer);
+  emailDraftRenderTimer=setTimeout(()=>{
+    renderEmailPreviewOnly();
+    persistWorkspaceSafe(false);
+  },90);
+}
+function saveDraft(){
+  captureDraft();
+  const currentId=db.activeDraftId||'';
+  const existingIndex=currentId?db.drafts.findIndex(x=>x.id===currentId):-1;
+  const snapshot={date:nyDate(),...db.draft,models:selectedModels().map(m=>m.name),modelIds:[...selected],html:''};
+  if(existingIndex>=0){db.drafts[existingIndex]={...db.drafts[existingIndex],...snapshot,id:currentId};db.activeDraftId=currentId}
+  else{const id=uid();db.drafts.push({id,...snapshot});db.activeDraftId=id}
+  db.selected=[...selected];
+  if(!persistWorkspaceSafe())return;
+  renderAll();
+  setStatus(existingIndex>=0?'Draft updated in CRM.':'Draft saved in CRM.');
+}
+function loadDraft(id){
+  const d=db.drafts.find(x=>x.id===id);if(!d)return;
+  db.activeDraftId=id;db.draft={...structuredClone(seed.draft),...structuredClone(d),html:''};
+  selected=(d.modelIds||[]).filter(modelId=>db.models.some(m=>m.id===modelId));
+  if(!selected.length&&Array.isArray(d.models))for(const name of d.models){const m=db.models.find(x=>normalizeName(x.name)===normalizeName(name));if(m&&!selected.includes(m.id))selected.push(m.id)}
+  db.selected=[...selected];resetDraftUtilityControls();persistWorkspaceSafe(false);go('email');setStatus(`Loaded ${d.brandProject||d.company||d.subject||'saved package'}.`)
+}
+async function copyEmail(){
+  if(!selected.length)return setStatus('Select at least one model first.');
+  const html=emailHtml(),tmp=document.createElement('div');tmp.innerHTML=html;
+  const plain=(tmp.innerText||tmp.textContent||'').trim();
+  try{
+    if(navigator.clipboard&&window.ClipboardItem){
+      await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([plain],{type:'text/plain'})})]);
+      setStatus('Formatted email copied.');return;
+    }
+  }catch(err){console.warn('Rich clipboard unavailable',err)}
+  try{
+    if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(plain);setStatus('Email copied as plain text.');return}
+  }catch(err){console.warn('Clipboard API unavailable',err)}
+  const area=document.createElement('textarea');area.value=plain;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();
+  try{if(document.execCommand('copy'))setStatus('Email copied as plain text.');else setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}
+  catch(err){console.error(err);setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}
+  finally{area.remove()}
+}
+/* END EMAIL DRAFT BUILDER STABILITY FIX */
+'''
+          if 'EMAIL DRAFT BUILDER STABILITY FIX 2026-09-17' not in text:
+              text=text.replace(marker,fix+'\n'+marker,1)
+
+          old="""['emailPurpose','emailContactName','emailCompany','emailRecipient','emailBrand','emailSubject','emailLink','emailContext','emailPrivateNotes','castingBriefRaw','includeStats','includePhotos','includeSources'].forEach(id=>$('#'+id).addEventListener('input',()=>{renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db))}));"""
+          new="""['emailPurpose','emailContactName','emailCompany','emailRecipient','emailBrand','emailSubject','emailLink','emailContext','emailPrivateNotes','castingBriefRaw','includeStats','includePhotos','includeSources'].forEach(id=>{const el=$('#'+id);if(el)el.addEventListener('input',queueEmailDraftRender)});$('#emailBrand')?.addEventListener('change',()=>{renderBrandAdvisor();renderSubmissionWarnings();persistWorkspaceSafe(false)});"""
+          if old not in text:
+              if new not in text: raise SystemExit('Draft input listener block not found')
+          else:
+              text=text.replace(old,new,1)
+
+          path.write_text(text,encoding='utf-8')
+          PY
+      - name: Validate repaired CRM
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html=Path('index.html').read_text(encoding='utf-8')
+          assert 'EMAIL DRAFT BUILDER STABILITY FIX 2026-09-17' in html
+          assert 'queueEmailDraftRender' in html
+          assert "html:''" in html
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',html,re.S|re.I)
+          Path('/tmp/app.js').write_text('\n'.join(scripts),encoding='utf-8')
+          PY
+          node --check /tmp/app.js
+      - name: Commit repair
+        shell: bash
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "Repair already present."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Fix email draft builder responsiveness and saving"
+          git pull --rebase origin main
+          git push
