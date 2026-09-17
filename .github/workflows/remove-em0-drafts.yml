@@ -1,0 +1,28 @@
+name: Remove Em0 from drafts
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch drafts
+        run: python scripts/remove_em0_from_drafts.py
+      - name: Validate JavaScript
+        run: node --check /tmp/app.js
+      - name: Commit update
+        run: |
+          if git diff --quiet -- index.html; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Remove Em0 from all drafts"
+          git pull --rebase origin main
+          git push
