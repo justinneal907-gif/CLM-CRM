@@ -1,0 +1,42 @@
+name: Diagnose draft builder
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract and syntax-check CRM script
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',html,re.S|re.I)
+          js='\n'.join(scripts)
+          Path('/tmp/app.js').write_text(js,encoding='utf-8')
+          ids=set(re.findall(r'\bid=["\']([^"\']+)["\']',html))
+          refs=re.findall(r"\$\('#([^']+)'\)",js)
+          missing=sorted(set(refs)-ids)
+          print('HTML IDs:',len(ids),'script refs:',len(set(refs)))
+          print('Missing direct #id refs:',missing)
+          funcs=re.findall(r'\bfunction\s+([A-Za-z_$][\w$]*)\s*\(',js)
+          dup=sorted({f for f in funcs if funcs.count(f)>1})
+          print('Duplicate function declarations:',dup)
+          PY
+          node --check /tmp/app.js
+      - name: Show package-builder function counts
+        shell: bash
+        run: |
+          grep -o "function emailHtml" index.html | wc -l
+          grep -o "function renderEmailSelection" index.html | wc -l
+          grep -o "function modelDraftCredentialHtml" index.html | wc -l
+          grep -o "function captureDraft" index.html | wc -l
+          grep -o "function hydrateDraft" index.html | wc -l
