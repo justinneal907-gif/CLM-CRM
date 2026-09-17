@@ -18,56 +18,17 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-
+          import base64
           path=Path('index.html')
           text=path.read_text(encoding='utf-8')
           marker='initNav();setupFilters();hydrateDraft();renderAll();'
-          if marker not in text:
-              raise SystemExit('CRM initialization marker not found')
-
-          fix=r'''
-/* EMAIL DRAFT BUILDER STABILITY FIX 2026-09-17 */
-let emailDraftRenderTimer=0;
-function compactDraftCachesForStorage(){
-  if(Array.isArray(db?.drafts))for(const d of db.drafts)if(d&&Object.prototype.hasOwnProperty.call(d,'html'))d.html='';
-  if(db?.draft&&Object.prototype.hasOwnProperty.call(db.draft,'html'))db.draft.html='';
-}
-function persistWorkspaceSafe(showError=true){
-  db.selected=[...selected];compactDraftCachesForStorage();
-  try{localStorage.setItem(NEW_KEY,JSON.stringify(db));return true}
-  catch(err){console.error('CRM storage write failed',err);if(showError)setStatus('Could not save this change because browser storage is full. Existing CRM data is still intact; remove large uploaded draft photos or export a backup.');return false}
-}
-function save(){db.selected=[...selected];if(!persistWorkspaceSafe())return false;renderAll();return true}
-function persistDraftPresentation(){db.selected=[...selected];db.draft=db.draft||structuredClone(seed.draft);db.draft.modelIds=[...selected];persistWorkspaceSafe()}
-function renderEmail(){if(!$('#emailPreview'))return;captureDraft();$('#emailPreview').innerHTML=emailHtml();renderEmailSelection();renderBrandAdvisor();renderBriefSummary();renderDraftScope()}
-function renderEmailPreviewOnly(){if(!$('#emailPreview'))return;captureDraft();$('#emailPreview').innerHTML=emailHtml();renderBriefSummary();renderSubmissionWarnings();renderDraftScope()}
-function queueEmailDraftRender(){captureDraft();clearTimeout(emailDraftRenderTimer);emailDraftRenderTimer=setTimeout(()=>{renderEmailPreviewOnly();persistWorkspaceSafe(false)},90)}
-function saveDraft(){
-  captureDraft();const currentId=db.activeDraftId||'';const existingIndex=currentId?db.drafts.findIndex(x=>x.id===currentId):-1;
-  const snapshot={date:nyDate(),...db.draft,models:selectedModels().map(m=>m.name),modelIds:[...selected],html:''};
-  if(existingIndex>=0){db.drafts[existingIndex]={...db.drafts[existingIndex],...snapshot,id:currentId};db.activeDraftId=currentId}else{const id=uid();db.drafts.push({id,...snapshot});db.activeDraftId=id}
-  db.selected=[...selected];if(!persistWorkspaceSafe())return;renderAll();setStatus(existingIndex>=0?'Draft updated in CRM.':'Draft saved in CRM.')
-}
-function loadDraft(id){
-  const d=db.drafts.find(x=>x.id===id);if(!d)return;db.activeDraftId=id;db.draft={...structuredClone(seed.draft),...structuredClone(d),html:''};
-  selected=(d.modelIds||[]).filter(modelId=>db.models.some(m=>m.id===modelId));if(!selected.length&&Array.isArray(d.models))for(const name of d.models){const m=db.models.find(x=>normalizeName(x.name)===normalizeName(name));if(m&&!selected.includes(m.id))selected.push(m.id)}
-  db.selected=[...selected];resetDraftUtilityControls();persistWorkspaceSafe(false);go('email');setStatus(`Loaded ${d.brandProject||d.company||d.subject||'saved package'}.`)
-}
-async function copyEmail(){
-  if(!selected.length)return setStatus('Select at least one model first.');const html=emailHtml(),tmp=document.createElement('div');tmp.innerHTML=html;const plain=(tmp.innerText||tmp.textContent||'').trim();
-  try{if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([plain],{type:'text/plain'})})]);setStatus('Formatted email copied.');return}}catch(err){console.warn('Rich clipboard unavailable',err)}
-  try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(plain);setStatus('Email copied as plain text.');return}}catch(err){console.warn('Clipboard API unavailable',err)}
-  const area=document.createElement('textarea');area.value=plain;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();try{if(document.execCommand('copy'))setStatus('Email copied as plain text.');else setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}catch(err){console.error(err);setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}finally{area.remove()}
-}
-/* END EMAIL DRAFT BUILDER STABILITY FIX */
-'''
-          if 'EMAIL DRAFT BUILDER STABILITY FIX 2026-09-17' not in text:
-              text=text.replace(marker,fix+'\n'+marker,1)
-
-          old="""['emailPurpose','emailContactName','emailCompany','emailRecipient','emailBrand','emailSubject','emailLink','emailContext','emailPrivateNotes','castingBriefRaw','includeStats','includePhotos','includeSources'].forEach(id=>$('#'+id).addEventListener('input',()=>{renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db))}));"""
-          new="""['emailPurpose','emailContactName','emailCompany','emailRecipient','emailBrand','emailSubject','emailLink','emailContext','emailPrivateNotes','castingBriefRaw','includeStats','includePhotos','includeSources'].forEach(id=>{const el=$('#'+id);if(el)el.addEventListener('input',queueEmailDraftRender)});$('#emailBrand')?.addEventListener('change',()=>{renderBrandAdvisor();renderSubmissionWarnings();persistWorkspaceSafe(false)});"""
-          if old in text:text=text.replace(old,new,1)
-          elif new not in text:raise SystemExit('Draft input listener block not found')
+          if marker not in text: raise SystemExit('CRM initialization marker not found')
+          fix=base64.b64decode('LyogRU1BSUwgRFJBRlQgQlVJTERFUiBTVEFCSUxJVFkgRklYIDIwMjYtMDktMTcgKi8KbGV0IGVtYWlsRHJhZnRSZW5kZXJUaW1lcj0wOwpmdW5jdGlvbiBjb21wYWN0RHJhZnRDYWNoZXNGb3JTdG9yYWdlKCl7CiAgaWYoQXJyYXkuaXNBcnJheShkYj8uZHJhZnRzKSlmb3IoY29uc3QgZCBvZiBkYi5kcmFmdHMpaWYoZCYmT2JqZWN0LnByb3RvdHlwZS5oYXNPd25Qcm9wZXJ0eS5jYWxsKGQsJ2h0bWwnKSlkLmh0bWw9Jyc7CiAgaWYoZGI/LmRyYWZ0JiZPYmplY3QucHJvdG90eXBlLmhhc093blByb3BlcnR5LmNhbGwoZGIuZHJhZnQsJ2h0bWwnKSlkYi5kcmFmdC5odG1sPScnOwp9CmZ1bmN0aW9uIHBlcnNpc3RXb3Jrc3BhY2VTYWZlKHNob3dFcnJvcj10cnVlKXsKICBkYi5zZWxlY3RlZD1bLi4uc2VsZWN0ZWRdO2NvbXBhY3REcmFmdENhY2hlc0ZvclN0b3JhZ2UoKTsKICB0cnl7bG9jYWxTdG9yYWdlLnNldEl0ZW0oTkVXX0tFWSxKU09OLnN0cmluZ2lmeShkYikpO3JldHVybiB0cnVlfQogIGNhdGNoKGVycil7Y29uc29sZS5lcnJvcignQ1JNIHN0b3JhZ2Ugd3JpdGUgZmFpbGVkJyxlcnIpO2lmKHNob3dFcnJvcilzZXRTdGF0dXMoJ0NvdWxkIG5vdCBzYXZlIHRoaXMgY2hhbmdlIGJlY2F1c2UgYnJvd3NlciBzdG9yYWdlIGlzIGZ1bGwuIEV4aXN0aW5nIENSTSBkYXRhIGlzIHN0aWxsIGludGFjdDsgcmVtb3ZlIGxhcmdlIHVwbG9hZGVkIGRyYWZ0IHBob3RvcyBvciBleHBvcnQgYSBiYWNrdXAuJyk7cmV0dXJuIGZhbHNlfQp9CmZ1bmN0aW9uIHNhdmUoKXtkYi5zZWxlY3RlZD1bLi4uc2VsZWN0ZWRdO2lmKCFwZXJzaXN0V29ya3NwYWNlU2FmZSgpKXJldHVybiBmYWxzZTtyZW5kZXJBbGwoKTtyZXR1cm4gdHJ1ZX0KZnVuY3Rpb24gcGVyc2lzdERyYWZ0UHJlc2VudGF0aW9uKCl7ZGIuc2VsZWN0ZWQ9Wy4uLnNlbGVjdGVkXTtkYi5kcmFmdD1kYi5kcmFmdHx8c3RydWN0dXJlZENsb25lKHNlZWQuZHJhZnQpO2RiLmRyYWZ0Lm1vZGVsSWRzPVsuLi5zZWxlY3RlZF07cGVyc2lzdFdvcmtzcGFjZVNhZmUoKX0KZnVuY3Rpb24gcmVuZGVyRW1haWwoKXtpZighJCgnI2VtYWlsUHJldmlldycpKXJldHVybjtjYXB0dXJlRHJhZnQoKTskKCcjZW1haWxQcmV2aWV3JykuaW5uZXJIVE1MPWVtYWlsSHRtbCgpO3JlbmRlckVtYWlsU2VsZWN0aW9uKCk7cmVuZGVyQnJhbmRBZHZpc29yKCk7cmVuZGVyQnJpZWZTdW1tYXJ5KCk7cmVuZGVyRHJhZnRTY29wZSgpfQpmdW5jdGlvbiByZW5kZXJFbWFpbFByZXZpZXdPbmx5KCl7aWYoISQoJyNlbWFpbFByZXZpZXcnKSlyZXR1cm47Y2FwdHVyZURyYWZ0KCk7JCgnI2VtYWlsUHJldmlldycpLmlubmVySFRNTD1lbWFpbEh0bWwoKTtyZW5kZXJCcmllZlN1bW1hcnkoKTtyZW5kZXJTdWJtaXNzaW9uV2FybmluZ3MoKTtyZW5kZXJEcmFmdFNjb3BlKCl9CmZ1bmN0aW9uIHF1ZXVlRW1haWxEcmFmdFJlbmRlcigpe2NhcHR1cmVEcmFmdCgpO2NsZWFyVGltZW91dChlbWFpbERyYWZ0UmVuZGVyVGltZXIpO2VtYWlsRHJhZnRSZW5kZXJUaW1lcj1zZXRUaW1lb3V0KCgpPT57cmVuZGVyRW1haWxQcmV2aWV3T25seSgpO3BlcnNpc3RXb3Jrc3BhY2VTYWZlKGZhbHNlKX0sOTApfQpmdW5jdGlvbiBzYXZlRHJhZnQoKXsKICBjYXB0dXJlRHJhZnQoKTtjb25zdCBjdXJyZW50SWQ9ZGIuYWN0aXZlRHJhZnRJZHx8Jyc7Y29uc3QgZXhpc3RpbmdJbmRleD1jdXJyZW50SWQ/ZGIuZHJhZnRzLmZpbmRJbmRleCh4PT54LmlkPT09Y3VycmVudElkKTotMTsKICBjb25zdCBzbmFwc2hvdD17ZGF0ZTpueURhdGUoKSwuLi5kYi5kcmFmdCxtb2RlbHM6c2VsZWN0ZWRNb2RlbHMoKS5tYXAobT0+bS5uYW1lKSxtb2RlbElkczpbLi4uc2VsZWN0ZWRdLGh0bWw6Jyd9OwogIGlmKGV4aXN0aW5nSW5kZXg+PTApe2RiLmRyYWZ0c1tleGlzdGluZ0luZGV4XT17Li4uZGIuZHJhZnRzW2V4aXN0aW5nSW5kZXhdLC4uLnNuYXBzaG90LGlkOmN1cnJlbnRJZH07ZGIuYWN0aXZlRHJhZnRJZD1jdXJyZW50SWR9ZWxzZXtjb25zdCBpZD11aWQoKTtkYi5kcmFmdHMucHVzaCh7aWQsLi4uc25hcHNob3R9KTtkYi5hY3RpdmVEcmFmdElkPWlkfQogIGRiLnNlbGVjdGVkPVsuLi5zZWxlY3RlZF07aWYoIXBlcnNpc3RXb3Jrc3BhY2VTYWZlKCkpcmV0dXJuO3JlbmRlckFsbCgpO3NldFN0YXR1cyhleGlzdGluZ0luZGV4Pj0wPydEcmFmdCB1cGRhdGVkIGluIENSTS4nOidEcmFmdCBzYXZlZCBpbiBDUk0uJykKfQpmdW5jdGlvbiBsb2FkRHJhZnQoaWQpewogIGNvbnN0IGQ9ZGIuZHJhZnRzLmZpbmQoeD0+eC5pZD09PWlkKTtpZighZClyZXR1cm47ZGIuYWN0aXZlRHJhZnRJZD1pZDtkYi5kcmFmdD17Li4uc3RydWN0dXJlZENsb25lKHNlZWQuZHJhZnQpLC4uLnN0cnVjdHVyZWRDbG9uZShkKSxodG1sOicnfTsKICBzZWxlY3RlZD0oZC5tb2RlbElkc3x8W10pLmZpbHRlcihtb2RlbElkPT5kYi5tb2RlbHMuc29tZShtPT5tLmlkPT09bW9kZWxJZCkpO2lmKCFzZWxlY3RlZC5sZW5ndGgmJkFycmF5LmlzQXJyYXkoZC5tb2RlbHMpKWZvcihjb25zdCBuYW1lIG9mIGQubW9kZWxzKXtjb25zdCBtPWRiLm1vZGVscy5maW5kKHg9Pm5vcm1hbGl6ZU5hbWUoeC5uYW1lKT09PW5vcm1hbGl6ZU5hbWUobmFtZSkpO2lmKG0mJiFzZWxlY3RlZC5pbmNsdWRlcyhtLmlkKSlzZWxlY3RlZC5wdXNoKG0uaWQpfQogIGRiLnNlbGVjdGVkPVsuLi5zZWxlY3RlZF07cmVzZXREcmFmdFV0aWxpdHlDb250cm9scygpO3BlcnNpc3RXb3Jrc3BhY2VTYWZlKGZhbHNlKTtnbygnZW1haWwnKTtzZXRTdGF0dXMoYExvYWRlZCAke2QuYnJhbmRQcm9qZWN0fHxkLmNvbXBhbnl8fGQuc3ViamVjdHx8J3NhdmVkIHBhY2thZ2UnfS5gKQp9CmFzeW5jIGZ1bmN0aW9uIGNvcHlFbWFpbCgpewogIGlmKCFzZWxlY3RlZC5sZW5ndGgpcmV0dXJuIHNldFN0YXR1cygnU2VsZWN0IGF0IGxlYXN0IG9uZSBtb2RlbCBmaXJzdC4nKTtjb25zdCBodG1sPWVtYWlsSHRtbCgpLHRtcD1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCdkaXYnKTt0bXAuaW5uZXJIVE1MPWh0bWw7Y29uc3QgcGxhaW49KHRtcC5pbm5lclRleHR8fHRtcC50ZXh0Q29udGVudHx8JycpLnRyaW0oKTsKICB0cnl7aWYobmF2aWdhdG9yLmNsaXBib2FyZCYmd2luZG93LkNsaXBib2FyZEl0ZW0pe2F3YWl0IG5hdmlnYXRvci5jbGlwYm9hcmQud3JpdGUoW25ldyBDbGlwYm9hcmRJdGVtKHsndGV4dC9odG1sJzpuZXcgQmxvYihbaHRtbF0se3R5cGU6J3RleHQvaHRtbCd9KSwndGV4dC9wbGFpbic6bmV3IEJsb2IoW3BsYWluXSx7dHlwZTondGV4dC9wbGFpbid9KX0pXSk7c2V0U3RhdHVzKCdGb3JtYXR0ZWQgZW1haWwgY29waWVkLicpO3JldHVybn19Y2F0Y2goZXJyKXtjb25zb2xlLndhcm4oJ1JpY2ggY2xpcGJvYXJkIHVuYXZhaWxhYmxlJyxlcnIpfQogIHRyeXtpZihuYXZpZ2F0b3IuY2xpcGJvYXJkPy53cml0ZVRleHQpe2F3YWl0IG5hdmlnYXRvci5jbGlwYm9hcmQud3JpdGVUZXh0KHBsYWluKTtzZXRTdGF0dXMoJ0VtYWlsIGNvcGllZCBhcyBwbGFpbiB0ZXh0LicpO3JldHVybn19Y2F0Y2goZXJyKXtjb25zb2xlLndhcm4oJ0NsaXBib2FyZCBBUEkgdW5hdmFpbGFibGUnLGVycil9CiAgY29uc3QgYXJlYT1kb2N1bWVudC5jcmVhdGVFbGVtZW50KCd0ZXh0YXJlYScpO2FyZWEudmFsdWU9cGxhaW47YXJlYS5zZXRBdHRyaWJ1dGUoJ3JlYWRvbmx5JywnJyk7YXJlYS5zdHlsZS5wb3NpdGlvbj0nZml4ZWQnO2FyZWEuc3R5bGUub3BhY2l0eT0nMCc7ZG9jdW1lbnQuYm9keS5hcHBlbmRDaGlsZChhcmVhKTthcmVhLnNlbGVjdCgpO3RyeXtpZihkb2N1bWVudC5leGVjQ29tbWFuZCgnY29weScpKXNldFN0YXR1cygnRW1haWwgY29waWVkIGFzIHBsYWluIHRleHQuJyk7ZWxzZSBzZXRTdGF0dXMoJ0NvcHkgd2FzIGJsb2NrZWQgYnkgdGhlIGJyb3dzZXIuIFNlbGVjdCB0aGUgcHJldmlldyBhbmQgY29weSBpdCBtYW51YWxseS4nKX1jYXRjaChlcnIpe2NvbnNvbGUuZXJyb3IoZXJyKTtzZXRTdGF0dXMoJ0NvcHkgd2FzIGJsb2NrZWQgYnkgdGhlIGJyb3dzZXIuIFNlbGVjdCB0aGUgcHJldmlldyBhbmQgY29weSBpdCBtYW51YWxseS4nKX1maW5hbGx5e2FyZWEucmVtb3ZlKCl9Cn0KLyogRU5EIEVNQUlMIERSQUZUIEJVSUxERVIgU1RBQklMSVRZIEZJWCAqLw==').decode()
+          if 'EMAIL DRAFT BUILDER STABILITY FIX 2026-09-17' not in text: text=text.replace(marker,fix+'\n'+marker,1)
+          old=base64.b64decode('WydlbWFpbFB1cnBvc2UnLCdlbWFpbENvbnRhY3ROYW1lJywnZW1haWxDb21wYW55JywnZW1haWxSZWNpcGllbnQnLCdlbWFpbEJyYW5kJywnZW1haWxTdWJqZWN0JywnZW1haWxMaW5rJywnZW1haWxDb250ZXh0JywnZW1haWxQcml2YXRlTm90ZXMnLCdjYXN0aW5nQnJpZWZSYXcnLCdpbmNsdWRlU3RhdHMnLCdpbmNsdWRlUGhvdG9zJywnaW5jbHVkZVNvdXJjZXMnXS5mb3JFYWNoKGlkPT4kKCcjJytpZCkuYWRkRXZlbnRMaXN0ZW5lcignaW5wdXQnLCgpPT57cmVuZGVyRW1haWwoKTtsb2NhbFN0b3JhZ2Uuc2V0SXRlbShORVdfS0VZLEpTT04uc3RyaW5naWZ5KGRiKSl9KSk7').decode()
+          new=base64.b64decode('WydlbWFpbFB1cnBvc2UnLCdlbWFpbENvbnRhY3ROYW1lJywnZW1haWxDb21wYW55JywnZW1haWxSZWNpcGllbnQnLCdlbWFpbEJyYW5kJywnZW1haWxTdWJqZWN0JywnZW1haWxMaW5rJywnZW1haWxDb250ZXh0JywnZW1haWxQcml2YXRlTm90ZXMnLCdjYXN0aW5nQnJpZWZSYXcnLCdpbmNsdWRlU3RhdHMnLCdpbmNsdWRlUGhvdG9zJywnaW5jbHVkZVNvdXJjZXMnXS5mb3JFYWNoKGlkPT57Y29uc3QgZWw9JCgnIycraWQpO2lmKGVsKWVsLmFkZEV2ZW50TGlzdGVuZXIoJ2lucHV0JyxxdWV1ZUVtYWlsRHJhZnRSZW5kZXIpfSk7JCgnI2VtYWlsQnJhbmQnKT8uYWRkRXZlbnRMaXN0ZW5lcignY2hhbmdlJywoKT0+e3JlbmRlckJyYW5kQWR2aXNvcigpO3JlbmRlclN1Ym1pc3Npb25XYXJuaW5ncygpO3BlcnNpc3RXb3Jrc3BhY2VTYWZlKGZhbHNlKX0pOw==').decode()
+          if old in text: text=text.replace(old,new,1)
+          elif new not in text: raise SystemExit('Draft input listener block not found')
           path.write_text(text,encoding='utf-8')
           PY
       - name: Validate CRM JavaScript
