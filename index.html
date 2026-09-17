@@ -298,7 +298,7 @@ function expandMilanPackages(data){
 }
 
 const seed={models:BASE_ROSTER.map(m=>applyModelIdentity({...m,niche:NICHE_MAP[m.name]||'Development',secondaryNiche:SECONDARY_NICHE_MAP[m.name]||'',stats:m.measurements,profile:m.profileUrl,photo:m.photoUrl,sourceDate:m.sourceDate||SOURCE_DATE,availabilityStatus:'Unknown',statusFrom:'',statusTo:'',holdProject:'',availabilityNotes:''})),contacts:structuredClone([...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS]),submissions:[],bookings:[],tasks:[],drafts:[],draft:{purpose:'submission',contactId:'',contactName:'',company:'',recipientEmail:'',brandProject:'',packageLink:'https://canva.link/hkqja7ybl587pm8',brief:'',castingBriefRaw:'',parsedBrief:null,subject:'Model Package',includeStats:true,includePhotos:true,includeSources:true},selected:[],customPhotos:{},settings:{personalCommissionRate:10,autoFollowUp:true,closeStaleSubmissions:true,workEmail:WORK_EMAIL}};
-let db=loadWorkspace();let selected=[...(db.selected||[])];let active='today';let modalType=null;let modalEditId=null;
+let db=structuredClone(seed);let selected=[];let active='today';let modalType=null;let modalEditId=null;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const initials=n=>String(n||'').split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase();
@@ -325,8 +325,115 @@ function applyLanaMeasurements(data){
 
 function mergeContacts(recovered,current){const contacts=(current||[]).map(c=>({...c}));for(const c of (recovered||[])){const email=String(c.email||'').trim().toLowerCase();if(!contacts.some(existing=>(c.id&&existing.id===c.id)||(email&&String(existing.email||'').trim().toLowerCase()===email)))contacts.push({...c})}return contacts}
 function applyRecovered(data){const incoming=data||{};data={...structuredClone(seed),...incoming};data.settings={...structuredClone(seed.settings),...(incoming.settings||{})};data.draft={...structuredClone(seed.draft),...(incoming.draft||{})};data.activeDraftId=incoming.activeDraftId||data.activeDraftId||'';data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>applyModelIdentity({...m,availabilityStatus:m.availabilityStatus||'Unknown',statusFrom:m.statusFrom||'',statusTo:m.statusTo||'',holdProject:m.holdProject||'',availabilityNotes:m.availabilityNotes||''}));data.contacts=mergeContacts([...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS],data.contacts||[]).map(c=>({...c,relationship:c.relationship||'Developing',preferredNiches:c.preferredNiches||''}));data.submissions=mergeRecovered([...RECOVERED_SUBMISSIONS,...WORK_GMAIL_SUBMISSIONS],data.submissions||[]).map(normalizeRecordModelNames);data.drafts=mergeRecovered([...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS],data.drafts||[]).map(normalizeRecordModelNames);data.bookings=(data.bookings||[]).map(normalizeRecordModelNames);data.recovery={...(data.recovery||{}),gmailRecoveredOn:'2026-09-14',submissionCount:RECOVERED_SUBMISSIONS.length,draftCount:RECOVERED_DRAFTS.length,tasksRecovered:0,rosterCheckedOn:'2026-09-14',supplementalModels:['Sophia Pippen'],newModels:['Anhelena','Bianca'],nicheSystemVersion:2,nicheTaxonomy:'standard-no-specialty-story',workflowSystemVersion:3,workGmail:WORK_EMAIL,workGmailSyncedOn:'2026-09-14',workGmailSubmissionCount:WORK_GMAIL_SUBMISSIONS.length,milanFirstDayDraftsAddedOn:'2026-09-16',milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,milanRestDraftsAddedOn:'2026-09-16',milanRestDraftCount:MILAN_REST_DRAFTS.length,modelIdentityUpdatedOn:'2026-09-16',modelAppearanceReviewedOn:'2026-09-16'};return applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data))))}
-function loadWorkspace(){try{const v2=localStorage.getItem(NEW_KEY);if(v2){const data=applyRecovered(JSON.parse(v2));localStorage.setItem(NEW_KEY,JSON.stringify(data));return data}const copy=localStorage.getItem(COPY_V1_KEY);const orig=localStorage.getItem(ORIGINAL_KEY);let migrated=structuredClone(seed);if(orig)migrated=migrateLegacy(JSON.parse(orig));if(copy){const c=JSON.parse(copy);migrated={...migrated,...c,models:mergeModels(migrated.models,c.models||[])}}try{migrated.customPhotos={...JSON.parse(localStorage.getItem(ORIGINAL_PHOTO_KEY)||'{}'),...(migrated.customPhotos||{})}}catch{}migrated=applyRecovered(migrated);localStorage.setItem(NEW_KEY,JSON.stringify(migrated));return migrated}catch(e){console.warn(e);return applyRecovered(structuredClone(seed))}}
-function save(){db.selected=selected;localStorage.setItem(NEW_KEY,JSON.stringify(db));renderAll()}
+/* CRM INDEXEDDB STORAGE V1 */
+const IDB_DB_NAME='jn-agency-crm';
+const IDB_DB_VERSION=1;
+const IDB_STORE='workspace';
+const IDB_STATE_KEY='primary';
+const IDB_MIGRATION_MARKER='jn-agency-crm-indexeddb-migrated-v1';
+let idbWriteQueue=Promise.resolve();
+let idbUnavailable=false;
+
+function openCRMDatabase(){
+  return new Promise((resolve,reject)=>{
+    if(!('indexedDB' in window))return reject(new Error('IndexedDB is unavailable in this browser.'));
+    const req=indexedDB.open(IDB_DB_NAME,IDB_DB_VERSION);
+    req.onupgradeneeded=()=>{
+      const database=req.result;
+      if(!database.objectStoreNames.contains(IDB_STORE))database.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error('Could not open IndexedDB.'));
+    req.onblocked=()=>reject(new Error('IndexedDB upgrade was blocked by another open CRM tab.'));
+  });
+}
+function idbReadWorkspace(){
+  return openCRMDatabase().then(database=>new Promise((resolve,reject)=>{
+    const tx=database.transaction(IDB_STORE,'readonly');
+    const req=tx.objectStore(IDB_STORE).get(IDB_STATE_KEY);
+    req.onsuccess=()=>resolve(req.result||null);
+    req.onerror=()=>reject(req.error||new Error('Could not read CRM data from IndexedDB.'));
+    tx.oncomplete=()=>database.close();
+    tx.onerror=()=>{database.close();reject(tx.error||new Error('IndexedDB read transaction failed.'))};
+  }));
+}
+function idbWriteWorkspace(snapshot){
+  return openCRMDatabase().then(database=>new Promise((resolve,reject)=>{
+    const tx=database.transaction(IDB_STORE,'readwrite');
+    tx.objectStore(IDB_STORE).put(snapshot,IDB_STATE_KEY);
+    tx.oncomplete=()=>{database.close();resolve(true)};
+    tx.onerror=()=>{database.close();reject(tx.error||new Error('IndexedDB write transaction failed.'))};
+    tx.onabort=()=>{database.close();reject(tx.error||new Error('IndexedDB write transaction was aborted.'))};
+  }));
+}
+function loadLegacyWorkspace(){
+  try{
+    const v2=localStorage.getItem(NEW_KEY);
+    if(v2)return applyRecovered(JSON.parse(v2));
+    const copy=localStorage.getItem(COPY_V1_KEY);
+    const orig=localStorage.getItem(ORIGINAL_KEY);
+    let migrated=structuredClone(seed);
+    if(orig)migrated=migrateLegacy(JSON.parse(orig));
+    if(copy){const c=JSON.parse(copy);migrated={...migrated,...c,models:mergeModels(migrated.models,c.models||[])}}
+    try{migrated.customPhotos={...JSON.parse(localStorage.getItem(ORIGINAL_PHOTO_KEY)||'{}'),...(migrated.customPhotos||{})}}catch{}
+    return applyRecovered(migrated);
+  }catch(err){
+    console.warn('Legacy CRM migration read failed',err);
+    return applyRecovered(structuredClone(seed));
+  }
+}
+function clearLegacyWorkspaceAfterMigration(){
+  for(const key of [NEW_KEY,COPY_V1_KEY,ORIGINAL_KEY,ORIGINAL_PHOTO_KEY]){
+    try{localStorage.removeItem(key)}catch{}
+  }
+  try{localStorage.setItem(IDB_MIGRATION_MARKER,new Date().toISOString())}catch{}
+}
+async function loadWorkspaceIndexedDB(){
+  try{
+    const stored=await idbReadWorkspace();
+    if(stored){
+      idbUnavailable=false;
+      return applyRecovered(stored);
+    }
+  }catch(err){
+    console.warn('IndexedDB read unavailable; attempting legacy migration/fallback.',err);
+    idbUnavailable=true;
+  }
+  const migrated=loadLegacyWorkspace();
+  try{
+    await idbWriteWorkspace(structuredClone(migrated));
+    idbUnavailable=false;
+    clearLegacyWorkspaceAfterMigration();
+    try{navigator.storage?.persist?.()}catch{}
+  }catch(err){
+    idbUnavailable=true;
+    console.error('IndexedDB migration failed; keeping legacy browser storage intact.',err);
+  }
+  return migrated;
+}
+function writeLocalStorageFallback(snapshot,showError=true){
+  try{localStorage.setItem(NEW_KEY,JSON.stringify(snapshot));return true}
+  catch(err){
+    console.error('CRM fallback storage write failed',err);
+    if(showError&&typeof setStatus==='function')setStatus('Could not save this change. IndexedDB is unavailable and local browser storage is full. Export a backup before clearing browser data.');
+    return false;
+  }
+}
+function queueIndexedDBWrite(snapshot,showError=true){
+  if(idbUnavailable)return writeLocalStorageFallback(snapshot,showError);
+  idbWriteQueue=idbWriteQueue.catch(()=>{}).then(()=>idbWriteWorkspace(snapshot)).then(()=>{
+    idbUnavailable=false;
+    try{localStorage.removeItem(NEW_KEY)}catch{}
+  }).catch(err=>{
+    console.error('IndexedDB save failed; using localStorage fallback.',err);
+    idbUnavailable=true;
+    writeLocalStorageFallback(snapshot,showError);
+  });
+  return true;
+}
+/* END CRM INDEXEDDB STORAGE V1 */
+
+function save(){db.selected=selected;persistWorkspaceSafe(false);renderAll()}
 function getPhoto(m){return (db.customPhotos||{})[m.id]||m.photo||m.photoUrl||''}
 function go(id){active=id;$$('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+id));$$('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));$('#pageTitle').textContent=({today:'Today',models:'Models',contacts:'Contacts',submissions:'Submissions',bookings:'Bookings',tasks:'Tasks',email:'Packages & Leads',data:'Data'})[id]||id;if(id==='email')hydrateDraft();renderAll()}
 const views=[['today','Today'],['models','Models'],['contacts','Contacts'],['submissions','Submissions'],['bookings','Bookings'],['tasks','Tasks'],['email','Packages & Leads'],['data','Data']];
@@ -349,8 +456,8 @@ function briefPrimaryDate(){return db.draft?.parsedBrief?.shootDate||''}
 function renderBriefSummary(){const el=$('#briefParseSummary');if(!el)return;const b=db.draft?.parsedBrief;if(!b){el.innerHTML='';return}const items=[];if(b.project)items.push('<b>Project:</b> '+esc(b.project));if(b.dateText||b.shootText)items.push('<b>Dates:</b> '+esc(b.shootText||b.dateText));if(b.castingText)items.push('<b>Casting:</b> '+esc(b.castingText));if(b.rate)items.push('<b>Rate:</b> '+esc(fmtMoney(b.rate)));if(b.usage)items.push('<b>Usage:</b> '+esc(b.usage));if(b.location)items.push('<b>Location:</b> '+esc(b.location));if(b.requirements)items.push('<b>Requirement:</b> '+esc(b.requirements));if(b.nicheClues?.length)items.push('<b>Brief signals:</b> '+b.nicheClues.map(n=>`<span class="pill">${esc(n)}</span>`).join(' '));el.innerHTML=items.join('<br>')||'Brief parsed. No structured fields were confidently detected; the raw brief is still saved.'}
 function briefNiches(){const brand=inferBrandProfile(normalizedBrandName());const fromBrand=brand?.niches||[];const fromBrief=db.draft?.parsedBrief?.nicheClues||[];return [...new Set([...fromBrief,...fromBrand])].filter(n=>NICHE_ORDER.includes(n))}
 function qualifiedModels(){const niches=briefNiches();const date=briefPrimaryDate();const market=$('#emailNicheMarket')?.value||'';return db.models.filter(m=>m.activeBoard!==false&&(!market||m.location===market)&&(!niches.length||niches.includes(m.niche)||niches.includes(m.secondaryNiche))&&!availabilityConflict(m,date)).sort((a,b)=>{const ai=niches.indexOf(a.niche),bi=niches.indexOf(b.niche);return (ai<0?99:ai)-(bi<0?99:bi)||(a.location==='New York'?0:1)-(b.location==='New York'?0:1)||a.name.localeCompare(b.name)})}
-function parseBriefAction(){const raw=$('#castingBriefRaw').value;db.draft.castingBriefRaw=raw;db.draft.parsedBrief=parseCastingBrief(raw);const b=db.draft.parsedBrief;if(b.project&&!$('#emailBrand').value.trim())$('#emailBrand').value=b.project;if(b.rate||b.usage||b.location||b.dateText||b.shootText){const parts=[];if(b.dateText||b.shootText)parts.push('Dates: '+(b.shootText||b.dateText));if(b.rate)parts.push('Rate: '+fmtMoney(b.rate));if(b.usage)parts.push('Usage: '+b.usage);if(b.location)parts.push('Location: '+b.location);if(b.requirements)parts.push(b.requirements);if(!$('#emailContext').value.trim())$('#emailContext').value=parts.join(' | ')}captureDraft();localStorage.setItem(NEW_KEY,JSON.stringify(db));renderBriefSummary();renderBrandAdvisor();renderSubmissionWarnings();setStatus('Casting brief parsed and saved.')}
-function clearParsedBrief(){db.draft.castingBriefRaw='';db.draft.parsedBrief=null;$('#castingBriefRaw').value='';renderBriefSummary();renderBrandAdvisor();renderSubmissionWarnings();localStorage.setItem(NEW_KEY,JSON.stringify(db))}
+function parseBriefAction(){const raw=$('#castingBriefRaw').value;db.draft.castingBriefRaw=raw;db.draft.parsedBrief=parseCastingBrief(raw);const b=db.draft.parsedBrief;if(b.project&&!$('#emailBrand').value.trim())$('#emailBrand').value=b.project;if(b.rate||b.usage||b.location||b.dateText||b.shootText){const parts=[];if(b.dateText||b.shootText)parts.push('Dates: '+(b.shootText||b.dateText));if(b.rate)parts.push('Rate: '+fmtMoney(b.rate));if(b.usage)parts.push('Usage: '+b.usage);if(b.location)parts.push('Location: '+b.location);if(b.requirements)parts.push(b.requirements);if(!$('#emailContext').value.trim())$('#emailContext').value=parts.join(' | ')}captureDraft();persistWorkspaceSafe(false);renderBriefSummary();renderBrandAdvisor();renderSubmissionWarnings();setStatus('Casting brief parsed and saved.')}
+function clearParsedBrief(){db.draft.castingBriefRaw='';db.draft.parsedBrief=null;$('#castingBriefRaw').value='';renderBriefSummary();renderBrandAdvisor();renderSubmissionWarnings();persistWorkspaceSafe(false)}
 function applyPackageVariant(){const v=$('#packageVariant').value;if(!v)return;const current=selectedModels();if(v==='top3'||v==='top5'){const n=v==='top3'?3:5;selected=current.slice(0,n).map(m=>m.id)}else{let niches=[];if(v==='editorial')niches=['High Fashion / Editorial'];if(v==='runway')niches=['Luxury / Runway','High Fashion / Editorial'];if(v==='beauty')niches=['Beauty'];if(v==='commercial')niches=['Fashion-Commercial','Commercial / Lifestyle'];let pool=v==='allQualified'?qualifiedModels():db.models.filter(m=>m.activeBoard!==false&&niches.some(n=>m.niche===n||m.secondaryNiche===n)&&!availabilityConflict(m,briefPrimaryDate()));const market=$('#emailNicheMarket').value;if(market)pool=pool.filter(m=>m.location===market);selected=pool.map(m=>m.id)}save();renderEmailMatches();setStatus('Package variant applied. You can still add or remove models individually.')}
 function submissionClientKey(){return normalizeName([$('#emailRecipient')?.value,$('#emailContactName')?.value,$('#emailCompany')?.value].filter(Boolean).join(' '))}
 function relatedSubmission(s){const key=submissionClientKey();if(!key)return false;return normalizeName([s.email||s.recipient,s.contact,s.company].filter(Boolean).join(' ')).split(' ').some(x=>x&&key.includes(x))||key.split(' ').some(x=>x&&normalizeName([s.email||s.recipient,s.contact,s.company].join(' ')).includes(x))}
@@ -373,26 +480,26 @@ function openModel(id){const m=db.models.find(x=>x.id===id);if(!m)return;$('#mod
 function fileToDataUrl(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
 async function saveModel(id){const m=db.models.find(x=>x.id===id);m.niche=$('#modalNiche').value;m.secondaryNiche=$('#modalSecondaryNiche').value;m.availabilityStatus=$('#modalAvailability').value;m.statusFrom=$('#modalStatusFrom').value;m.statusTo=$('#modalStatusTo').value;m.holdProject=$('#modalHoldProject').value.trim();m.availabilityNotes=$('#modalAvailabilityNotes').value.trim();m.hair=$('#modalHair').value.trim();m.eyes=$('#modalEyes').value.trim();m.stats=mergeAppearanceStats($('#modalStats').value,m.hair,m.eyes);m.measurements=m.stats;const url=$('#modalPhoto').value.trim();if(url)m.photo=url;const file=$('#modalFile').files[0];if(file){db.customPhotos=db.customPhotos||{};db.customPhotos[id]=await fileToDataUrl(file)}save();$('#modelDialog').close()}
 function resetDraftUtilityControls(){if($('#emailModelSearch'))$('#emailModelSearch').value='';if($('#emailNicheSelect'))$('#emailNicheSelect').value='';if($('#packageVariant'))$('#packageVariant').value='';if($('#emailNicheMarket'))$('#emailNicheMarket').value='New York'}
-function startBlankPackage(modelId=''){db.activeDraftId='';db.draft=structuredClone(seed.draft);selected=modelId&&db.models.some(m=>m.id===modelId)?[modelId]:[];db.selected=[...selected];resetDraftUtilityControls();localStorage.setItem(NEW_KEY,JSON.stringify(db));go('email');setStatus(modelId?'Started a new package with the selected model.':'Started a new unsaved package.')}
+function startBlankPackage(modelId=''){db.activeDraftId='';db.draft=structuredClone(seed.draft);selected=modelId&&db.models.some(m=>m.id===modelId)?[modelId]:[];db.selected=[...selected];resetDraftUtilityControls();persistWorkspaceSafe(false);go('email');setStatus(modelId?'Started a new package with the selected model.':'Started a new unsaved package.')}
 function createPackage(id){const m=db.models.find(x=>x.id===id);startBlankPackage(id);if($('#emailModelSearch'))$('#emailModelSearch').value=m?.name||'';renderEmailMatches()}
 function selectedModels(){return selected.map(id=>db.models.find(m=>m.id===id)).filter(Boolean)}
 function draftPhotoSelections(){db.draft=db.draft||structuredClone(seed.draft);db.draft.photoSelections=db.draft.photoSelections||{};return db.draft.photoSelections}
 function draftPhotoForModel(m){return draftPhotoSelections()[m.id]||(db.customPhotos||{})[m.id]||m.photo||m.photoUrl||''}
 function draftPhotoOptions(m){const out=[];const add=x=>{if(!x)return;const url=typeof x==='string'?x:(x.url||x.src||'');if(url&&!out.some(y=>y.url===url))out.push({url,label:typeof x==='string'?'Portfolio photo':(x.label||x.title||'Portfolio photo')})};if(typeof MODEL_PHOTO_LIBRARY!=='undefined'&&MODEL_PHOTO_LIBRARY[m.id])MODEL_PHOTO_LIBRARY[m.id].forEach(add);[m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(a=>Array.isArray(a)&&a.forEach(add));add((db.customPhotos||{})[m.id]);add(m.photo);add(m.photoUrl);return out.slice(0,12)}
-function persistDraftPresentation(){db.selected=[...selected];db.draft=db.draft||structuredClone(seed.draft);db.draft.modelIds=[...selected];localStorage.setItem(NEW_KEY,JSON.stringify(db))}
-function setDraftPhotoUrl(id,url){const v=String(url||'').trim(),photos=draftPhotoSelections();if(v)photos[id]=v;else delete photos[id];persistDraftPresentation();renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db));setStatus(v?'Draft photo updated. Click Update draft to save it to the package.':'Draft photo reset to the model default.')}
-function resetDraftPhoto(id){const photos=draftPhotoSelections();delete photos[id];persistDraftPresentation();renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db));setStatus('Draft photo reset to the model default. Click Update draft to save the package.')}
+function persistDraftPresentation(){db.selected=[...selected];db.draft=db.draft||structuredClone(seed.draft);db.draft.modelIds=[...selected];persistWorkspaceSafe(false)}
+function setDraftPhotoUrl(id,url){const v=String(url||'').trim(),photos=draftPhotoSelections();if(v)photos[id]=v;else delete photos[id];persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);setStatus(v?'Draft photo updated. Click Update draft to save it to the package.':'Draft photo reset to the model default.')}
+function resetDraftPhoto(id){const photos=draftPhotoSelections();delete photos[id];persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);setStatus('Draft photo reset to the model default. Click Update draft to save the package.')}
 async function fileToDraftPhoto(file){if(!file)return'';try{const raw=await fileToDataUrl(file);return await new Promise(resolve=>{const img=new Image();img.onload=()=>{const maxW=1200,maxH=1600,scale=Math.min(1,maxW/img.width,maxH/img.height),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale)),c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',.84))};img.onerror=()=>resolve(raw);img.src=raw})}catch{return''}}
-async function setDraftPhotoFile(id,input){const file=input?.files?.[0];if(!file)return;const data=await fileToDraftPhoto(file);if(!data)return setStatus('Could not read that image.');draftPhotoSelections()[id]=data;persistDraftPresentation();renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db));setStatus('Uploaded photo selected for this draft only. Click Update draft to save it.')}
-function moveSelectedModel(id,delta){const i=selected.indexOf(id);if(i<0)return;const j=Math.max(0,Math.min(selected.length-1,i+delta));if(i===j)return;selected.splice(i,1);selected.splice(j,0,id);persistDraftPresentation();renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db));setStatus('Model order changed. Click Update draft to save the package.')}
+async function setDraftPhotoFile(id,input){const file=input?.files?.[0];if(!file)return;const data=await fileToDraftPhoto(file);if(!data)return setStatus('Could not read that image.');draftPhotoSelections()[id]=data;persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);setStatus('Uploaded photo selected for this draft only. Click Update draft to save it.')}
+function moveSelectedModel(id,delta){const i=selected.indexOf(id);if(i<0)return;const j=Math.max(0,Math.min(selected.length-1,i+delta));if(i===j)return;selected.splice(i,1);selected.splice(j,0,id);persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);setStatus('Model order changed. Click Update draft to save the package.')}
 let selectedDragId='';
 function dragSelectedModel(e,id){selectedDragId=id;if(e?.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id)}}
-function dropSelectedModel(e,targetId){if(e)e.preventDefault();const source=(e?.dataTransfer?.getData('text/plain')||selectedDragId);if(!source||source===targetId)return;const a=selected.indexOf(source),b=selected.indexOf(targetId);if(a<0||b<0)return;selected.splice(a,1);selected.splice(b,0,source);selectedDragId='';persistDraftPresentation();renderEmail();localStorage.setItem(NEW_KEY,JSON.stringify(db));setStatus('Model order changed. Click Update draft to save the package.')}
+function dropSelectedModel(e,targetId){if(e)e.preventDefault();const source=(e?.dataTransfer?.getData('text/plain')||selectedDragId);if(!source||source===targetId)return;const a=selected.indexOf(source),b=selected.indexOf(targetId);if(a<0||b<0)return;selected.splice(a,1);selected.splice(b,0,source);selectedDragId='';persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);setStatus('Model order changed. Click Update draft to save the package.')}
 function captureDraft(){db.draft={...(db.draft||{}),purpose:$('#emailPurpose').value,contactId:$('#emailContact').value,contactName:$('#emailContactName').value,company:$('#emailCompany').value,recipientEmail:$('#emailRecipient').value,brandProject:$('#emailBrand').value,packageLink:$('#emailLink').value,brief:$('#emailContext').value,castingBriefRaw:$('#castingBriefRaw')?.value||db.draft?.castingBriefRaw||'',parsedBrief:db.draft?.parsedBrief||null,subject:$('#emailSubject').value,includeStats:$('#includeStats').checked,includePhotos:$('#includePhotos').checked,includeSources:$('#includeSources').checked,modelIds:[...selected]}}
 function hydrateDraft(){const d=db.draft||seed.draft;$('#emailPurpose').value=d.purpose||'submission';$('#emailContact').value=d.contactId||'';$('#emailContactName').value=d.contactName||'';$('#emailCompany').value=d.company||'';$('#emailRecipient').value=d.recipientEmail||'';$('#emailBrand').value=d.brandProject||'';$('#emailLink').value=d.packageLink||'https://canva.link/hkqja7ybl587pm8';$('#emailContext').value=d.brief||'';if($('#castingBriefRaw'))$('#castingBriefRaw').value=d.castingBriefRaw||'';$('#emailSubject').value=d.subject||'Model Package';$('#includeStats').checked=d.includeStats!==false;$('#includePhotos').checked=d.includePhotos!==false;$('#includeSources').checked=d.includeSources!==false;renderBriefSummary()}
 function renderContactOptions(){const cur=$('#emailContact')?.value||db.draft?.contactId||'';if(!$('#emailContact'))return;$('#emailContact').innerHTML='<option value="">— Select contact —</option>'+db.contacts.map(c=>`<option value="${esc(c.id||'')}">${esc(c.name||'Unnamed')}${c.company?' · '+esc(c.company):''}</option>`).join('');$('#emailContact').value=cur}
 function contactObj(){return db.contacts.find(c=>c.id===$('#emailContact').value)}
-function applyContact(){const c=contactObj();if(c){$('#emailContactName').value=c.name||'';$('#emailCompany').value=c.company||'';$('#emailRecipient').value=c.email||'';renderEmail();captureDraft();localStorage.setItem(NEW_KEY,JSON.stringify(db))}}
+function applyContact(){const c=contactObj();if(c){$('#emailContactName').value=c.name||'';$('#emailCompany').value=c.company||'';$('#emailRecipient').value=c.email||'';renderEmail();captureDraft();persistWorkspaceSafe(false)}}
 function renderEmailMatches(){if(!$('#emailModelMatches'))return;const q=$('#emailModelSearch').value.trim().toLowerCase();const list=q?db.models.filter(m=>[m.name,m.location,m.division,m.niche,m.secondaryNiche].join(' ').toLowerCase().includes(q)&&!selected.includes(m.id)).slice(0,12):[];$('#emailModelMatches').innerHTML=list.map(m=>`<button class="btn" style="margin:3px" onclick="addToEmail('${m.id}')">${esc(m.name)} · ${esc(m.location)} · ${esc(m.niche||'Unclassified')}</button>`).join('')}
 function addToEmail(id){if(!selected.includes(id))selected.push(id);save();renderEmailMatches()}
 function removeFromEmail(id){selected=selected.filter(x=>x!==id);save()}
@@ -423,7 +530,7 @@ function renderEmail(){if(!$('#emailPreview'))return;captureDraft();$('#emailPre
 async function copyEmail(){if(!selected.length)return setStatus('Select at least one model first.');const html=emailHtml(),tmp=document.createElement('div');tmp.innerHTML=html;try{await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([tmp.innerText||tmp.textContent],{type:'text/plain'})})]);setStatus('Formatted email copied.')}catch{await navigator.clipboard.writeText(tmp.innerText||tmp.textContent);setStatus('Plain-text email copied.')}}
 function setStatus(x){if($('#emailStatus'))$('#emailStatus').textContent=x}
 function saveDraft(){captureDraft();const currentId=db.activeDraftId||'';const existingIndex=currentId?db.drafts.findIndex(x=>x.id===currentId):-1;const snapshot={date:nyDate(),...db.draft,models:selectedModels().map(m=>m.name),modelIds:[...selected],html:emailHtml()};if(existingIndex>=0){db.drafts[existingIndex]={...db.drafts[existingIndex],...snapshot,id:currentId};db.activeDraftId=currentId}else{const id=uid();db.drafts.push({id,...snapshot});db.activeDraftId=id}db.selected=[...selected];save();setStatus(existingIndex>=0?'Draft updated in CRM.':'Draft saved in CRM.')}
-function loadDraft(id){const d=db.drafts.find(x=>x.id===id);if(!d)return;db.activeDraftId=id;db.draft={...structuredClone(seed.draft),...structuredClone(d)};selected=(d.modelIds||[]).filter(modelId=>db.models.some(m=>m.id===modelId));if(!selected.length&&Array.isArray(d.models)){for(const name of d.models){const m=db.models.find(x=>normalizeName(x.name)===normalizeName(name));if(m&&!selected.includes(m.id))selected.push(m.id)}}db.selected=[...selected];resetDraftUtilityControls();localStorage.setItem(NEW_KEY,JSON.stringify(db));go('email');setStatus(`Loaded ${d.brandProject||d.company||d.subject||'saved package'}.`)}
+function loadDraft(id){const d=db.drafts.find(x=>x.id===id);if(!d)return;db.activeDraftId=id;db.draft={...structuredClone(seed.draft),...structuredClone(d)};selected=(d.modelIds||[]).filter(modelId=>db.models.some(m=>m.id===modelId));if(!selected.length&&Array.isArray(d.models)){for(const name of d.models){const m=db.models.find(x=>normalizeName(x.name)===normalizeName(name));if(m&&!selected.includes(m.id))selected.push(m.id)}}db.selected=[...selected];resetDraftUtilityControls();persistWorkspaceSafe(false);go('email');setStatus(`Loaded ${d.brandProject||d.company||d.subject||'saved package'}.`)}
 function deleteDraft(id){db.drafts=db.drafts.filter(x=>x.id!==id);if(db.activeDraftId===id)db.activeDraftId='';save()}
 function renderDrafts(){if(!$('#savedDrafts'))return;$('#savedDrafts').innerHTML=db.drafts.slice().reverse().map(d=>{const activeDraft=d.id===db.activeDraftId;return `<div class="draft-card" style="${activeDraft?'border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset':''}"><b>${esc(d.subject||'Untitled draft')}</b>${activeDraft?' <span class="pill">OPEN</span>':''}<div class="muted">${esc(d.date||'')} · ${esc(d.brandProject||d.recipientEmail||'')} · ${esc((d.models||[]).join(', '))}${d.source?` · ${esc(d.source)}`:''}</div><div class="actions" style="margin-top:8px"><button class="btn${activeDraft?' primary':''}" onclick="loadDraft('${d.id}')">${activeDraft?'Reload':'Open'}</button>${d.gmailUrl?`<a class="btn" href="${esc(d.gmailUrl)}" target="_blank" rel="noopener">Gmail</a>`:''}<button class="btn danger" onclick="deleteDraft('${d.id}')">Delete</button></div></div>`}).join('')||'<div class="empty">No saved drafts.</div>'}
 function activeDraftRecord(){return db.activeDraftId?db.drafts.find(x=>x.id===db.activeDraftId)||null:null}
@@ -442,7 +549,7 @@ function exportAll(){download('justin-agency-crm-upgraded-copy.json',JSON.string
 function exportRoster(){const rows=[['Name','Location','Division','Main Niche','Secondary Niche','Hair','Eyes','Availability','Status From','Status To','Hold / Booking Project','Measurements','Profile URL','Photo URL','Active Board'],...db.models.map(m=>[m.name,m.location,m.division,m.niche||'',m.secondaryNiche||'',m.hair||'',m.eyes||'',m.availabilityStatus||'Unknown',m.statusFrom||'',m.statusTo||'',m.holdProject||'',m.stats||m.measurements,m.profile||m.profileUrl,getPhoto(m),m.activeBoard!==false])];download('chez-les-mannequins-global-roster.csv',rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv')}
 async function importAll(file){try{let data=JSON.parse(await file.text());if(data&&data.state)data=migrateLegacy(data.state);if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('Invalid CRM backup');db=applyRecovered(data);selected=[...(db.selected||[])];save();alert('CRM backup imported.')}catch(e){console.error(e);alert('Could not import that JSON file.')}}
 function resetWorkspace(){if(!confirm('Reset contacts, submissions, bookings, tasks, drafts, selected models, and custom photos in this copy? The seeded roster remains.'))return;db=structuredClone(seed);selected=[];save()}
-function renderAll(){if(maintenanceSweep())localStorage.setItem(NEW_KEY,JSON.stringify(db));renderStats();setupFilters();renderModels();renderContactOptions();renderEmailSelection();renderDrafts();renderTables();renderToday();if(active==='email')renderEmail();else renderDraftScope()}
+function renderAll(){if(maintenanceSweep())persistWorkspaceSafe(false);renderStats();setupFilters();renderModels();renderContactOptions();renderEmailSelection();renderDrafts();renderTables();renderToday();if(active==='email')renderEmail();else renderDraftScope()}
 function captureDraft(){db.draft={...(db.draft||{}),purpose:$('#emailPurpose').value,contactId:$('#emailContact').value,contactName:$('#emailContactName').value,company:$('#emailCompany').value,recipientEmail:$('#emailRecipient').value,brandProject:$('#emailBrand').value,packageLink:$('#emailLink').value,brief:$('#emailContext').value,notes:$('#emailPrivateNotes')?.value||'',castingBriefRaw:$('#castingBriefRaw')?.value||db.draft?.castingBriefRaw||'',parsedBrief:db.draft?.parsedBrief||null,subject:$('#emailSubject').value,includeStats:$('#includeStats').checked,includePhotos:$('#includePhotos').checked,includeSources:$('#includeSources').checked,modelIds:[...selected]}}
 function hydrateDraft(){const d=db.draft||seed.draft;$('#emailPurpose').value=d.purpose||'submission';$('#emailContact').value=d.contactId||'';$('#emailContactName').value=d.contactName||'';$('#emailCompany').value=d.company||'';$('#emailRecipient').value=d.recipientEmail||'';$('#emailBrand').value=d.brandProject||'';$('#emailLink').value=d.packageLink||'https://canva.link/hkqja7ybl587pm8';$('#emailContext').value=d.brief||'';if($('#emailPrivateNotes'))$('#emailPrivateNotes').value=d.notes||'';if($('#castingBriefRaw'))$('#castingBriefRaw').value=d.castingBriefRaw||'';$('#emailSubject').value=d.subject||'Model Package';$('#includeStats').checked=d.includeStats!==false;$('#includePhotos').checked=d.includePhotos!==false;$('#includeSources').checked=d.includeSources!==false;renderBriefSummary()}
 function packagePhotoLibrary(){return db.photoLibrary||(db.photoLibrary={})}
@@ -454,8 +561,8 @@ async function setDraftPhotoFile(id,input){const f=input?.files?.[0];if(!f)retur
 function choosePackagePhoto(id,i){const m=db.models.find(x=>x.id===id),p=m&&draftPhotoOptions(m)[i];if(!p)return;if(!selected.includes(id))selected.push(id);draftPhotoSelections()[id]=p.url;persistDraftPresentation();renderEmail();setStatus('Library photo selected.')}
 function removePackagePhoto(id,i){const m=db.models.find(x=>x.id===id),p=m&&draftPhotoOptions(m)[i],l=packagePhotoLibrary();if(!p||!(l[id]||[]).some(x=>(typeof x==='string'?x:x.url)===p.url))return;l[id]=l[id].filter(x=>(typeof x==='string'?x:x.url)!==p.url);if(draftPhotoSelections()[id]===p.url)delete draftPhotoSelections()[id];persistDraftPresentation();renderEmail()}
 function renderPhotoLibrary(){const s=$('#photoLibraryModel'),g=$('#photoLibraryGrid');if(!s||!g)return;const cur=s.value;s.innerHTML=db.models.map(m=>`<option value="${esc(m.id)}">${esc(m.name)} · ${esc(m.location)}</option>`).join('');s.value=db.models.some(m=>m.id===cur)?cur:(selected[0]||db.models[0]?.id||'');const m=db.models.find(x=>x.id===s.value);if(!m)return g.innerHTML='<div class="photo-library-empty">Choose a model.</div>';const p=draftPhotoOptions(m),pick=draftPhotoForModel(m),saved=packagePhotoLibrary()[m.id]||[];g.innerHTML=p.length?p.map((x,i)=>`<div class="photo-library-card ${pick===x.url?'active':''}"><img src="${esc(x.url)}" alt="${esc(m.name)} photo"><div class="tiny"><b>${esc(x.label)}</b></div><button class="btn ${pick===x.url?'primary':''}" type="button" onclick="choosePackagePhoto('${m.id}',${i})">${pick===x.url?'Selected':'Use in draft'}</button>${saved.some(y=>(typeof y==='string'?y:y.url)===x.url)?`<button class="btn danger" type="button" onclick="removePackagePhoto('${m.id}',${i})">Remove</button>`:''}</div>`).join(''):'<div class="photo-library-empty">No photos yet. Add a URL or upload photos.</div>'}
-function addPhotoLibraryUrl(){const id=$('#photoLibraryModel')?.value,u=$('#photoLibraryUrl')?.value.trim();if(!id||!u)return setStatus('Choose a model and enter a photo URL.');addPackagePhoto(id,u,'Saved URL');$('#photoLibraryUrl').value='';localStorage.setItem(NEW_KEY,JSON.stringify(db));renderPhotoLibrary();setStatus('Photo added to library.')}
-async function addPhotoLibraryFiles(input){const id=$('#photoLibraryModel')?.value;if(!id)return;for(const f of [...(input?.files||[])]){const d=await fileToDraftPhoto(f);if(d)addPackagePhoto(id,d,f.name||'Uploaded photo')}input.value='';localStorage.setItem(NEW_KEY,JSON.stringify(db));renderPhotoLibrary();setStatus('Photos added to library.')}
+function addPhotoLibraryUrl(){const id=$('#photoLibraryModel')?.value,u=$('#photoLibraryUrl')?.value.trim();if(!id||!u)return setStatus('Choose a model and enter a photo URL.');addPackagePhoto(id,u,'Saved URL');$('#photoLibraryUrl').value='';persistWorkspaceSafe(false);renderPhotoLibrary();setStatus('Photo added to library.')}
+async function addPhotoLibraryFiles(input){const id=$('#photoLibraryModel')?.value;if(!id)return;for(const f of [...(input?.files||[])]){const d=await fileToDraftPhoto(f);if(d)addPackagePhoto(id,d,f.name||'Uploaded photo')}input.value='';persistWorkspaceSafe(false);renderPhotoLibrary();setStatus('Photos added to library.')}
 function modelDraftCredentialHtml(m,ui=false){let body='';if(m?.id==='new-york-women-maja-stockwell')body=`<b><a href="https://www.instagram.com/maddestockwell?stkn=MXdqbnhzd2R3dnlkMw=="${ui?' target="_blank" rel="noopener"':''}>Mom</a></b> is famous 90s model from Sweden`;else if(m?.id==='new-york-women-mary-timms')body='<b>Partook in Vogue World with DVF, Former Miss Nigeria, over 1M followers on Instagram.</b>';else if(m?.id==='new-york-women-claudia-lucchini')body='<b>Walked for Mugler and Rick Owens.</b>';else return'';return ui?`<div class="credential-note" style="color:#ff0000">${body}</div>`:`<div style="color:#ff0000;margin:2px 0 8px">${body}</div>`}
 function renderEmailSelection(){if(!$('#selectedModels'))return;const date=briefPrimaryDate(),picked=selectedModels();$('#selectedModels').innerHTML=(picked.length?'<div class="drag-hint">Email order follows this list. Choose photos from the library or from each model card.</div>':'')+picked.map((m,index)=>{const pick=draftPhotoForModel(m),opts=draftPhotoOptions(m);return `<div class="draft-model-card" draggable="true" ondragstart="dragSelectedModel(event,'${m.id}')" ondragover="event.preventDefault()" ondrop="dropSelectedModel(event,'${m.id}')"><div class="draft-model-head">${pick?`<img class="draft-model-thumb" src="${esc(pick)}" alt="${esc(m.name)} draft photo">`:`<div class="draft-model-thumb placeholder" style="display:flex;align-items:center;justify-content:center">${esc(initials(m.name))}</div>`}<div><div><b>${index+1}. ${esc(m.name)}</b> · ${esc(m.location)} / ${esc(m.division)}</div><div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div><div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div>${modelDraftCredentialHtml(m,true)}<div class="draft-model-controls"><button class="btn" type="button" onclick="moveSelectedModel('${m.id}',-1)" ${index===0?'disabled':''}>↑ Move up</button><button class="btn" type="button" onclick="moveSelectedModel('${m.id}',1)" ${index===picked.length-1?'disabled':''}>↓ Move down</button><button class="btn danger" type="button" onclick="removeFromEmail('${m.id}')">Remove</button></div></div></div>${opts.length?`<div class="draft-photo-strip">${opts.map((p,i)=>`<button class="draft-photo-choice ${pick===p.url?'active':''}" type="button" title="${esc(p.label)}" onclick="choosePackagePhoto('${m.id}',${i})"><img src="${esc(p.url)}" alt="${esc(m.name)} photo"></button>`).join('')}</div>`:''}<div class="draft-photo-controls"><input type="url" placeholder="Paste photo URL — saves to library" onchange="setDraftPhotoUrl('${m.id}',this.value)"><button class="btn" type="button" onclick="resetDraftPhoto('${m.id}')">Use default</button></div><div class="draft-photo-upload"><input type="file" accept="image/*" onchange="setDraftPhotoFile('${m.id}',this)"><span class="muted tiny">Uploads save to the photo library and are selected for this draft.</span></div></div>`}).join('')||'<div class="empty">No models selected.</div>';renderSubmissionWarnings();renderPhotoLibrary()}
 function emailHtml(){const d={purpose:$('#emailPurpose').value,contactName:$('#emailContactName').value.trim(),brand:$('#emailBrand').value.trim(),link:$('#emailLink').value.trim(),brief:$('#emailContext').value.trim(),stats:$('#includeStats').checked,photos:$('#includePhotos').checked,sources:$('#includeSources').checked},picked=selectedModels(),first=d.contactName.split(/\s+/)[0]||'',sal=first?`Hi ${esc(first)},`:'Hi,';let lead='';if(d.purpose==='submission'){const h=d.link?`<a href="${esc(d.link)}" style="color:#4285f4;font-size:18px" target="_blank">HERE</a>`:'HERE';lead=`${h} are our model suggestions${d.brand?' for '+esc(d.brand):''}. We preselected a few models and put them below.`}else if(d.purpose==='followup')lead=`Following up with our model suggestions${d.brand?' for '+esc(d.brand):''}.`;else if(d.purpose==='availability')lead=`Sharing availability and model details${d.brand?' for '+esc(d.brand):''}.`;else lead=`I wanted to introduce a few models from our roster${d.brand?' for '+esc(d.brand):''}.`;const blocks=picked.map(m=>{const n=m.name==='Sophia Pippen'?'Sophia Pippen (Daughter of Scottie Pippen)':m.name;return `<div style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(n)}</b>${d.stats&&m.stats?' | '+formatStats(m.stats):''}</div>${d.sources&&m.profile?`<div><a href="${esc(m.profile)}" target="_blank">Portfolio</a></div>`:''}${modelDraftCredentialHtml(m)}${d.photos&&draftPhotoForModel(m)?`<div style="text-align:left"><img src="${esc(draftPhotoForModel(m))}" width="440" style="max-width:100%;height:auto;margin:8px 0 0" alt="${esc(m.name)}"></div>`:''}</div>`}).join(''),extra=d.purpose!=='submission'&&d.brief?`<br><div>${esc(d.brief).replace(/\n/g,'<br>')}</div>`:'';return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000"><div>${sal}</div><br><div>${lead}</div>${extra}<br>${blocks||'<div>[Select one or more models]</div>'}<div>Thank you,</div><div>Justin</div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`}
@@ -468,7 +575,7 @@ function compactDraftCachesForStorage(){
 }
 function persistWorkspaceSafe(showError=true){
   db.selected=[...selected];compactDraftCachesForStorage();
-  try{localStorage.setItem(NEW_KEY,JSON.stringify(db));return true}
+  try{persistWorkspaceSafe(false);return true}
   catch(err){console.error('CRM storage write failed',err);if(showError)setStatus('Could not save this change because browser storage is full. Existing CRM data is still intact; remove large uploaded draft photos or export a backup.');return false}
 }
 function save(){db.selected=[...selected];if(!persistWorkspaceSafe())return false;renderAll();return true}
@@ -494,7 +601,37 @@ async function copyEmail(){
   const area=document.createElement('textarea');area.value=plain;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();try{if(document.execCommand('copy'))setStatus('Email copied as plain text.');else setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}catch(err){console.error(err);setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}finally{area.remove()}
 }
 /* END EMAIL DRAFT BUILDER STABILITY FIX */
-initNav();setupFilters();hydrateDraft();renderAll();
+/* INDEXEDDB RUNTIME OVERRIDES */
+function persistWorkspaceSafe(showError=true){
+  db.selected=[...selected];
+  if(typeof compactDraftCachesForStorage==='function')compactDraftCachesForStorage();
+  let snapshot;
+  try{snapshot=structuredClone(db)}catch{snapshot=JSON.parse(JSON.stringify(db))}
+  return queueIndexedDBWrite(snapshot,showError);
+}
+function save(){
+  db.selected=[...selected];
+  persistWorkspaceSafe(true);
+  renderAll();
+  return true;
+}
+function persistDraftPresentation(){
+  db.selected=[...selected];
+  db.draft=db.draft||structuredClone(seed.draft);
+  db.draft.modelIds=[...selected];
+  persistWorkspaceSafe(false);
+}
+async function bootstrapWorkspace(){
+  db=await loadWorkspaceIndexedDB();
+  selected=[...(db.selected||[])];
+  initNav();
+  setupFilters();
+  hydrateDraft();
+  renderAll();
+  persistWorkspaceSafe(false);
+}
+bootstrapWorkspace();
+/* END INDEXEDDB RUNTIME OVERRIDES */
 $('#modelSearch').oninput=renderModels;$('#locationFilter').onchange=renderModels;$('#divisionFilter').onchange=renderModels;$('#nicheFilter').onchange=renderModels;
 $('#availabilityFilter').onchange=renderModels;$('#selectNicheBtn').onclick=selectNicheFromModels;$('#clearFilters').onclick=()=>{$('#modelSearch').value='';$('#locationFilter').value='';$('#divisionFilter').value='';$('#nicheFilter').value='';renderModels()};
 $('#openWorkGmailBtn').onclick=openInWorkGmail;$('#emailModelSearch').oninput=renderEmailMatches;$('#emailContact').onchange=applyContact;$('#suggestLookBtn').onclick=renderBrandAdvisor;$('#brandWebSearchBtn').onclick=searchBrandWeb;
@@ -502,6 +639,6 @@ $('#parseBriefBtn').onclick=parseBriefAction;
 $('#clearBriefBtn').onclick=clearParsedBrief;
 ['emailPurpose','emailContactName','emailCompany','emailRecipient','emailBrand','emailSubject','emailLink','emailContext','emailPrivateNotes','castingBriefRaw','includeStats','includePhotos','includeSources'].forEach(id=>{const el=$('#'+id);if(el)el.addEventListener('input',queueEmailDraftRender)});$('#emailBrand')?.addEventListener('change',()=>{renderBrandAdvisor();renderSubmissionWarnings();persistWorkspaceSafe(false)});
 $('#copyEmailBtn').onclick=copyEmail;$('#copySubjectBtn').onclick=async()=>{await navigator.clipboard.writeText($('#emailSubject').value);setStatus('Subject copied.')};$('#saveDraftBtn').onclick=saveDraft;$('#recordSubmissionBtn').onclick=recordSubmission;
-$('#exportBtn').onclick=exportAll;$('#exportDataBtn').onclick=exportAll;$('#exportRosterBtn').onclick=exportRoster;$('#importDataInput').onchange=e=>e.target.files[0]&&importAll(e.target.files[0]);$('#resetWorkspaceBtn').onclick=resetWorkspace;$('#refreshBtn').onclick=()=>{db=loadWorkspace();selected=[...(db.selected||[])];hydrateDraft();renderAll()};$('#addBtn').onclick=()=>openRecordModal('tasks');$('#recordSave').onclick=saveRecord;$('#recordCancel').onclick=()=>{modalEditId=null;$('#recordDialog').close()};
+$('#exportBtn').onclick=exportAll;$('#exportDataBtn').onclick=exportAll;$('#exportRosterBtn').onclick=exportRoster;$('#importDataInput').onchange=e=>e.target.files[0]&&importAll(e.target.files[0]);$('#resetWorkspaceBtn').onclick=resetWorkspace;$('#refreshBtn').onclick=async()=>{db=await loadWorkspaceIndexedDB();selected=[...(db.selected||[])];hydrateDraft();renderAll()};$('#addBtn').onclick=()=>openRecordModal('tasks');$('#recordSave').onclick=saveRecord;$('#recordCancel').onclick=()=>{modalEditId=null;$('#recordDialog').close()};
 </script>
 </body></html>
