@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/tmp/sophiadiag/scripts/add_sophia_all_drafts.py", line 13, in <module>
+    P2.write_bytes(base64.b64decode(P2_B64.read_text(encoding='utf-8').strip()))
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/base64.py", line 88, in b64decode
+    return binascii.a2b_base64(s, strict_mode=validate)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+binascii.Error: Incorrect padding
