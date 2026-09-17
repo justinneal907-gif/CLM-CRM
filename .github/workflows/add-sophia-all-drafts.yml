@@ -13,14 +13,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add Sophia and photos
-        run: python scripts/add_sophia_all_drafts.py
-      - name: Validate JavaScript
-        run: node --check /tmp/app.js
-      - name: Commit update
+      - name: Diagnose patch
+        run: |
+          mkdir -p /tmp/sophiadiag/assets/models /tmp/sophiadiag/scripts
+          cp index.html /tmp/sophiadiag/index.html
+          cp assets/models/sophia-pippen-1.b64 /tmp/sophiadiag/assets/models/
+          cp assets/models/sophia-pippen-2.b64 /tmp/sophiadiag/assets/models/
+          cp scripts/add_sophia_all_drafts.py /tmp/sophiadiag/scripts/
+          set +e
+          (cd /tmp/sophiadiag && python scripts/add_sophia_all_drafts.py) > sophia-debug.log 2>&1
+          echo $? > sophia-exit.txt
+          cat sophia-debug.log
+      - name: Commit diagnostics
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Add Sophia Pippen to all drafts with photos"
+          git add sophia-debug.log sophia-exit.txt
+          git commit -m "Capture Sophia updater diagnostics"
           git push origin HEAD:sophia-all-drafts
