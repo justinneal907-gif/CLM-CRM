@@ -86,6 +86,7 @@ jobs:
           src = src.replace('value="justin.neal.chezlesmannequins@gmail.com" readonly', 'value="" placeholder="your agency email"')
           src = src.replace('Agency Work Gmail', 'Agency email')
           src = src.replace('Open in Work Gmail', 'Open in Gmail')
+          src = src.replace('justin.neal.chezlesmannequins@gmail.com', '')
 
           # Give the shared copy its own storage namespace so it can never import the live CRM's browser data.
           storage_replacements = {
