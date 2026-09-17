@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blank CRM Copy</title>
+<style>body{font-family:Arial,sans-serif;margin:0;padding:24px;background:#f5f4ef;color:#171b18}.status{max-width:720px;margin:10vh auto;background:#fff;border:1px solid #d9ded9;border-radius:12px;padding:24px}</style>
+</head>
+<body>
+<div class="status" id="status"><h1>Loading blank CRM…</h1><p>This copy uses isolated browser storage and does not modify the existing CRM.</p></div>
+<script>
+(async()=>{
+  const status=document.getElementById('status');
+  try{
+    let html=await fetch('index.html',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('Could not load CRM template');return r.text()});
+
+    // Give the copy its own storage namespace so it can never overwrite the live CRM's records.
+    html=html.replace(/localStorage\./g,'blankStorage.');
+    const storageShim=`<script>
+const blankStorage={
+  getItem(k){return localStorage.getItem('clm_blank_copy::'+k)},
+  setItem(k,v){return localStorage.setItem('clm_blank_copy::'+k,v)},
+  removeItem(k){return localStorage.removeItem('clm_blank_copy::'+k)}
+};
+<\/script>`;
+    html=html.replace('<head>','<head>'+storageShim);
+
+    // On the first launch only, strip CRM records while retaining the complete feature set and templates.
+    const initializer=`<script>
+(()=>{
+  const marker='clm_blank_copy::initialized_v1';
+  if(localStorage.getItem(marker)) return;
+  try{
+    const listKeys=['models','contacts','submissions','bookings','tasks','drafts','selected'];
+    for(const key of listKeys){ if(typeof db!=='undefined' && Array.isArray(db[key])) db[key]=[]; }
+    if(typeof db!=='undefined'){
+      db.activeDraftId='';
+      if(typeof seed!=='undefined' && seed.draft) db.draft=structuredClone(seed.draft);
+      if(db.photoLibrary && typeof db.photoLibrary==='object') db.photoLibrary={};
+      if(db.recovery && typeof db.recovery==='object') db.recovery={};
+    }
+    if(typeof selected!=='undefined') selected=[];
+    if(typeof save==='function') save();
+    localStorage.setItem(marker,'1');
+    if(typeof renderAll==='function') renderAll();
+    if(typeof go==='function') go('today');
+  }catch(e){ console.error('Blank CRM initialization failed',e); }
+})();
+<\/script>`;
+    html=html.replace('</body>',initializer+'</body>');
+    document.open();
+    document.write(html);
+    document.close();
+  }catch(err){
+    status.innerHTML='<h1>Could not load blank CRM</h1><p>'+String(err.message||err)+'</p>';
+  }
+})();
+</script>
+</body>
+</html>
