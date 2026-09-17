@@ -1,0 +1,101 @@
+name: Update Sophia Pippen description
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update Sophia roster and package description
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          text=p.read_text(encoding='utf-8')
+
+          old_record='{"id":"new-york-women-sophia-pippen","name":"Sophia Pippen","location":"New York","division":"Women (supplemental)","measurements":"Height: 5’11’’ | Bust: 32’’ | Waist: 25’’ | Hip: 34’’ | Shoe: 10 US Women | Eyes: Dark Brown | Hair: Brown | Tattoos: No","profileUrl":"https://www.instagram.com/reel/Dau7LamBWMM/","photoUrl":"","photoFilename":"","source":"Agency submission / Gmail","activeBoard":false,"notes":"Supplemental agency model; not listed on the public Chez Les Mannequins boards checked September 14, 2026."}'
+          new_record='{"id":"new-york-women-sophia-pippen","name":"Sophia Pippen","location":"New York","division":"Women (supplemental)","measurements":"Height: 5’11’’ | Bust: 32’’ | Waist: 25’’ | Hip: 35’’ | Shoe: 10 US Women | Tattoos: No | Hair: Dark Brown | Eyes: Dark Brown","hair":"Dark Brown","eyes":"Dark Brown","profileUrl":"https://www.instagram.com/reel/Dau7LamBWMM/","profileLabel":"Size Reference","description":"Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian","photoUrl":"","photoFilename":"","source":"User-provided model description","sourceDate":"2026-09-17","activeBoard":false,"notes":"Supplemental agency model. Measurements and description updated from user-provided agency information on September 17, 2026."}'
+          if old_record in text:
+              text=text.replace(old_record,new_record,1)
+          elif new_record not in text:
+              raise SystemExit('Sophia seed record not found')
+
+          # Ensure current IndexedDB/local workspace gets the update on load.
+          marker="function mergeContacts(recovered,current){"
+          migration=r'''function applySophiaDescription(data){
+  const m=(data.models||[]).find(x=>x.id==='new-york-women-sophia-pippen'||normalizeName(x.name)==='sophia pippen');
+  if(m){
+    const stats='Height: 5’11’’ | Bust: 32’’ | Waist: 25’’ | Hip: 35’’ | Shoe: 10 US Women | Tattoos: No | Hair: Dark Brown | Eyes: Dark Brown';
+    m.name='Sophia Pippen';m.measurements=stats;m.stats=stats;m.hair='Dark Brown';m.eyes='Dark Brown';
+    m.profileUrl='https://www.instagram.com/reel/Dau7LamBWMM/';m.profile=m.profileUrl;m.profileLabel='Size Reference';
+    m.description='Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian';
+    m.source='User-provided model description';m.sourceDate='2026-09-17';
+    m.notes='Supplemental agency model. Measurements and description updated from user-provided agency information on September 17, 2026.';
+  }
+  data.recovery={...(data.recovery||{}),sophiaDescriptionVersion:1};
+  return data;
+}
+'''
+          if 'function applySophiaDescription(data)' not in text:
+              i=text.find(marker)
+              if i<0: raise SystemExit('Sophia migration insertion point not found')
+              text=text[:i]+migration+text[i:]
+
+          old_return='return applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data))))}'
+          new_return='return applySophiaDescription(applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data)))))}'
+          if old_return in text:
+              text=text.replace(old_return,new_return,1)
+          elif new_return not in text:
+              raise SystemExit('applyRecovered return not found')
+
+          # Remove old abbreviated special naming in every email renderer.
+          text=text.replace("m.name==='Sophia Pippen'?'Sophia Pippen (Daughter of Scottie Pippen)':m.name","m.name")
+
+          # Add Sophia credential/description into the shared model credential helper.
+          old_helper="function modelDraftCredentialHtml(m,ui=false){let body='';if(m?.id==='new-york-women-maja-stockwell')"
+          new_helper="function modelDraftCredentialHtml(m,ui=false){let body='';if(m?.id==='new-york-women-sophia-pippen')body='<b>(Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian)</b>';else if(m?.id==='new-york-women-maja-stockwell')"
+          if old_helper in text:
+              text=text.replace(old_helper,new_helper,1)
+          elif "m?.id==='new-york-women-sophia-pippen'" not in text:
+              raise SystemExit('Credential helper not found')
+
+          # Label Sophia's source link as Size Reference in both email renderer variants.
+          text=text.replace("${d.sources&&m.profile?`<div><a href=\"${esc(m.profile)}\" target=\"_blank\">Portfolio</a></div>`:''}","${d.sources&&m.profile?`<div><a href=\"${esc(m.profile)}\" target=\"_blank\">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}")
+          text=text.replace("${d.sources&&m.profile?`<div><a href=\"${esc(m.profile)}\">Portfolio</a></div>`:''}","${d.sources&&m.profile?`<div><a href=\"${esc(m.profile)}\">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}")
+
+          p.write_text(text,encoding='utf-8')
+          PY
+      - name: Validate CRM JavaScript
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html=Path('index.html').read_text(encoding='utf-8')
+          assert 'Hip: 35’’' in html
+          assert 'Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian' in html
+          assert 'function applySophiaDescription(data)' in html
+          assert 'sophiaDescriptionVersion:1' in html
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',html,re.S|re.I)
+          Path('/tmp/app.js').write_text('\n'.join(scripts),encoding='utf-8')
+          PY
+          node --check /tmp/app.js
+      - name: Commit update
+        shell: bash
+        run: |
+          if git diff --quiet -- index.html; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Update Sophia Pippen description"
+          git pull --rebase origin main
+          git push
