@@ -336,8 +336,36 @@ function applySophiaDescription(data){
   data.recovery={...(data.recovery||{}),sophiaDescriptionVersion:1};
   return data;
 }
+const EM0_DRAFT_MODEL_ID='new-york-development-em0-spit';
+function stripEm0FromDraftRecord(record){
+  if(!record||typeof record!=='object')return record;
+  const out={...record};
+  const isEm0Name=v=>['em0','em0 spit'].includes(String(v||'').trim().toLowerCase());
+  if(Array.isArray(out.modelIds))out.modelIds=out.modelIds.filter(id=>id!==EM0_DRAFT_MODEL_ID);
+  if(Array.isArray(out.models))out.models=out.models.filter(name=>!isEm0Name(name));
+  if(out.packageDepthReview&&typeof out.packageDepthReview==='object'){
+    const review={...out.packageDepthReview};
+    if(Array.isArray(review.addedModels))review.addedModels=review.addedModels.filter(name=>!isEm0Name(name));
+    if(review.reasons&&typeof review.reasons==='object'){
+      review.reasons={...review.reasons};
+      delete review.reasons.Em0;delete review.reasons['Em0 Spit'];
+    }
+    if(Array.isArray(review.profileSources))review.profileSources=review.profileSources.filter(url=>!String(url||'').toLowerCase().includes('/development/em0spit'));
+    out.packageDepthReview=review;
+  }
+  out.html='';
+  return out;
+}
+function removeEm0FromDrafts(data){
+  data.drafts=(data.drafts||[]).map(stripEm0FromDraftRecord);
+  data.draft=stripEm0FromDraftRecord(data.draft||{});
+  data.selected=(data.selected||[]).filter(id=>id!==EM0_DRAFT_MODEL_ID);
+  if(data.draftPhotoSelections&&typeof data.draftPhotoSelections==='object')delete data.draftPhotoSelections[EM0_DRAFT_MODEL_ID];
+  data.recovery={...(data.recovery||{}),em0RemovedFromDraftsOn:'2026-09-17'};
+  return data;
+}
 function mergeContacts(recovered,current){const contacts=(current||[]).map(c=>({...c}));for(const c of (recovered||[])){const email=String(c.email||'').trim().toLowerCase();if(!contacts.some(existing=>(c.id&&existing.id===c.id)||(email&&String(existing.email||'').trim().toLowerCase()===email)))contacts.push({...c})}return contacts}
-function applyRecovered(data){const incoming=data||{};data={...structuredClone(seed),...incoming};data.settings={...structuredClone(seed.settings),...(incoming.settings||{})};data.draft={...structuredClone(seed.draft),...(incoming.draft||{})};data.activeDraftId=incoming.activeDraftId||data.activeDraftId||'';data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>applyModelIdentity({...m,availabilityStatus:m.availabilityStatus||'Unknown',statusFrom:m.statusFrom||'',statusTo:m.statusTo||'',holdProject:m.holdProject||'',availabilityNotes:m.availabilityNotes||''}));data.contacts=mergeContacts([...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS],data.contacts||[]).map(c=>({...c,relationship:c.relationship||'Developing',preferredNiches:c.preferredNiches||''}));data.submissions=mergeRecovered([...RECOVERED_SUBMISSIONS,...WORK_GMAIL_SUBMISSIONS],data.submissions||[]).map(normalizeRecordModelNames);data.drafts=mergeRecovered([...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS],data.drafts||[]).map(normalizeRecordModelNames);data.bookings=(data.bookings||[]).map(normalizeRecordModelNames);data.recovery={...(data.recovery||{}),gmailRecoveredOn:'2026-09-14',submissionCount:RECOVERED_SUBMISSIONS.length,draftCount:RECOVERED_DRAFTS.length,tasksRecovered:0,rosterCheckedOn:'2026-09-14',supplementalModels:['Sophia Pippen'],newModels:['Anhelena','Bianca'],nicheSystemVersion:2,nicheTaxonomy:'standard-no-specialty-story',workflowSystemVersion:3,workGmail:WORK_EMAIL,workGmailSyncedOn:'2026-09-14',workGmailSubmissionCount:WORK_GMAIL_SUBMISSIONS.length,milanFirstDayDraftsAddedOn:'2026-09-16',milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,milanRestDraftsAddedOn:'2026-09-16',milanRestDraftCount:MILAN_REST_DRAFTS.length,modelIdentityUpdatedOn:'2026-09-16',modelAppearanceReviewedOn:'2026-09-16'};return applySophiaDescription(applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data)))))}
+function applyRecovered(data){const incoming=data||{};data={...structuredClone(seed),...incoming};data.settings={...structuredClone(seed.settings),...(incoming.settings||{})};data.draft={...structuredClone(seed.draft),...(incoming.draft||{})};data.activeDraftId=incoming.activeDraftId||data.activeDraftId||'';data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>applyModelIdentity({...m,availabilityStatus:m.availabilityStatus||'Unknown',statusFrom:m.statusFrom||'',statusTo:m.statusTo||'',holdProject:m.holdProject||'',availabilityNotes:m.availabilityNotes||''}));data.contacts=mergeContacts([...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS],data.contacts||[]).map(c=>({...c,relationship:c.relationship||'Developing',preferredNiches:c.preferredNiches||''}));data.submissions=mergeRecovered([...RECOVERED_SUBMISSIONS,...WORK_GMAIL_SUBMISSIONS],data.submissions||[]).map(normalizeRecordModelNames);data.drafts=mergeRecovered([...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS],data.drafts||[]).map(normalizeRecordModelNames);data.bookings=(data.bookings||[]).map(normalizeRecordModelNames);data.recovery={...(data.recovery||{}),gmailRecoveredOn:'2026-09-14',submissionCount:RECOVERED_SUBMISSIONS.length,draftCount:RECOVERED_DRAFTS.length,tasksRecovered:0,rosterCheckedOn:'2026-09-14',supplementalModels:['Sophia Pippen'],newModels:['Anhelena','Bianca'],nicheSystemVersion:2,nicheTaxonomy:'standard-no-specialty-story',workflowSystemVersion:3,workGmail:WORK_EMAIL,workGmailSyncedOn:'2026-09-14',workGmailSubmissionCount:WORK_GMAIL_SUBMISSIONS.length,milanFirstDayDraftsAddedOn:'2026-09-16',milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,milanRestDraftsAddedOn:'2026-09-16',milanRestDraftCount:MILAN_REST_DRAFTS.length,modelIdentityUpdatedOn:'2026-09-16',modelAppearanceReviewedOn:'2026-09-16'};return removeEm0FromDrafts(applySophiaDescription(applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data))))))}
 /* CRM INDEXEDDB STORAGE V1 */
 const IDB_DB_NAME='jn-agency-crm';
 const IDB_DB_VERSION=1;
