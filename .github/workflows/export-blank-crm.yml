@@ -1,0 +1,165 @@
+name: Export blank CRM copy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create sanitized blank copy
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          src = Path('index.html').read_text(encoding='utf-8')
+
+          def replace_js_container(text, name, replacement):
+              marker = f'const {name}='
+              start = text.find(marker)
+              if start < 0:
+                  return text
+              value_start = start + len(marker)
+              while value_start < len(text) and text[value_start].isspace():
+                  value_start += 1
+              if value_start >= len(text) or text[value_start] not in '[{':
+                  return text
+              opener = text[value_start]
+              closer = ']' if opener == '[' else '}'
+              depth = 0
+              quote = None
+              escape = False
+              i = value_start
+              while i < len(text):
+                  ch = text[i]
+                  if quote:
+                      if escape:
+                          escape = False
+                      elif ch == '\\':
+                          escape = True
+                      elif ch == quote:
+                          quote = None
+                  else:
+                      if ch in ('"', "'", '`'):
+                          quote = ch
+                      elif ch == opener:
+                          depth += 1
+                      elif ch == closer:
+                          depth -= 1
+                          if depth == 0:
+                              end = i + 1
+                              return text[:value_start] + replacement + text[end:]
+                  i += 1
+              return text
+
+          # Remove embedded submission/draft/research history from the distributable source.
+          for name, repl in [
+              ('WORK_GMAIL_SUBMISSIONS','[]'),
+              ('RECOVERED_SUBMISSIONS','[]'),
+              ('RECOVERED_DRAFTS','[]'),
+              ('MILAN_FIRST_DAY_DRAFTS','[]'),
+              ('MILAN_REST_DRAFTS','[]'),
+              ('MILAN_OPEN_CLOSE_OVERRIDES','{}'),
+          ]:
+              src = replace_js_container(src, name, repl)
+
+          # Remove the user-specific historical casting-lead panel.
+          src = re.sub(
+              r'<details class="casting-leads panel" id="castingLeadsPanel">.*?</details>',
+              '<details class="casting-leads panel" id="castingLeadsPanel"><summary>Casting leads</summary><div class="empty">No saved casting leads yet.</div></details>',
+              src,
+              count=1,
+              flags=re.S,
+          )
+
+          # Neutral shared-copy branding and sender identity.
+          src = src.replace('<title>Justin · Agency CRM — Upgraded Copy</title>', '<title>Agency CRM — Blank Copy</title>')
+          src = src.replace('Justin Neal · Chez Les Mannequins', 'Chez Les Mannequins · Blank Workspace')
+          src = src.replace('JUSTIN NEAL / AGENCY DESK', 'AGENCY CRM / BLANK COPY')
+          src = src.replace('value="justin.neal.chezlesmannequins@gmail.com" readonly', 'value="" placeholder="your agency email"')
+          src = src.replace('Agency Work Gmail', 'Agency email')
+          src = src.replace('Open in Work Gmail', 'Open in Gmail')
+
+          # Give the shared copy its own storage namespace so it can never import the live CRM's browser data.
+          storage_replacements = {
+              'jn-agency-crm-indexeddb-migrated-v1':'clm-blank-crm-indexeddb-migrated-v1',
+              'jn-agency-crm-copy-v2':'clm-blank-crm-copy-v2',
+              'jn-agency-crm-copy-v1':'clm-blank-crm-copy-v1',
+              'justinAgencyCRM.customPhotos.v1':'clmBlankAgencyCRM.customPhotos.v1',
+              'justinAgencyCRM.v4':'clmBlankAgencyCRM.v1',
+              "IDB_DB_NAME='jn-agency-crm'":"IDB_DB_NAME='clm-agency-crm-blank-template'",
+          }
+          for old, new in storage_replacements.items():
+              src = src.replace(old, new)
+
+          # The agency roster is intentionally retained for package-building, but all workspace/activity data starts empty.
+          blank_init = r'''
+          /* DISTRIBUTABLE BLANK WORKSPACE — generated 2026-09-17 */
+          seed.contacts=[];
+          seed.submissions=[];
+          seed.bookings=[];
+          seed.tasks=[];
+          seed.drafts=[];
+          seed.selected=[];
+          seed.customPhotos={};
+          seed.photoLibrary={};
+          seed.activeDraftId='';
+          seed.models=(seed.models||[]).map(m=>({...m,notes:''}));
+          seed.draft={...(seed.draft||{}),purpose:'submission',contactId:'',contactName:'',company:'',recipientEmail:'',brandProject:'',packageLink:'',brief:'',notes:'',castingBriefRaw:'',parsedBrief:null,subject:'Model Package',modelIds:[],photoSelections:{}};
+          '''
+          anchor = 'let db=structuredClone(seed);'
+          if anchor not in src:
+              raise SystemExit('Could not find workspace initialization anchor')
+          src = src.replace(anchor, blank_init + '\n' + anchor, 1)
+
+          # Remove residual Gmail/history URLs and the recovered-history explanatory copy.
+          src = re.sub(r'https://mail\.google\.com/[^"\'\s<`]+', '#', src)
+          src = re.sub(r'<p class="muted" style="margin-top:12px"><b>Recovered history:</b>.*?</p>', '<p class="muted" style="margin-top:12px"><b>Blank copy:</b> No prior CRM history is included.</p>', src, count=1, flags=re.S)
+
+          # Distribution note at the top of the workspace.
+          topbar_marker = '<div class="stats" id="stats"></div>'
+          note = '<div class="warning" style="margin-bottom:16px"><b>Blank shared copy.</b> Agency roster retained; contacts, submissions, bookings, tasks, packages, private notes, custom photos, selections, and prior browser history start empty.</div>'
+          if topbar_marker in src:
+              src = src.replace(topbar_marker, note + topbar_marker, 1)
+
+          # Safety checks: no user work email or personal Gmail history should survive in the export.
+          forbidden = [
+              'justin.neal.chezlesmannequins@gmail.com',
+              'mail.google.com/mail/#all/',
+              'Recovered from Gmail',
+              'WORK_GMAIL_SUBMISSIONS=[{',
+              'RECOVERED_SUBMISSIONS=[{',
+              'RECOVERED_DRAFTS=[{',
+          ]
+          for token in forbidden:
+              if token in src:
+                  raise SystemExit(f'Unsanitized token remains: {token}')
+
+          out = Path('CLM-CRM-Blank-Copy.html')
+          out.write_text(src, encoding='utf-8')
+          print(f'Created {out} ({out.stat().st_size} bytes)')
+
+      - name: Validate exported JavaScript
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html=Path('CLM-CRM-Blank-Copy.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',html,re.S|re.I)
+          Path('/tmp/blank-crm.js').write_text('\n'.join(scripts),encoding='utf-8')
+          PY
+          node --check /tmp/blank-crm.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CLM-CRM-Blank-Copy
+          path: CLM-CRM-Blank-Copy.html
+          if-no-files-found: error
+          retention-days: 7
