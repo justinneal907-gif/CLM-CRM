@@ -319,6 +319,87 @@ function mergeModels(base,legacy){
 const importName=m=>String(m.name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
 const additions=(base||[]).filter(m=>!m.importedFromDhruvDraft||!(legacy||[]).some(old=>old.id!==m.id&&importName(old)===importName(m)));
 const map=new Map(additions.map(m=>[m.id,{...m}]));for(const old of (legacy||[])){const id=old.id||'';if(id&&map.has(id)){const match=map.get(id);Object.assign(match,old,{stats:old.stats||old.measurements||match.stats,measurements:old.measurements||old.stats||match.measurements,profileUrl:old.profileUrl||old.profile||match.profileUrl,profile:old.profile||old.profileUrl||match.profile,photoUrl:old.photoUrl||old.photo||match.photoUrl,photo:old.photo||old.photoUrl||match.photo})}else{const key=id||`custom-${String(old.name||'model').toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${map.size}`;map.set(key,{...old,id:key})}}return [...map.values()]}
+
+const MILAN_POST_ETRO_CONTACT_OVERRIDES={
+  'milan-ss27-rest-anteprima':{name:'Federica Ciuci Priori',email:'federicaciucipriori@gmail.com',office:'Ciuci Priori Casting'},
+  'milan-ss27-rest-francesco-murano':{name:'Shaun Beyen',email:'office@shaunbeyen.com',office:'Shaun Beyen Casting'},
+  'milan-ss27-rest-emporio-armani':{name:'Geremia Schiano / Piergiorgio Del Moro',email:'regina@thecastingagency.com',contactKeyName:'Piergiorgio Del Moro',office:'DM Casting / representation'},
+  'milan-ss27-rest-the-attico':{name:'Piergiorgio Del Moro',email:'regina@thecastingagency.com',office:'DM Casting / representation'},
+  'milan-ss27-rest-hui':{name:'Décio Santos',email:'',office:'Décio Santos Casting'},
+  'milan-ss27-rest-giorgio-armani':{name:'Geremia Schiano',email:'',office:'Geremia Schiano Casting'}
+};
+function milanPostEtroTemplates(){
+  const etroIndex=MILAN_REST_DRAFTS.findIndex(d=>d.id==='milan-ss27-rest-etro');
+  return etroIndex<0?[]:MILAN_REST_DRAFTS.slice(etroIndex+1);
+}
+function milanContactNorm(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase()}
+function milanContactSlug(v){return milanContactNorm(v).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')}
+function milanPostEtroContactInfo(template,currentDraft=null){
+  const override=MILAN_POST_ETRO_CONTACT_OVERRIDES[template.id]||{};
+  const verifiedName=override.name||template.contactName||'';
+  const currentName=String(currentDraft?.contactName||'').trim();
+  const name=verifiedName||currentName||(template.company||'Milan')+' Casting Team';
+  const hasOverrideEmail=Object.prototype.hasOwnProperty.call(override,'email');
+  const verifiedEmail=String(hasOverrideEmail?override.email:(template.recipientEmail||'')).trim();
+  const currentEmail=String(currentDraft?.recipientEmail||'').trim();
+  const email=verifiedEmail||currentEmail;
+  const contactKeyName=override.contactKeyName||verifiedName||currentName||(template.company||'Milan')+' Casting Team';
+  const id='milan-ss27-contact-'+milanContactSlug(contactKeyName||email||template.company||template.id);
+  const office=override.office||((template.company||'')+' Casting');
+  return {id,name,email,office};
+}
+function applyMilanPostEtroCastingContacts(data){
+  if(data.recovery?.milanPostEtroCastingContactsVersion===1)return data;
+  const templates=milanPostEtroTemplates();
+  const templateById=new Map(templates.map(t=>[t.id,t]));
+  const draftsById=new Map((data.drafts||[]).map(d=>[d.id,d]));
+  const contacts=(data.contacts||[]).map(c=>({...c}));
+  const assignedIds=new Map();
+
+  for(const template of templates){
+    const currentDraft=draftsById.get(template.id)||null;
+    const info=milanPostEtroContactInfo(template,currentDraft);
+    const emailKey=milanContactNorm(info.email);
+    const nameKey=milanContactNorm((MILAN_POST_ETRO_CONTACT_OVERRIDES[template.id]||{}).contactKeyName||info.name);
+    let contact=null;
+
+    if(currentDraft?.contactId)contact=contacts.find(c=>c.id===currentDraft.contactId)||null;
+    if(!contact&&emailKey)contact=contacts.find(c=>milanContactNorm(c.email)===emailKey)||null;
+    if(!contact&&nameKey)contact=contacts.find(c=>milanContactNorm(c.name)===nameKey)||null;
+
+    if(!contact){
+      contact={
+        id:info.id,
+        name:(MILAN_POST_ETRO_CONTACT_OVERRIDES[template.id]||{}).contactKeyName||info.name,
+        company:info.office,
+        email:info.email,
+        relationship:'New',
+        preferredNiches:'High Fashion / Editorial, Luxury / Runway',
+        notes:'Milan Fashion Week S/S 2027 contact lead · '+(template.company||'')+' · Prior-season/public contact research; current S/S 2027 assignment may be unconfirmed.'
+      };
+      contacts.push(contact);
+    }else{
+      if(!contact.email&&info.email)contact.email=info.email;
+      if(!contact.company&&info.office)contact.company=info.office;
+      if(!contact.name)contact.name=(MILAN_POST_ETRO_CONTACT_OVERRIDES[template.id]||{}).contactKeyName||info.name;
+    }
+    assignedIds.set(template.id,contact.id);
+  }
+
+  const patchDraft=d=>{
+    const template=templateById.get(d?.id);
+    if(!template)return d;
+    const info=milanPostEtroContactInfo(template,d);
+    return {...d,contactId:assignedIds.get(template.id)||d.contactId||info.id,contactName:info.name,recipientEmail:info.email,html:''};
+  };
+
+  data.contacts=contacts;
+  data.drafts=(data.drafts||[]).map(patchDraft);
+  data.draft=patchDraft(data.draft||{});
+  data.recovery={...(data.recovery||{}),milanPostEtroCastingContactsVersion:1,milanPostEtroCastingContactsUpdatedOn:'2026-09-18'};
+  return data;
+}
+
 function mergeRecovered(recovered,current){const map=new Map((recovered||[]).map(x=>[x.id,x]));for(const x of (current||[]))map.set(x.id,x);return [...map.values()]}
 function applyLanaMeasurements(data){
   const m=(data.models||[]).find(x=>x.id==='agency-women-lana'||normalizeName(x.name)==='lana');
@@ -412,7 +493,7 @@ function modelDraftPhotosHtml(m){
 }
 
 function mergeContacts(recovered,current){const contacts=(current||[]).map(c=>({...c}));for(const c of (recovered||[])){const email=String(c.email||'').trim().toLowerCase();if(!contacts.some(existing=>(c.id&&existing.id===c.id)||(email&&String(existing.email||'').trim().toLowerCase()===email)))contacts.push({...c})}return contacts}
-function applyRecovered(data){const incoming=data||{};data={...structuredClone(seed),...incoming};data.settings={...structuredClone(seed.settings),...(incoming.settings||{})};data.draft={...structuredClone(seed.draft),...(incoming.draft||{})};data.activeDraftId=incoming.activeDraftId||data.activeDraftId||'';data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>applyModelIdentity({...m,availabilityStatus:m.availabilityStatus||'Unknown',statusFrom:m.statusFrom||'',statusTo:m.statusTo||'',holdProject:m.holdProject||'',availabilityNotes:m.availabilityNotes||''}));data.contacts=mergeContacts([...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS],data.contacts||[]).map(c=>({...c,relationship:c.relationship||'Developing',preferredNiches:c.preferredNiches||''}));data.submissions=mergeRecovered([...RECOVERED_SUBMISSIONS,...WORK_GMAIL_SUBMISSIONS],data.submissions||[]).map(normalizeRecordModelNames);data.drafts=mergeRecovered([...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS],data.drafts||[]).map(normalizeRecordModelNames);data.bookings=(data.bookings||[]).map(normalizeRecordModelNames);data.recovery={...(data.recovery||{}),gmailRecoveredOn:'2026-09-14',submissionCount:RECOVERED_SUBMISSIONS.length,draftCount:RECOVERED_DRAFTS.length,tasksRecovered:0,rosterCheckedOn:'2026-09-14',supplementalModels:['Sophia Pippen'],newModels:['Anhelena','Bianca'],nicheSystemVersion:2,nicheTaxonomy:'standard-no-specialty-story',workflowSystemVersion:3,workGmail:WORK_EMAIL,workGmailSyncedOn:'2026-09-14',workGmailSubmissionCount:WORK_GMAIL_SUBMISSIONS.length,milanFirstDayDraftsAddedOn:'2026-09-16',milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,milanRestDraftsAddedOn:'2026-09-16',milanRestDraftCount:MILAN_REST_DRAFTS.length,modelIdentityUpdatedOn:'2026-09-16',modelAppearanceReviewedOn:'2026-09-16'};return applyPhotoManagement(addSophiaToAllDrafts(removeEm0FromDrafts(applySophiaDescription(applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data))))))))}
+function applyRecovered(data){const incoming=data||{};data={...structuredClone(seed),...incoming};data.settings={...structuredClone(seed.settings),...(incoming.settings||{})};data.draft={...structuredClone(seed.draft),...(incoming.draft||{})};data.activeDraftId=incoming.activeDraftId||data.activeDraftId||'';data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>applyModelIdentity({...m,availabilityStatus:m.availabilityStatus||'Unknown',statusFrom:m.statusFrom||'',statusTo:m.statusTo||'',holdProject:m.holdProject||'',availabilityNotes:m.availabilityNotes||''}));data.contacts=mergeContacts([...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS],data.contacts||[]).map(c=>({...c,relationship:c.relationship||'Developing',preferredNiches:c.preferredNiches||''}));data.submissions=mergeRecovered([...RECOVERED_SUBMISSIONS,...WORK_GMAIL_SUBMISSIONS],data.submissions||[]).map(normalizeRecordModelNames);data.drafts=mergeRecovered([...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS],data.drafts||[]).map(normalizeRecordModelNames);data=applyMilanPostEtroCastingContacts(data);data.bookings=(data.bookings||[]).map(normalizeRecordModelNames);data.recovery={...(data.recovery||{}),gmailRecoveredOn:'2026-09-14',submissionCount:RECOVERED_SUBMISSIONS.length,draftCount:RECOVERED_DRAFTS.length,tasksRecovered:0,rosterCheckedOn:'2026-09-14',supplementalModels:['Sophia Pippen'],newModels:['Anhelena','Bianca'],nicheSystemVersion:2,nicheTaxonomy:'standard-no-specialty-story',workflowSystemVersion:3,workGmail:WORK_EMAIL,workGmailSyncedOn:'2026-09-14',workGmailSubmissionCount:WORK_GMAIL_SUBMISSIONS.length,milanFirstDayDraftsAddedOn:'2026-09-16',milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,milanRestDraftsAddedOn:'2026-09-16',milanRestDraftCount:MILAN_REST_DRAFTS.length,modelIdentityUpdatedOn:'2026-09-16',modelAppearanceReviewedOn:'2026-09-16'};return applyPhotoManagement(addSophiaToAllDrafts(removeEm0FromDrafts(applySophiaDescription(applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data))))))))}
 /* CRM INDEXEDDB STORAGE V1 */
 const IDB_DB_NAME='jn-agency-crm';
 const IDB_DB_VERSION=1;
