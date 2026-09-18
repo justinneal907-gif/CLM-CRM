@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<title>Chez Les Mannequins · Client Package</title>
+<style>
+:root{--ink:#111;--muted:#6f6f6f;--line:#e8e8e8;--paper:#fff;--soft:#f7f7f5}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+a{color:inherit}.shell{width:min(1500px,100%);margin:auto;padding:34px 34px 70px}.mast{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;border-bottom:1px solid var(--ink);padding-bottom:18px;margin-bottom:34px}
+.wordmark{font-size:20px;font-weight:800;letter-spacing:.16em}.tag{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:7px}
+.meta{text-align:right;max-width:560px}.meta h1{font-family:Georgia,"Times New Roman",serif;font-size:clamp(30px,4.5vw,68px);font-weight:400;line-height:.98;margin:0 0 10px}.meta .client{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.note{max-width:800px;font-family:Georgia,"Times New Roman",serif;font-size:18px;line-height:1.6;margin:0 0 34px;color:#333}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:42px 22px}.card{min-width:0}.photo{aspect-ratio:3/4;background:#f2f2ef;overflow:hidden}.photo img{width:100%;height:100%;object-fit:cover;display:block}.name{font-family:Georgia,"Times New Roman",serif;font-size:28px;line-height:1.05;margin:14px 0 9px}.stats{display:flex;gap:5px 14px;flex-wrap:wrap;color:#424242;font-size:12px;line-height:1.55}.stat{white-space:nowrap}.links{margin-top:11px;display:flex;gap:14px;align-items:center}.links a{font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border-bottom:1px solid var(--ink);padding-bottom:2px}
+.footer{border-top:1px solid var(--line);margin-top:58px;padding-top:20px;display:flex;justify-content:space-between;gap:16px;color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.empty{min-height:70vh;display:grid;place-items:center;text-align:center}.empty h1{font-family:Georgia,"Times New Roman",serif;font-weight:400}.expired{padding:18px;border:1px solid #ddd;background:var(--soft);margin-bottom:24px}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mast{display:block}.meta{text-align:left;margin-top:28px}.shell{padding:24px 20px 48px}}
+@media(max-width:560px){.grid{grid-template-columns:1fr;gap:34px}.shell{padding:18px 14px 40px}.wordmark{font-size:16px}.meta h1{font-size:38px}.name{font-size:25px}.photo{aspect-ratio:4/5}.footer{display:block}.footer div+div{margin-top:8px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function b64bytes(v){v=v.replace(/-/g,'+').replace(/_/g,'/');while(v.length%4)v+='=';const bin=atob(v);const out=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);return out}
+async function decode(token){
+  if(!token)throw new Error('Missing package');
+  const dot=token.indexOf('.');const kind=dot>0?token.slice(0,dot):'j';const data=dot>0?token.slice(dot+1):token;
+  const bytes=b64bytes(data);
+  if(kind==='gz'){
+    if(!('DecompressionStream' in window))throw new Error('This browser cannot open this package.');
+    const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return JSON.parse(await new Response(stream).text());
+  }
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+function statParts(s){return String(s||'').split('|').map(x=>x.trim()).filter(Boolean)}
+function render(pkg){
+  const root=$('#app');
+  const exp=pkg.e&&new Date(pkg.e+'T23:59:59');
+  if(exp&&Date.now()>exp.getTime()){
+    root.innerHTML='<div class="shell empty"><div><div class="wordmark">CHEZ LES MANNEQUINS</div><h1>This package has expired.</h1><p>Contact the agency for current selections and availability.</p></div></div>';return;
+  }
+  const models=Array.isArray(pkg.m)?pkg.m:[];
+  const cards=models.map(function(m){
+    const photo=m.ph?'<img src="'+esc(m.ph)+'" alt="'+esc(m.n)+'" loading="lazy">':'';
+    const stats=statParts(m.me).map(x=>'<span class="stat">'+esc(x)+'</span>').join('');
+    const links=m.pr?'<div class="links"><a href="'+esc(m.pr)+'" target="_blank" rel="noopener">View portfolio</a></div>':'';
+    return '<article class="card"><div class="photo">'+photo+'</div><div class="name">'+esc(m.n)+'</div><div class="stats">'+stats+'</div>'+links+'</article>';
+  }).join('');
+  const subtitle=[pkg.c,pkg.s].filter(Boolean).join(' · ');
+  root.innerHTML='<main class="shell"><header class="mast"><div><div class="wordmark">CHEZ LES MANNEQUINS</div><div class="tag">Private Client Selection</div></div><div class="meta"><div class="client">'+esc(subtitle||'Model Package')+'</div><h1>'+esc(pkg.p||'Model Selection')+'</h1></div></header>'
+    +(pkg.n?'<p class="note">'+esc(pkg.n)+'</p>':'')
+    +'<section class="grid">'+cards+'</section>'
+    +'<footer class="footer"><div>Chez Les Mannequins</div><div>Private package · Please do not redistribute</div></footer></main>';
+}
+function fail(){
+  $('#app').innerHTML='<div class="shell empty"><div><div class="wordmark">CHEZ LES MANNEQUINS</div><h1>Package unavailable.</h1><p>This page requires a valid private package link.</p></div></div>';
+}
+(async function(){try{const p=new URLSearchParams(location.hash.replace(/^#/,''));const token=p.get('p');if(!token)return fail();render(await decode(token))}catch(e){console.error(e);fail()}})();
+})();
+</script>
+</body>
+</html>
