@@ -363,7 +363,14 @@ function applyMilanPostEtroCastingContacts(data){
     const nameKey=milanContactNorm((MILAN_POST_ETRO_CONTACT_OVERRIDES[template.id]||{}).contactKeyName||info.name);
     let contact=null;
 
-    if(currentDraft?.contactId)contact=contacts.find(c=>c.id===currentDraft.contactId)||null;
+    if(currentDraft?.contactId){
+      const linked=contacts.find(c=>c.id===currentDraft.contactId)||null;
+      if(linked){
+        const linkedEmail=milanContactNorm(linked.email);
+        const linkedName=milanContactNorm(linked.name);
+        if((emailKey&&(linkedEmail===emailKey||(!linkedEmail&&linkedName===nameKey)))||(!emailKey&&linkedName===nameKey))contact=linked;
+      }
+    }
     if(!contact&&emailKey)contact=contacts.find(c=>milanContactNorm(c.email)===emailKey)||null;
     if(!contact&&nameKey)contact=contacts.find(c=>milanContactNorm(c.name)===nameKey)||null;
 
