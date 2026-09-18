@@ -120,6 +120,11 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.app{display:gri
 .saved-package-results-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:12px 0 6px}
 @media(max-width:760px){.quick-order-list{grid-template-columns:1fr}.quick-order-title{display:block}.quick-order-title .muted{display:block;margin-top:2px}.quick-order-row select,.draft-position-control select{font-size:16px;min-height:42px}.saved-package-search input{font-size:16px;min-height:44px}}
 /* END PACKAGE ORDER + SAVED PACKAGE SEARCH */
+
+/* MULTI-IMAGE PACKAGE CONTROLS */
+.draft-photo-choice{position:relative}
+.multi-photo-badge{position:absolute;right:4px;top:4px;display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#fff;border:1px solid #9ba59e;font-weight:800;font-size:14px;line-height:1}
+.draft-photo-choice.active .multi-photo-badge{border-width:2px}
 </style>
 </head>
 <body>
@@ -908,6 +913,116 @@ function addPackagePhoto(id,url,label='Saved photo'){
   if(!library[id].some(x=>photoKey(x)===photoKey(url)))library[id].push({url,label});
 }
 /* End persistent photo management. */
+
+
+/* MULTI-IMAGE DRAFT PACKAGE SUPPORT 2026-09-18 */
+function applyPhotoManagement(data){
+  const upgrade=x=>typeof x==='string'?upgradedPhotoURL(x):x&&typeof x==='object'?{...x,...(x.url?{url:upgradedPhotoURL(x.url)}:{}),...(x.src?{src:upgradedPhotoURL(x.src)}:{})}:x;
+  for(const m of data.models||[]){
+    for(const k of ['photo','photoUrl']){m[k]=upgradedPhotoURL(m[k]);if(isDeletedPhoto(data,m.id,m[k]))m[k]=''}
+    for(const k of ['photos','photoLibrary','portfolioPhotos','images'])if(Array.isArray(m[k]))m[k]=m[k].map(upgrade).filter(x=>!isDeletedPhoto(data,m.id,photoURL(x)));
+  }
+  for(const [id,list] of Object.entries(data.photoLibrary||{}))if(Array.isArray(list))data.photoLibrary[id]=list.map(upgrade).filter(x=>!isDeletedPhoto(data,id,photoURL(x)));
+  for(const [id,url] of Object.entries(data.customPhotos||{})){data.customPhotos[id]=upgradedPhotoURL(url);if(isDeletedPhoto(data,id,url))delete data.customPhotos[id]}
+  for(const d of [data.draft,...(data.drafts||[])].filter(Boolean)){
+    d.photoSelections=d.photoSelections||{};
+    for(const [id,value] of Object.entries(d.photoSelections)){
+      const list=(Array.isArray(value)?value:[value]).map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(data,id,url));
+      if(Array.isArray(value))d.photoSelections[id]=[...new Set(list)];
+      else d.photoSelections[id]=list[0]||'';
+    }
+    for(const [id,list] of Object.entries(d.packagePhotos||{}))if(Array.isArray(list)){
+      d.packagePhotos[id]=[...new Set(list.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(data,id,url)))];
+    }
+    d.html='';
+  }
+  return data;
+}
+function draftPhotosForModel(m){
+  const selections=draftPhotoSelections();
+  if(Object.prototype.hasOwnProperty.call(selections,m.id)){
+    const raw=Array.isArray(selections[m.id])?selections[m.id]:[selections[m.id]];
+    return [...new Set(raw.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)))];
+  }
+  const legacy=db.draft?.packagePhotos?.[m.id];
+  if(Array.isArray(legacy)&&legacy.length){
+    return [...new Set(legacy.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)))];
+  }
+  const fallback=getPhoto(m);
+  return fallback?[fallback]:[];
+}
+function draftPhotoForModel(m){return draftPhotosForModel(m)[0]||''}
+function setDraftPhotosForModel(id,urls){
+  const clean=[...new Set((urls||[]).map(upgradedPhotoURL).filter(Boolean))];
+  draftPhotoSelections()[id]=clean;
+  db.draft.packagePhotos=db.draft.packagePhotos||{};
+  db.draft.packagePhotos[id]=[...clean];
+}
+function togglePackagePhoto(id,i){
+  const m=db.models.find(x=>x.id===id),p=m&&draftPhotoOptions(m)[i];if(!p)return;
+  if(!selected.includes(id))selected.push(id);
+  const current=draftPhotosForModel(m),key=photoKey(p.url);
+  const exists=current.some(url=>photoKey(url)===key);
+  setDraftPhotosForModel(id,exists?current.filter(url=>photoKey(url)!==key):[...current,p.url]);
+  persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);
+  setStatus(exists?'Photo removed from this package.':'Photo added to this package.');
+}
+function choosePackagePhoto(id,i){togglePackagePhoto(id,i)}
+function resetDraftPhoto(id){
+  const photos=draftPhotoSelections();delete photos[id];
+  if(db.draft?.packagePhotos)delete db.draft.packagePhotos[id];
+  persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);
+  setStatus('Draft photos reset to the model default.');
+}
+function setDraftPhotoUrl(id,url){
+  url=String(url||'').trim();if(!url)return;
+  addPackagePhoto(id,url,'Saved URL');
+  const m=db.models.find(x=>x.id===id),current=m?draftPhotosForModel(m):[];
+  setDraftPhotosForModel(id,[...current,url]);
+  persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);
+  setStatus('Photo saved to the library and added to this package.');
+}
+async function setDraftPhotoFile(id,input){
+  const files=[...(input?.files||[])];if(!files.length)return;
+  const added=[];
+  for(const f of files){
+    const data=await fileToDraftPhoto(f);
+    if(data){addPackagePhoto(id,data,f.name||'Uploaded photo');added.push(data)}
+  }
+  input.value='';
+  if(!added.length)return setStatus('Could not read those images.');
+  const m=db.models.find(x=>x.id===id),current=m?draftPhotosForModel(m):[];
+  setDraftPhotosForModel(id,[...current,...added]);
+  persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);
+  setStatus(added.length===1?'Uploaded photo added to this package.':`${added.length} uploaded photos added to this package.`);
+}
+function modelDraftPhotosHtml(m){
+  const urls=draftPhotosForModel(m);
+  if(!urls.length)return'';
+  return `<div style="text-align:left">${urls.map((url,i)=>`<div style="display:inline-block;vertical-align:top;margin:8px 8px 0 0"><img src="${esc(url)}" width="${urls.length>1?300:440}" style="max-width:100%;height:auto;display:block" alt="${esc(m.name)} photo ${i+1}"></div>`).join('')}</div>`;
+}
+function renderPhotoLibrary(){
+  const s=$('#photoLibraryModel'),g=$('#photoLibraryGrid');if(!s||!g)return;
+  const cur=s.value;s.innerHTML=db.models.map(m=>`<option value="${esc(m.id)}">${esc(m.name)} · ${esc(m.location)}</option>`).join('');
+  s.value=db.models.some(m=>m.id===cur)?cur:(selected[0]||db.models[0]?.id||'');
+  const m=db.models.find(x=>x.id===s.value);if(!m)return g.innerHTML='<div class="photo-library-empty">Choose a model.</div>';
+  const p=draftPhotoOptions(m),selectedUrls=draftPhotosForModel(m),selectedKeys=new Set(selectedUrls.map(photoKey));
+  g.innerHTML=p.length?p.map((x,i)=>{
+    const active=selectedKeys.has(photoKey(x.url));
+    return `<div class="photo-library-card ${active?'active':''}"><img src="${esc(x.url)}" alt="${esc(m.name)} photo"><div class="tiny"><b>${esc(x.label)}</b></div><button class="btn ${active?'primary':''}" type="button" onclick="togglePackagePhoto('${m.id}',${i})">${active?'Remove from package':'Add to package'}</button><button class="btn danger" type="button" onclick="removePackagePhoto('${m.id}',${i})">Delete from CRM</button></div>`;
+  }).join(''):'<div class="photo-library-empty">No photos yet. Add a URL or upload photos.</div>';
+}
+function renderEmailSelection(){
+  if(!$('#selectedModels'))return;
+  const date=briefPrimaryDate(),picked=selectedModels();
+  const quick=picked.length>1?`<div class="quick-order-panel"><div class="quick-order-title"><b>Quick reorder</b><span class="muted tiny">Send any model straight to a position.</span></div><div class="quick-order-list">${picked.map((m,index)=>`<label class="quick-order-row"><span>${index+1}. ${esc(m.name)}</span><select aria-label="Position for ${esc(m.name)}" onchange="setSelectedModelPosition('${m.id}',this.value)">${modelPositionOptions(index,picked.length)}</select></label>`).join('')}</div></div>`:'';
+  $('#selectedModels').innerHTML=(picked.length?'<div class="drag-hint">Email order follows this list. Select as many photos as you want for each model.</div>':'')+quick+picked.map((m,index)=>{
+    const picks=draftPhotosForModel(m),pick=picks[0]||'',selectedKeys=new Set(picks.map(photoKey)),opts=draftPhotoOptions(m);
+    return `<div class="draft-model-card"><div class="draft-model-head">${pick?`<img class="draft-model-thumb" src="${esc(pick)}" alt="${esc(m.name)} draft photo">`:`<div class="draft-model-thumb placeholder" style="display:flex;align-items:center;justify-content:center">${esc(initials(m.name))}</div>`}<div><div><b>${index+1}. ${esc(m.name)}</b> · ${esc(m.location)} / ${esc(m.division)}</div><div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div><div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div>${modelDraftCredentialHtml(m,true)}<div class="draft-model-controls"><label class="draft-position-control"><span>Position</span><select onchange="setSelectedModelPosition('${m.id}',this.value)">${modelPositionOptions(index,picked.length)}</select></label><span class="pill">${picks.length} photo${picks.length===1?'':'s'}</span><button class="btn danger" type="button" onclick="removeFromEmail('${m.id}')">Remove</button></div></div></div>${opts.length?`<div class="draft-photo-strip">${opts.map((p,i)=>{const active=selectedKeys.has(photoKey(p.url));return `<button class="draft-photo-choice ${active?'active':''}" type="button" title="${active?'Remove':'Add'} ${esc(p.label)}" onclick="togglePackagePhoto('${m.id}',${i})"><img src="${esc(p.url)}" alt="${esc(m.name)} photo"><span class="multi-photo-badge">${active?'✓':'+'}</span></button>`}).join('')}</div>`:''}<div class="draft-photo-controls"><input type="url" placeholder="Paste photo URL — adds to package" onchange="setDraftPhotoUrl('${m.id}',this.value);this.value=''"><button class="btn" type="button" onclick="resetDraftPhoto('${m.id}')">Reset to default</button></div><div class="draft-photo-upload"><input type="file" accept="image/*" multiple onchange="setDraftPhotoFile('${m.id}',this)"><span class="muted tiny">Select one or multiple images. Uploads save to the photo library and are added to this draft.</span></div></div>`;
+  }).join('')||'<div class="empty">No models selected.</div>';
+  renderSubmissionWarnings();renderPhotoLibrary();
+}
+/* END MULTI-IMAGE DRAFT PACKAGE SUPPORT */
 
 /* INDEXEDDB RUNTIME OVERRIDES */
 function persistWorkspaceSafe(showError=true){
