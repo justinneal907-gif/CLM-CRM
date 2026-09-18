@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>Chez Les Mannequins · Package Builder</title>
+<style>
+:root{--ink:#121212;--muted:#6e706d;--line:#dedfdb;--soft:#f5f5f2;--paper:#fff;--accent:#1f3429}
+*{box-sizing:border-box}body{margin:0;background:#f3f3f0;color:var(--ink);font:14px/1.45 Arial,Helvetica,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}
+.top{position:sticky;top:0;z-index:30;background:#111;color:#fff;padding:16px 22px;display:flex;justify-content:space-between;align-items:center;gap:16px}.brand{font-weight:800;letter-spacing:.14em}.top small{color:#aaa}.layout{display:grid;grid-template-columns:minmax(360px,.9fr) minmax(480px,1.1fr);gap:18px;padding:18px;max-width:1600px;margin:auto}.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}.panel h2{font-family:Georgia,"Times New Roman",serif;font-size:24px;font-weight:400;margin:0 0 12px}.muted{color:var(--muted)}.toolbar{display:grid;grid-template-columns:1fr 170px;gap:8px;margin-bottom:10px}.toolbar input,.toolbar select,.field input,.field select,.field textarea,.model-form input,.model-form textarea{width:100%;border:1px solid #bbbdb9;border-radius:7px;background:#fff;padding:9px}.field{margin-bottom:10px}.field label{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}.field textarea{min-height:78px;resize:vertical}
+.btn{border:1px solid #bbbdb9;background:#fff;border-radius:7px;padding:8px 10px}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.btn.dark{background:#111;border-color:#111;color:#fff}.btn.danger{color:#8b2020}.actions{display:flex;gap:7px;flex-wrap:wrap}.roster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:66vh;overflow:auto;padding-right:2px}.person{display:grid;grid-template-columns:64px 1fr;gap:9px;border:1px solid var(--line);border-radius:9px;padding:8px;background:#fff}.thumb{width:64px;height:82px;object-fit:cover;background:#eee}.person h3{font-size:14px;margin:0 0 4px}.tiny{font-size:11px;color:var(--muted);line-height:1.35}.person .btn{padding:6px 8px;margin-top:7px;font-size:12px}
+.builder-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.selected{margin-top:14px}.sel{display:grid;grid-template-columns:74px 1fr auto;gap:10px;align-items:start;border-top:1px solid var(--line);padding:10px 0}.sel:first-child{border-top:0}.sel img{width:74px;height:96px;object-fit:cover;background:#eee}.sel h3{margin:1px 0 4px;font-size:15px}.sel-controls{display:grid;gap:5px}.sel-controls button{width:34px;height:32px;padding:0}.photo-override{margin-top:7px}.photo-override input{width:100%;font-size:12px;border:1px solid #ccc;border-radius:6px;padding:6px}
+.sharebox{margin-top:16px;border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:12px}.sharebox textarea{width:100%;min-height:90px;font-size:12px;border:1px solid #c8c9c5;border-radius:7px;padding:8px;background:#fff}.saved-list{margin-top:10px;display:grid;gap:7px}.saved-row{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px}.saved-row strong{display:block}
+dialog{border:0;border-radius:12px;width:min(720px,calc(100% - 24px));padding:0;box-shadow:0 20px 70px #0005}dialog::backdrop{background:#0008}.modal{padding:18px}.model-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.model-form .wide{grid-column:1/-1}.status{font-size:12px;margin-left:8px;color:#d7e8df}
+@media(max-width:1050px){.layout{grid-template-columns:1fr}.roster{max-height:none}.top{position:static}}
+@media(max-width:620px){.layout{padding:10px}.roster{grid-template-columns:1fr}.builder-grid,.model-form{grid-template-columns:1fr}.model-form .wide{grid-column:auto}.top{padding:13px}.top small{display:none}.sel{grid-template-columns:62px 1fr}.sel img{width:62px;height:82px}.sel-controls{grid-column:1/-1;display:flex}.toolbar{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="top"><div><div class="brand">CHEZ LES MANNEQUINS</div><small>Standalone Client Package Builder</small></div><div><span id="status" class="status"></span></div></header>
+<main class="layout">
+<section class="panel">
+  <div class="actions" style="justify-content:space-between;align-items:center;margin-bottom:10px"><h2 style="margin:0">Roster</h2><button class="btn" id="manageBtn">Manage roster</button></div>
+  <div class="toolbar"><input id="search" placeholder="Search name, market or measurements"><select id="market"><option value="">All markets</option></select></div>
+  <div class="muted tiny" id="rosterCount" style="margin-bottom:10px"></div>
+  <div class="roster" id="roster"></div>
+</section>
+<section class="panel">
+  <h2>Build package</h2>
+  <div class="builder-grid">
+    <div class="field"><label>Client</label><input id="client" placeholder="Missoni"></div>
+    <div class="field"><label>Project / season</label><input id="season" placeholder="SS27 Milan"></div>
+    <div class="field" style="grid-column:1/-1"><label>Package title</label><input id="project" placeholder="Model Selection"></div>
+    <div class="field" style="grid-column:1/-1"><label>Optional note</label><textarea id="note" placeholder="Sharing a focused selection for your consideration."></textarea></div>
+    <div class="field"><label>Expires</label><input id="expires" type="date"></div>
+  </div>
+  <div class="selected" id="selected"></div>
+  <div class="actions" style="margin-top:14px">
+    <button class="btn primary" id="generate">Generate private link</button>
+    <button class="btn" id="saveDraft">Save package</button>
+    <button class="btn" id="clear">Clear</button>
+  </div>
+  <div class="sharebox" id="sharebox" hidden>
+    <div class="field"><label>Client link</label><textarea id="shareUrl" readonly></textarea></div>
+    <div class="actions"><button class="btn dark" id="copy">Copy link</button><button class="btn" id="preview">Open preview</button></div>
+    <p class="tiny muted">The package itself is encoded in the private URL. It does not read from the CRM or require a database.</p>
+  </div>
+  <div style="margin-top:22px"><strong>Saved packages</strong><div class="saved-list" id="saved"></div></div>
+</section>
+</main>
+
+<dialog id="modelDialog"><div class="modal">
+  <div class="actions" style="justify-content:space-between;align-items:center"><h2 style="margin:0">Manage roster</h2><button class="btn" id="closeDialog">Close</button></div>
+  <p class="muted">Changes are stored only in this browser and are independent of the CRM.</p>
+  <form id="modelForm" class="model-form">
+    <input id="mid" type="hidden">
+    <div><label>Name</label><input id="mname" required></div>
+    <div><label>Market</label><input id="mlocation"></div>
+    <div class="wide"><label>Measurements</label><textarea id="mmeasurements" placeholder="Height: ... | Bust: ... | Waist: ..."></textarea></div>
+    <div class="wide"><label>Portfolio URL</label><input id="mprofile" type="url"></div>
+    <div class="wide"><label>Primary photo URL</label><input id="mphoto" type="url"></div>
+    <div class="wide"><label>Additional photo URLs (one per line)</label><textarea id="mphotos"></textarea></div>
+    <div class="wide actions"><button class="btn primary" type="submit">Save model</button><button class="btn" type="button" id="resetModel">New model</button><button class="btn danger" type="button" id="deleteModel">Delete selected model</button></div>
+  </form>
+  <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+  <div class="actions"><button class="btn" id="exportRoster">Export roster JSON</button><label class="btn">Import roster JSON<input id="importRoster" type="file" accept=".json,application/json" hidden></label></div>
+</div></dialog>
+
+<script src="roster.js"></script>
+<script>
+(function(){
+const BASE=Array.isArray(window.CLM_PACKAGE_ROSTER)?window.CLM_PACKAGE_ROSTER:[];
+const KEY='clm-standalone-package-roster-v1', SAVED='clm-standalone-packages-v1';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let selected=[], generated='', editingId='';
+function uid(){return crypto.randomUUID?crypto.randomUUID():'m-'+Date.now()+'-'+Math.random().toString(16).slice(2)}
+function custom(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}
+function saveCustom(v){localStorage.setItem(KEY,JSON.stringify(v))}
+function library(){
+  const map=new Map(BASE.map(m=>[m.id,Object.assign({},m)]));
+  custom().forEach(m=>map.set(m.id,Object.assign({},map.get(m.id)||{},m)));
+  return [...map.values()];
+}
+function toast(t){$('#status').textContent=t;clearTimeout(toast.t);toast.t=setTimeout(()=>$('#status').textContent='',2600)}
+function photo(m){return m.photoOverride||m.photoUrl||(Array.isArray(m.photos)&&m.photos[0])||''}
+function marketOptions(){
+  const vals=[...new Set(library().map(m=>m.location).filter(Boolean))].sort();
+  $('#market').innerHTML='<option value="">All markets</option>'+vals.map(v=>'<option>'+esc(v)+'</option>').join('');
+}
+function renderRoster(){
+  const q=$('#search').value.trim().toLowerCase(), mk=$('#market').value;
+  const data=library().filter(m=>(!mk||m.location===mk)&&(!q||[m.name,m.location,m.measurements].join(' ').toLowerCase().includes(q)));
+  $('#rosterCount').textContent=data.length+' models · '+selected.length+' selected';
+  $('#roster').innerHTML=data.map(m=>{
+    const isSel=selected.some(x=>x.id===m.id);
+    return '<article class="person"><img class="thumb" src="'+esc(photo(m))+'" alt="" loading="lazy"><div><h3>'+esc(m.name)+'</h3><div class="tiny">'+esc(m.location||'')+(m.division?' · '+esc(m.division):'')+'</div><div class="tiny">'+esc(m.measurements||'')+'</div><button class="btn '+(isSel?'':'primary')+'" data-add="'+esc(m.id)+'">'+(isSel?'Selected':'Add to package')+'</button> <button class="btn" data-edit="'+esc(m.id)+'">Edit</button></div></article>'
+  }).join('');
+}
+function renderSelected(){
+  if(!selected.length){$('#selected').innerHTML='<div class="muted" style="padding:16px 0">Choose models from the roster to build a package.</div>';return}
+  $('#selected').innerHTML=selected.map((m,i)=>'<div class="sel"><img src="'+esc(photo(m))+'" alt=""><div><h3>'+(i+1)+'. '+esc(m.name)+'</h3><div class="tiny">'+esc(m.measurements||'')+'</div><div class="photo-override"><input data-photo="'+i+'" value="'+esc(m.photoOverride||'')+'" placeholder="Optional package-specific photo URL"></div></div><div class="sel-controls"><button class="btn" data-up="'+i+'" title="Move up">↑</button><button class="btn" data-down="'+i+'" title="Move down">↓</button><button class="btn danger" data-remove="'+i+'" title="Remove">×</button></div></div>').join('');
+}
+function renderSaved(){
+  let rows=[];try{rows=JSON.parse(localStorage.getItem(SAVED)||'[]')}catch{}
+  $('#saved').innerHTML=rows.length?rows.map((x,i)=>'<div class="saved-row"><div><strong>'+esc(x.project||'Model Selection')+'</strong><span class="tiny muted">'+esc(x.client||'')+' · '+esc(x.created||'')+'</span></div><div class="actions"><button class="btn" data-load="'+i+'">Load</button><button class="btn danger" data-del="'+i+'">×</button></div></div>').join(''):'<div class="tiny muted">No saved packages yet.</div>';
+}
+function add(id){
+  if(selected.some(x=>x.id===id))return;
+  const m=library().find(x=>x.id===id);if(m)selected.push(Object.assign({},m));
+  renderRoster();renderSelected();
+}
+function payload(){
+  return {v:1,c:$('#client').value.trim(),p:$('#project').value.trim()||'Model Selection',s:$('#season').value.trim(),n:$('#note').value.trim(),e:$('#expires').value,m:selected.map(m=>({n:m.name,me:m.measurements||'',ph:photo(m),pr:m.profileUrl||''}))};
+}
+function bytesToB64url(bytes){let out='';const step=0x8000;for(let i=0;i<bytes.length;i+=step)out+=String.fromCharCode.apply(null,bytes.subarray(i,i+step));return btoa(out).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+async function encode(obj){
+  const raw=new TextEncoder().encode(JSON.stringify(obj));
+  if('CompressionStream' in window){
+    const stream=new Blob([raw]).stream().pipeThrough(new CompressionStream('gzip'));
+    const buf=new Uint8Array(await new Response(stream).arrayBuffer());
+    return 'gz.'+bytesToB64url(buf);
+  }
+  return 'j.'+bytesToB64url(raw);
+}
+async function generate(){
+  if(!selected.length){toast('Add at least one model');return}
+  const token=await encode(payload());
+  const u=new URL('./',location.href);u.search='';u.hash='p='+token;
+  generated=u.toString();$('#shareUrl').value=generated;$('#sharebox').hidden=false;toast('Private package link generated');
+}
+function savePackage(){
+  if(!selected.length){toast('Add at least one model');return}
+  let rows=[];try{rows=JSON.parse(localStorage.getItem(SAVED)||'[]')}catch{}
+  rows.unshift({client:$('#client').value.trim(),season:$('#season').value.trim(),project:$('#project').value.trim(),note:$('#note').value.trim(),expires:$('#expires').value,modelIds:selected.map(m=>m.id),overrides:Object.fromEntries(selected.filter(m=>m.photoOverride).map(m=>[m.id,m.photoOverride])),created:new Date().toLocaleDateString()});
+  localStorage.setItem(SAVED,JSON.stringify(rows.slice(0,100)));renderSaved();toast('Package saved');
+}
+function loadPackage(i){
+  let rows=[];try{rows=JSON.parse(localStorage.getItem(SAVED)||'[]')}catch{}const x=rows[i];if(!x)return;
+  $('#client').value=x.client||'';$('#season').value=x.season||'';$('#project').value=x.project||'';$('#note').value=x.note||'';$('#expires').value=x.expires||'';
+  const lib=library();selected=(x.modelIds||[]).map(id=>lib.find(m=>m.id===id)).filter(Boolean).map(m=>Object.assign({},m,{photoOverride:(x.overrides||{})[m.id]||''}));
+  renderRoster();renderSelected();toast('Saved package loaded');
+}
+function clearAll(){selected=[];['client','season','project','note','expires'].forEach(id=>$('#'+id).value='');$('#sharebox').hidden=true;generated='';renderRoster();renderSelected()}
+function openEdit(id){
+  const m=library().find(x=>x.id===id)||{};editingId=m.id||'';
+  $('#mid').value=m.id||'';$('#mname').value=m.name||'';$('#mlocation').value=m.location||'';$('#mmeasurements').value=m.measurements||'';$('#mprofile').value=m.profileUrl||'';$('#mphoto').value=m.photoUrl||'';$('#mphotos').value=(m.photos||[]).join('\n');$('#modelDialog').showModal();
+}
+function resetForm(){editingId='';$('#modelForm').reset();$('#mid').value=''}
+function persistModel(){
+  const id=editingId||uid();const rows=custom().filter(x=>x.id!==id);
+  rows.push({id:id,name:$('#mname').value.trim(),location:$('#mlocation').value.trim(),division:'',measurements:$('#mmeasurements').value.trim(),profileUrl:$('#mprofile').value.trim(),photoUrl:$('#mphoto').value.trim(),photos:$('#mphotos').value.split(/\n+/).map(x=>x.trim()).filter(Boolean)});
+  saveCustom(rows);editingId=id;marketOptions();renderRoster();renderSelected();toast('Roster updated');
+}
+function deleteModel(){
+  if(!editingId){toast('Select a model first');return}
+  const baseExists=BASE.some(x=>x.id===editingId);
+  let rows=custom().filter(x=>x.id!==editingId);
+  if(baseExists)rows.push({id:editingId,name:'[Hidden] '+editingId,hidden:true});
+  saveCustom(rows);selected=selected.filter(x=>x.id!==editingId);resetForm();marketOptions();renderRoster();renderSelected();toast('Model removed from local roster');
+}
+const oldLibrary=library;
+library=function(){
+  const map=new Map(BASE.map(m=>[m.id,Object.assign({},m)]));
+  custom().forEach(m=>{if(m.hidden)map.delete(m.id);else map.set(m.id,Object.assign({},map.get(m.id)||{},m))});
+  return [...map.values()];
+};
+$('#search').addEventListener('input',renderRoster);$('#market').addEventListener('change',renderRoster);
+$('#roster').addEventListener('click',e=>{const a=e.target.closest('[data-add]'),ed=e.target.closest('[data-edit]');if(a)add(a.dataset.add);if(ed)openEdit(ed.dataset.edit)});
+$('#selected').addEventListener('click',e=>{let b=e.target.closest('[data-up],[data-down],[data-remove]');if(!b)return;let i=Number(b.dataset.up??b.dataset.down??b.dataset.remove);if(b.dataset.up!=null&&i>0)[selected[i-1],selected[i]]=[selected[i],selected[i-1]];if(b.dataset.down!=null&&i<selected.length-1)[selected[i+1],selected[i]]=[selected[i],selected[i+1]];if(b.dataset.remove!=null)selected.splice(i,1);renderRoster();renderSelected()});
+$('#selected').addEventListener('input',e=>{if(e.target.matches('[data-photo]'))selected[Number(e.target.dataset.photo)].photoOverride=e.target.value.trim()});
+$('#generate').onclick=generate;$('#saveDraft').onclick=savePackage;$('#clear').onclick=clearAll;
+$('#copy').onclick=async()=>{if(!generated)return;await navigator.clipboard.writeText(generated);toast('Link copied')};
+$('#preview').onclick=()=>{if(generated)window.open(generated,'_blank','noopener')};
+$('#saved').addEventListener('click',e=>{const l=e.target.closest('[data-load]'),d=e.target.closest('[data-del]');if(l)loadPackage(Number(l.dataset.load));if(d){let rows=JSON.parse(localStorage.getItem(SAVED)||'[]');rows.splice(Number(d.dataset.del),1);localStorage.setItem(SAVED,JSON.stringify(rows));renderSaved()}});
+$('#manageBtn').onclick=()=>{resetForm();$('#modelDialog').showModal()};$('#closeDialog').onclick=()=>$('#modelDialog').close();$('#resetModel').onclick=resetForm;$('#deleteModel').onclick=deleteModel;
+$('#modelForm').addEventListener('submit',e=>{e.preventDefault();persistModel()});
+$('#exportRoster').onclick=()=>{const blob=new Blob([JSON.stringify(library(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='clm-package-roster.json';a.click();URL.revokeObjectURL(a.href)};
+$('#importRoster').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const arr=JSON.parse(await f.text());if(!Array.isArray(arr))throw 0;saveCustom(arr.map(m=>Object.assign({id:uid()},m)));marketOptions();renderRoster();toast('Roster imported')}catch{toast('Invalid roster JSON')}});
+marketOptions();renderRoster();renderSelected();renderSaved();
+})();
+</script>
+</body>
+</html>
