@@ -355,12 +355,24 @@ function applyMilanPostEtroCastingContacts(data){
   const draftsById=new Map((data.drafts||[]).map(d=>[d.id,d]));
   const contacts=(data.contacts||[]).map(c=>({...c}));
   const assignedIds=new Map();
+  const preserveDraftIds=new Set();
 
   for(const template of templates){
     const currentDraft=draftsById.get(template.id)||null;
+    const override=MILAN_POST_ETRO_CONTACT_OVERRIDES[template.id]||{};
+    const currentEmail=milanContactNorm(currentDraft?.recipientEmail);
+    const knownEmails=[template.recipientEmail,override.email].map(milanContactNorm).filter(Boolean);
+    const currentName=milanContactNorm(currentDraft?.contactName);
+    const knownNames=[template.contactName,override.name].map(milanContactNorm).filter(Boolean);
+    const hasManualEmail=currentEmail&&!knownEmails.includes(currentEmail);
+    const hasManualName=currentName&&!knownNames.includes(currentName);
+    if(hasManualEmail||hasManualName){
+      preserveDraftIds.add(template.id);
+      continue;
+    }
     const info=milanPostEtroContactInfo(template,currentDraft);
     const emailKey=milanContactNorm(info.email);
-    const nameKey=milanContactNorm((MILAN_POST_ETRO_CONTACT_OVERRIDES[template.id]||{}).contactKeyName||info.name);
+    const nameKey=milanContactNorm(override.contactKeyName||info.name);
     let contact=null;
 
     if(currentDraft?.contactId){
@@ -395,7 +407,7 @@ function applyMilanPostEtroCastingContacts(data){
 
   const patchDraft=d=>{
     const template=templateById.get(d?.id);
-    if(!template)return d;
+    if(!template||preserveDraftIds.has(template.id))return d;
     const info=milanPostEtroContactInfo(template,d);
     return {...d,contactId:assignedIds.get(template.id)||d.contactId||info.id,contactName:info.name,recipientEmail:info.email,html:''};
   };
