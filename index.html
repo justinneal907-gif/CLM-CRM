@@ -956,7 +956,7 @@ function repeatCastingHtml(d,compact=false){
 
 function draftCardHtml(d,activeDraft=false){
   const privateNote=String(d.notes||'').trim(),privatePreview=privateNote?(privateNote.length>220?privateNote.slice(0,220).trimEnd()+'…':privateNote):'';
-  return `<div class="draft-card" style="${activeDraft?'border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset':''}"><b>${esc(d.subject||'Untitled draft')}</b>${activeDraft?' <span class="pill">OPEN</span>':''}${draftToneBadgeHtml(d)}${repeatCastingHtml(d,true)}<div class="muted">${esc(d.date||'')} · ${esc(d.brandProject||d.recipientEmail||'')} · ${esc((d.models||[]).join(', '))}${d.source?` · ${esc(d.source)}`:''}</div>${repeatCastingHtml(d,false)}${privatePreview?`<div class="draft-private-note"><b>PRIVATE NOTES</b><div>${esc(privatePreview).replace(/\\n/g,'<br>')}</div></div>`:''}<div class="actions" style="margin-top:8px"><button class="btn${activeDraft?' primary':''}" onclick="loadDraft('${d.id}')">${activeDraft?'Reload':'Open'}</button>${d.gmailUrl?`<a class="btn" href="${esc(d.gmailUrl)}" target="_blank" rel="noopener">Gmail</a>`:''}<button class="btn danger" onclick="deleteDraft('${d.id}')">Delete</button></div></div>`;
+  return `<div class="draft-card" style="${activeDraft?'border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset':''}"><b>${esc(d.subject||'Untitled draft')}</b>${activeDraft?' <span class="pill">OPEN</span>':''}${repeatCastingHtml(d,true)}<div class="muted">${esc(d.date||'')} · ${esc(d.brandProject||d.recipientEmail||'')} · ${esc((d.models||[]).join(', '))}${d.source?` · ${esc(d.source)}`:''}</div>${repeatCastingHtml(d,false)}${privatePreview?`<div class="draft-private-note"><b>PRIVATE NOTES</b><div>${esc(privatePreview).replace(/\\n/g,'<br>')}</div></div>`:''}<div class="actions" style="margin-top:8px"><button class="btn${activeDraft?' primary':''}" onclick="loadDraft('${d.id}')">${activeDraft?'Reload':'Open'}</button>${d.gmailUrl?`<a class="btn" href="${esc(d.gmailUrl)}" target="_blank" rel="noopener">Gmail</a>`:''}<button class="btn danger" onclick="deleteDraft('${d.id}')">Delete</button></div></div>`;
 }
 function renderDrafts(){
   const box=$('#savedDrafts');if(!box)return;
@@ -972,7 +972,7 @@ function renderDrafts(){
 }
 function activeDraftRecord(){return db.activeDraftId?db.drafts.find(x=>x.id===db.activeDraftId)||null:null}
 let historicalCastingLeadsHtml='';
-function renderDraftScope(){const view=$('#view-email');if(!view)return;const panel=$('#castingLeadsPanel');if(panel&&!historicalCastingLeadsHtml)historicalCastingLeadsHtml=panel.innerHTML;const saved=activeDraftRecord();const d=db.draft||saved||seed.draft;const label=d.brandProject||d.company||d.subject||'Unsaved package';let banner=$('#draftScopeBanner');if(!banner){banner=document.createElement('div');banner.id='draftScopeBanner';banner.className='panel';banner.style.marginBottom='14px';const split=view.querySelector('.split');view.insertBefore(banner,split||view.firstChild)}const state=saved?'Saved package open':'Unsaved package';banner.innerHTML=`<div class="eyebrow">${esc(state)}</div><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><h2 style="margin:4px 0">${esc(label)}${saved?draftToneBadgeHtml(saved):''}${saved?repeatCastingHtml(saved,true):''}</h2><div class="muted">Every package-builder section below is scoped to this ${saved?'saved draft':'working draft'}${saved?' · '+draftRelationshipTone(saved).reason:''}.</div>${saved?repeatCastingHtml(saved,false):''}</div><button class="btn" type="button" onclick="startBlankPackage()">New blank package</button></div>`;const headings=view.querySelectorAll('.split>.panel>h2');if(headings[0])headings[0].textContent='Model package builder · '+label;if(headings[1])headings[1].textContent='Email preview · '+label;const jump=$('#jumpToCastingLeadsBtn');if(jump)jump.textContent=saved?(d.company||label)+' lead context':'Casting leads';const saveBtn=$('#saveDraftBtn');if(saveBtn)saveBtn.textContent=saved?'Update draft':'Save draft';if(panel){if(saved){const c=db.contacts.find(x=>x.id===d.contactId)||null;const email=d.recipientEmail||c?.email||'';const projectKey=normalizeName(d.brandProject||d.company||'');const related=db.submissions.filter(x=>{if(x.draftId&&x.draftId===db.activeDraftId)return true;const hay=normalizeName([x.project,x.company,x.email,x.contact].filter(Boolean).join(' '));return projectKey&&hay.includes(projectKey)});const pb=d.parsedBrief||{};const modelNames=selectedModels().map(m=>m.name);panel.innerHTML=`<summary>${esc(label)} · lead context</summary><h2>${esc(label)}</h2><p><b>Contact:</b> ${esc(d.contactName||c?.name||'Not assigned')}${d.company||c?.company?` · ${esc(d.company||c?.company||'')}`:''}<br><b>Email:</b> ${esc(email||'Not verified / not entered')}</p>${d.brief?`<p><b>Package notes:</b> ${esc(d.brief)}</p>`:''}<p><b>Selected models:</b> ${esc(modelNames.join(', ')||'None selected')}</p>${pb.dateText||pb.shootDate||pb.location?`<p><b>Brief context:</b> ${esc([pb.dateText||pb.shootDate,pb.location].filter(Boolean).join(' · '))}</p>`:''}${d.source?`<p class="muted"><b>Source:</b> ${esc(d.source)}</p>`:''}<h3>Related submission history</h3>${related.length?`<div class="table-wrap"><table><thead><tr><th>Date</th><th>Project</th><th>Models</th><th>Status</th></tr></thead><tbody>${related.map(x=>`<tr><td>${esc(x.date||'')}</td><td>${esc(x.project||x.company||'')}</td><td>${esc((x.models||[]).join(', '))}</td><td>${esc(x.status||'')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No recorded submissions are linked to this draft yet.</div>'}`;panel.open=false}else if(historicalCastingLeadsHtml&&panel.innerHTML!==historicalCastingLeadsHtml){panel.innerHTML=historicalCastingLeadsHtml;panel.open=false}}}
+function renderDraftScope(){const view=$('#view-email');if(!view)return;const panel=$('#castingLeadsPanel');if(panel&&!historicalCastingLeadsHtml)historicalCastingLeadsHtml=panel.innerHTML;const saved=activeDraftRecord();const d=db.draft||saved||seed.draft;const label=d.brandProject||d.company||d.subject||'Unsaved package';let banner=$('#draftScopeBanner');if(!banner){banner=document.createElement('div');banner.id='draftScopeBanner';banner.className='panel';banner.style.marginBottom='14px';const split=view.querySelector('.split');view.insertBefore(banner,split||view.firstChild)}const state=saved?'Saved package open':'Unsaved package';banner.innerHTML=`<div class="eyebrow">${esc(state)}</div><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><h2 style="margin:4px 0">${esc(label)}${saved?repeatCastingHtml(saved,true):''}</h2><div class="muted">Every package-builder section below is scoped to this ${saved?'saved draft':'working draft'}.</div>${saved?repeatCastingHtml(saved,false):''}</div><button class="btn" type="button" onclick="startBlankPackage()">New blank package</button></div>`;const headings=view.querySelectorAll('.split>.panel>h2');if(headings[0])headings[0].textContent='Model package builder · '+label;if(headings[1])headings[1].textContent='Email preview · '+label;const jump=$('#jumpToCastingLeadsBtn');if(jump)jump.textContent=saved?(d.company||label)+' lead context':'Casting leads';const saveBtn=$('#saveDraftBtn');if(saveBtn)saveBtn.textContent=saved?'Update draft':'Save draft';if(panel){if(saved){const c=db.contacts.find(x=>x.id===d.contactId)||null;const email=d.recipientEmail||c?.email||'';const projectKey=normalizeName(d.brandProject||d.company||'');const related=db.submissions.filter(x=>{if(x.draftId&&x.draftId===db.activeDraftId)return true;const hay=normalizeName([x.project,x.company,x.email,x.contact].filter(Boolean).join(' '));return projectKey&&hay.includes(projectKey)});const pb=d.parsedBrief||{};const modelNames=selectedModels().map(m=>m.name);panel.innerHTML=`<summary>${esc(label)} · lead context</summary><h2>${esc(label)}</h2><p><b>Contact:</b> ${esc(d.contactName||c?.name||'Not assigned')}${d.company||c?.company?` · ${esc(d.company||c?.company||'')}`:''}<br><b>Email:</b> ${esc(email||'Not verified / not entered')}</p>${d.brief?`<p><b>Package notes:</b> ${esc(d.brief)}</p>`:''}<p><b>Selected models:</b> ${esc(modelNames.join(', ')||'None selected')}</p>${pb.dateText||pb.shootDate||pb.location?`<p><b>Brief context:</b> ${esc([pb.dateText||pb.shootDate,pb.location].filter(Boolean).join(' · '))}</p>`:''}${d.source?`<p class="muted"><b>Source:</b> ${esc(d.source)}</p>`:''}<h3>Related submission history</h3>${related.length?`<div class="table-wrap"><table><thead><tr><th>Date</th><th>Project</th><th>Models</th><th>Status</th></tr></thead><tbody>${related.map(x=>`<tr><td>${esc(x.date||'')}</td><td>${esc(x.project||x.company||'')}</td><td>${esc((x.models||[]).join(', '))}</td><td>${esc(x.status||'')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No recorded submissions are linked to this draft yet.</div>'}`;panel.open=false}else if(historicalCastingLeadsHtml&&panel.innerHTML!==historicalCastingLeadsHtml){panel.innerHTML=historicalCastingLeadsHtml;panel.open=false}}}
 function recordSubmission(){if(!selected.length)return setStatus('Select at least one model first.');captureDraft();const pb=db.draft.parsedBrief||{};const s={id:uid(),date:nyDate(),draftId:db.activeDraftId||'',contact:db.draft.contactName||contactObj()?.name||'',company:db.draft.company||contactObj()?.company||'',email:db.draft.recipientEmail||contactObj()?.email||'',project:db.draft.brandProject||db.draft.subject,models:selectedModels().map(m=>m.name),modelIds:[...selected],status:'Submitted',subject:db.draft.subject,shootDate:pb.shootDate||'',shootText:pb.shootText||pb.dateText||'',castingDate:'',castingText:pb.castingText||'',rate:pb.rate||'',usage:pb.usage||'',location:pb.location||'',briefRaw:db.draft.castingBriefRaw||''};db.submissions.push(s);autoFollowUpForSubmission(s);save();setStatus('Submission recorded and follow-up task created.')}
 const schemas={contacts:[['name','Name','text'],['company','Company','text'],['email','Email','email'],['relationship','Relationship','select',['New','Developing','Warm','Strong','Priority']],['preferredNiches','Preferred niches / looks','text'],['notes','Notes','textarea']],submissions:[['date','Date','date'],['contact','Contact name','text'],['company','Company / brand','text'],['email','Contact email','email'],['project','Project','text'],['shootDate','Shoot date','date'],['castingDate','Casting / fitting date','date'],['rate','Rate','text'],['usage','Usage','text'],['models','Models (comma separated)','text'],['status','Status','select',['Draft','Submitted','Requested','Casting','Callback','First Hold','Second Hold','Booked','Passed','Closed / No Booking']]],bookings:[['date','Date','date'],['project','Project','text'],['model','Model','text'],['client','Client / company','text'],['contact','Contact name','text'],['email','Contact email','email'],['baseFee','Base model fee','text'],['usageFee','Usage fee','text'],['fittingFee','Fitting fee','text'],['overtimeFee','Overtime','text'],['travelFee','Travel / per diem','text'],['renewalFee','Renewal fee','text'],['totalFee','Total fee (leave blank to calculate)','text'],['personalRate','Your commission %','text'],['status','Status','select',['Inquiry','Hold','First Hold','Second Hold','Booked','Completed','Paid']]],tasks:[['task','Task','text'],['contact','Contact name','text'],['company','Company / brand','text'],['email','Contact email','email'],['details','Details / Notes','textarea'],['due','Due','date'],['priority','Priority','select',['Low','Normal','High']],['status','Status','select',['Open','Waiting','Done']]]};
 function openRecordModal(type,id=null){modalType=type;modalEditId=id;const existing=id?(db[type]||[]).find(x=>x.id===id):null;$('#recordModalTitle').textContent=existing?'Edit '+type.slice(0,-1):type==='contacts'?'Add contact':type==='submissions'?'New submission':type==='bookings'?'Add booking':'Add task';const contactPicker=type!=='contacts'?`<div class="field"><label>Autofill from saved contact</label><select id="recordContactSelect"><option value="">— Select contact —</option>${db.contacts.map(c=>`<option value="${esc(c.id||'')}">${esc(c.name||'Unnamed')}${c.company?' · '+esc(c.company):''}</option>`).join('')}</select></div>`:'';$('#recordForm').innerHTML=contactPicker+schemas[type].map(([key,label,kind,opts])=>{let raw=existing?.[key]??((key==='date'||key==='due')?nyDate():'');if(type==='bookings'&&key==='personalRate'&&!raw)raw=db.settings?.personalCommissionRate||10;const value=Array.isArray(raw)?raw.join(', '):String(raw??'');return `<div class="field"><label>${label}</label>${kind==='textarea'?`<textarea name="${key}" rows="5">${esc(value)}</textarea>`:kind==='select'?`<select name="${key}">${opts.map(o=>`<option ${value===o?'selected':''}>${o}</option>`).join('')}</select>`:`<input name="${key}" type="${kind}" value="${esc(value)}">`}</div>`}).join('');if(type!=='contacts'){const sel=$('#recordContactSelect');if(sel){const match=db.contacts.find(c=>(existing?.contactId&&c.id===existing.contactId)||(!existing?.contactId&&existing?.email&&c.email===existing.email));if(match)sel.value=match.id;sel.onchange=()=>autofillRecordContact(type)}}$('#recordDialog').showModal()}
@@ -1013,94 +1013,7 @@ function renderEmailSelection(){
   renderSubmissionWarnings();
   renderPhotoLibrary();
 }
-/* CASTING RELATIONSHIP TONE — synced from Work Gmail 2026-09-20
-   Previously emailed casters get the warmer repeat-contact tone.
-   For a caster who is new to Justin but appears on multiple Paris S/S 2027 drafts,
-   only that caster's earliest Paris draft stays professional; later drafts become personal. */
-const PRIOR_EMAILED_CASTERS_2026_09_20=new Set([
-  'piergiorgio del moro','julia lange','mathilde curel','sivan currie','tess wilcox',
-  'simone schofer','ben grimes','rosie vogel','caterina matteucci','anita bitton'
-]);
-const PRIOR_EMAILED_CASTER_EMAILS_2026_09_20=new Set([
-  'pg@dmfashionstudio.com','julia.lange@me.com','mathilde@jl-casting.com','sivan.currie@gmail.com',
-  'tess.wilcox@gmail.com','info@simoneschofer.com','studio@bengrimescasting.com',
-  'rosie@rosievogelcasting.com','caterina@cmcasting.it','anita@establishmentnewyork.com'
-]);
-function usableCastingParts(value){
-  return castingContactParts(value).filter(x=>!/^(casting team not publicly verified)$/i.test(x));
-}
-function draftToneIdentity(d){
-  const c=d?.contactId?db.contacts.find(x=>x.id===d.contactId):null;
-  const names=[...usableCastingParts(d?.contactName),...usableCastingParts(c?.name)];
-  const emails=[...castingEmails(d?.recipientEmail),...castingEmails(c?.email)];
-  return {names:[...new Set(names.map(normalizeName).filter(Boolean))],displayNames:[...new Set(names)],emails:[...new Set(emails)]};
-}
-function parisCasterDrafts(casterName){
-  const n=normalizeName(casterName);
-  return (db.drafts||[]).filter(d=>isParisSS27Draft(d)&&draftToneIdentity(d).names.includes(n)).slice().sort((a,b)=>{
-    const timeOf=d=>String(d.parsedBrief?.time||d.time||((String(d.castingBriefRaw||'').match(/·\\s*(\\d{1,2}:\\d{2})\\.?$/)||[])[1])||'99:99');
-    const ak=String(a.date||'')+' '+timeOf(a),bk=String(b.date||'')+' '+timeOf(b);
-    if(ak!==bk)return ak.localeCompare(bk);
-    return String(a.id||'').localeCompare(String(b.id||''));
-  });
-}
-function draftRelationshipTone(d){
-  d=d||activeDraftRecord()||db.draft||{};
-  const id=draftToneIdentity(d);
-  const prior=id.names.some(n=>PRIOR_EMAILED_CASTERS_2026_09_20.has(n))||id.emails.some(e=>PRIOR_EMAILED_CASTER_EMAILS_2026_09_20.has(e));
-  if(prior)return {tone:'personal',reason:'previously emailed',firstContact:false};
-  if(isParisSS27Draft(d)){
-    const repeated=id.displayNames.map(name=>({name,drafts:parisCasterDrafts(name)})).filter(x=>x.drafts.length>1);
-    if(repeated.length){
-      const currentId=d.id||db.activeDraftId||'';
-      const isFirst=repeated.some(x=>x.drafts[0]?.id===currentId);
-      if(isFirst)return {tone:'professional',reason:'first Paris contact',firstContact:true};
-      return {tone:'personal',reason:'repeat Paris contact',firstContact:false};
-    }
-  }
-  return {tone:'professional',reason:'first contact',firstContact:true};
-}
-function draftToneBadgeHtml(d){
-  if(!d)return'';
-  const t=draftRelationshipTone(d);
-  return ` <span class="pill" title="${esc(t.reason)}">${t.tone==='personal'?'PERSONAL':'PROFESSIONAL'}</span>`;
-}
-function contactGreetingNames(d){
-  const names=draftToneIdentity(d).displayNames.map(x=>x.trim()).filter(Boolean);
-  if(!names.length){
-    const raw=String(d?.contactName||'').trim();
-    return raw?[raw.split(/\s+/)[0]]:[];
-  }
-  return [...new Set(names.map(x=>x.split(/\s+/)[0]).filter(Boolean))].slice(0,3);
-}
-function emailHtml(){
-  const d={purpose:$('#emailPurpose').value,contactName:$('#emailContactName').value.trim(),recipientEmail:$('#emailRecipient').value.trim(),brand:$('#emailBrand').value.trim(),link:$('#emailLink').value.trim(),brief:$('#emailContext').value.trim(),stats:$('#includeStats').checked,photos:$('#includePhotos').checked,sources:$('#includeSources').checked,id:db.activeDraftId||db.draft?.id||'',contactId:$('#emailContact').value};
-  const activeRecord=activeDraftRecord();
-  const toneDraft={...(activeRecord||db.draft||{}),...d,brandProject:d.brand||activeRecord?.brandProject||db.draft?.brandProject||''};
-  const tone=draftRelationshipTone(toneDraft);
-  const greetingNames=contactGreetingNames(toneDraft);
-  const sal=greetingNames.length?`${tone.tone==='personal'?'Hi':'Hello'} ${esc(greetingNames.join(', '))},`:(tone.tone==='personal'?'Hi again,':'Hello,');
-  const picked=selectedModels();
-  const h=d.link?`<a href="${esc(d.link)}" style="color:#4285f4;font-size:18px" target="_blank">HERE</a>`:'HERE';
-  let lead='';
-  if(d.purpose==='submission'){
-    if(tone.tone==='personal'){
-      lead=`${h} are a few models we thought could be a strong fit${d.brand?' for '+esc(d.brand):''}. I wanted to send these over directly as we continue sharing options with you through fashion week.`;
-    }else{
-      lead=`${h} are our model suggestions${d.brand?' for '+esc(d.brand):''}. We preselected a few models and included their details below for consideration.`;
-    }
-  }else if(d.purpose==='followup'){
-    lead=tone.tone==='personal'?`Just following up with a few more model suggestions${d.brand?' for '+esc(d.brand):''}.`:`Following up with our model suggestions${d.brand?' for '+esc(d.brand):''}.`;
-  }else if(d.purpose==='availability'){
-    lead=tone.tone==='personal'?`Sending over the latest availability and model details${d.brand?' for '+esc(d.brand):''}.`:`Sharing availability and model details${d.brand?' for '+esc(d.brand):''}.`;
-  }else{
-    lead=tone.tone==='personal'?`I wanted to send over a few more models from our roster${d.brand?' for '+esc(d.brand):''}.`:`I wanted to introduce a few models from our roster${d.brand?' for '+esc(d.brand):''}.`;
-  }
-  const blocks=picked.map(m=>`<div style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&m.stats?' | '+formatStats(m.stats):''}</div>${d.sources&&m.profile?`<div><a href="${esc(m.profile)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftCredentialHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`).join('');
-  const extra=d.purpose!=='submission'&&d.brief?`<br><div>${esc(d.brief).replace(/\n/g,'<br>')}</div>`:'';
-  const close=tone.tone==='personal'?'Best,':'Thank you,';
-  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000"><div>${sal}</div><br><div>${lead}</div>${extra}<br>${blocks||'<div>[Select one or more models]</div>'}<div style="margin:0 0 24px">Please see additional model suggestions <a href="https://canva.link/hkqja7ybl587pm8" style="color:#4285f4" target="_blank">HERE</a>.</div><div>${close}</div><div>Justin</div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
-}
+function emailHtml(){const d={purpose:$('#emailPurpose').value,contactName:$('#emailContactName').value.trim(),brand:$('#emailBrand').value.trim(),link:$('#emailLink').value.trim(),brief:$('#emailContext').value.trim(),stats:$('#includeStats').checked,photos:$('#includePhotos').checked,sources:$('#includeSources').checked},picked=selectedModels(),first=d.contactName.split(/\s+/)[0]||'',sal=first?`Hi ${esc(first)},`:'Hi,';let lead='';if(d.purpose==='submission'){const h=d.link?`<a href="${esc(d.link)}" style="color:#4285f4;font-size:18px" target="_blank">HERE</a>`:'HERE';lead=`${h} are our model suggestions${d.brand?' for '+esc(d.brand):''}. We preselected a few models and put them below.`}else if(d.purpose==='followup')lead=`Following up with our model suggestions${d.brand?' for '+esc(d.brand):''}.`;else if(d.purpose==='availability')lead=`Sharing availability and model details${d.brand?' for '+esc(d.brand):''}.`;else lead=`I wanted to introduce a few models from our roster${d.brand?' for '+esc(d.brand):''}.`;const blocks=picked.map(m=>{const n=m.name;return `<div style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(n)}</b>${d.stats&&m.stats?' | '+formatStats(m.stats):''}</div>${d.sources&&m.profile?`<div><a href="${esc(m.profile)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftCredentialHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`}).join(''),extra=d.purpose!=='submission'&&d.brief?`<br><div>${esc(d.brief).replace(/\n/g,'<br>')}</div>`:'';return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000"><div>${sal}</div><br><div>${lead}</div>${extra}<br>${blocks||'<div>[Select one or more models]</div>'}<div style="margin:0 0 24px">Please see additional model suggestions <a href="https://canva.link/hkqja7ybl587pm8" style="color:#4285f4" target="_blank">HERE</a>.</div><div>Thank you,</div><div>Justin</div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`}
 
 /* EMAIL DRAFT BUILDER STABILITY FIX 2026-09-17 */
 let emailDraftRenderTimer=0;
