@@ -1,0 +1,47 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Recover Paris drafts · CLM CRM</title>
+<style>body{font:16px/1.6 system-ui,sans-serif;background:#f4f3ef;color:#222;max-width:1000px;margin:40px auto;padding:0 24px}h1{line-height:1.2}button,.link{display:inline-block;background:#202d28;color:white;border:0;border-radius:8px;padding:12px 18px;font:inherit;cursor:pointer;margin:8px 8px 8px 0}button:disabled{opacity:.5;cursor:wait}a{color:#245845}table{width:100%;border-collapse:collapse;background:white}td,th{text-align:left;padding:12px;border-bottom:1px solid #ddd}#status{padding:16px;background:white;border-radius:8px;white-space:pre-wrap}.note{color:#555}details{margin:16px 0}</style>
+<h1>Recover your Paris drafts</h1>
+<p>58 Paris S/S 2027 packages recovered from the CRM repository, with corrected model links and the reviewed selections. Valentino includes Maja, Agang, Mary and Claudia.</p>
+<p>Open this page in the same browser and profile you use for the CRM. Close other CRM tabs before restoring so they cannot overwrite the recovery.</p>
+<p class="note">Restoring saves a copy of your current browser workspace first, then replaces the recovered Paris packages. Other drafts, contacts, submissions, bookings, tasks and saved photos are retained. Browser-only edits cannot be recovered from GitHub.</p>
+<button id="restore" disabled>Restore Paris drafts</button><button id="backup" disabled>Download original workspace backup</button><a class="link" href="../?recovery=paris-model-links-v1">Open repaired CRM</a>
+<p><a href="paris-drafts.json" download>Download recovered Paris package data</a></p><p id="status" role="status">Loading recovered packages…</p>
+<details><summary>Review the recovered model selections</summary><table><thead><tr><th>Show</th><th>Models</th></tr></thead><tbody id="rows"></tbody></table></details>
+<script>
+let payload,originalBackup;
+const keys=['jn-agency-crm-copy-v2','jn-agency-crm-copy-v1','justinAgencyCRM.v4','justinAgencyCRM.customPhotos.v1'];
+const status=document.getElementById('status');
+function connect(){return new Promise((resolve,reject)=>{const q=indexedDB.open('jn-agency-crm',1);q.onupgradeneeded=()=>{if(!q.result.objectStoreNames.contains('workspace'))q.result.createObjectStore('workspace')};q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);q.onblocked=()=>reject(new Error('Close other CRM tabs and try again.'))})}
+function read(db,key){return new Promise((resolve,reject)=>{const tx=db.transaction('workspace','readonly'),r=tx.objectStore('workspace').get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+function mergeParis(current,recovered){
+ const out=structuredClone(current||{});const models=new Map((out.models||[]).map(m=>[m.id,m]));
+ for(const m of recovered.models)if(!models.has(m.id))models.set(m.id,m);
+ out.models=[...models.values()];const drafts=new Map((out.drafts||[]).map(d=>[d.id,d]));
+ for(const d of recovered.drafts){const old=drafts.get(d.id)||{};drafts.set(d.id,{...old,...d,notes:old.notes||'',packageLink:old.packageLink||d.packageLink||'',photoSelections:old.photoSelections||{},packagePhotos:old.packagePhotos||{},html:''})}
+ out.drafts=[...drafts.values()];const activeId=out.draft?.id||out.activeDraftId;
+ if(recovered.drafts.some(d=>d.id===activeId)){out.draft={...out.draft,...drafts.get(activeId)};out.selected=[...out.draft.modelIds]}
+ out.recovery={...out.recovery,parisModelLinksRestoredOn:new Date().toISOString()};return out;
+}
+function downloadBackup(){if(!originalBackup)return;const a=document.createElement('a');const url=URL.createObjectURL(new Blob([JSON.stringify(originalBackup,null,2)],{type:'application/json'}));a.href=url;a.download='clm-before-paris-recovery.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+document.getElementById('backup').onclick=downloadBackup;
+document.getElementById('restore').onclick=async()=>{
+ const button=document.getElementById('restore');button.disabled=true;let database;
+ try{
+  database=await connect();const stored=await read(database,'primary');const legacy=Object.fromEntries(keys.map(k=>[k,localStorage.getItem(k)]));
+  let current=stored;
+  if(!current){for(const key of keys.slice(0,3)){if(legacy[key]){const parsed=JSON.parse(legacy[key]);current=parsed.state||parsed;break}}}
+  originalBackup={savedAt:new Date().toISOString(),workspace:stored||null,legacyLocalStorage:legacy};
+  const restored=mergeParis(current,payload);
+  if(!stored&&legacy[keys[3]])restored.customPhotos={...JSON.parse(legacy[keys[3]]),...restored.customPhotos};
+  const backupKey='paris-recovery-backup-'+Date.now();
+  await new Promise((resolve,reject)=>{const tx=database.transaction('workspace','readwrite'),store=tx.objectStore('workspace');store.put(originalBackup,backupKey);store.put(backupKey,'paris-recovery-latest-backup');store.put(restored,'primary');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Recovery cancelled; original data kept.'))});
+  const verified=await read(database,'primary');for(const d of payload.drafts){const got=verified.drafts.find(x=>x.id===d.id);if(JSON.stringify(got?.modelIds)!==JSON.stringify(d.modelIds))throw new Error('Saved data verification failed. Your backup is retained.');}
+  document.getElementById('backup').disabled=false;downloadBackup();status.textContent='Restored and verified all 58 Paris drafts. A copy of your original workspace is saved in this browser and downloaded. Open the repaired CRM above.';
+ }catch(e){status.textContent='Recovery did not complete: '+e.message+' Do not clear browser data.';button.disabled=false}finally{database?.close()}
+};
+fetch('paris-drafts.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('Package data unavailable');return r.json()}).then(data=>{
+ payload=data;for(const d of data.drafts){if(d.models.length!==d.modelIds.length)throw new Error('Incomplete model links for '+d.company);const row=document.createElement('tr');for(const value of [d.company,d.models.join(', ')]){const cell=document.createElement('td');cell.textContent=value;row.append(cell)}document.getElementById('rows').append(row)}
+ document.getElementById('restore').disabled=false;status.textContent='All 58 recovered packages are ready. Restore them here, then open the repaired CRM.';
+}).catch(e=>status.textContent=e.message);
+(async()=>{let d;try{d=await connect();const key=await read(d,'paris-recovery-latest-backup');if(key){originalBackup=await read(d,key);document.getElementById('backup').disabled=!originalBackup}}catch{}finally{d?.close()}})();
+</script></html>

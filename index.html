@@ -218,11 +218,13 @@ function applyEuropeNoTravelRemovals(data){
   return data;
 }
 function parisPostDiorDrafts(models){
-  const byName=new Map((models||[]).map(m=>[europeTravelName(m.name),m]));
+  // Roster display names are shortened by applyModelIdentity. Resolve the
+  // researched full names through the same aliases before linking records.
+  const byName=new Map((models||[]).map(m=>[europeTravelName(shortModelName(m.name)),m]));
   const fmtDate=iso=>new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Paris',weekday:'long',month:'long',day:'numeric',year:'numeric'}).format(new Date(iso+'T12:00:00Z'));
   return PARIS_POST_DIOR_ROWS.map(([date,time,brand,contactName,recipientEmail,recommended],index)=>{
     const chosen=recommended.filter(name=>!EUROPE_SS27_NO_TRAVEL_NAMES.has(europeTravelName(name)));
-    const ids=chosen.map(name=>byName.get(europeTravelName(name))?.id).filter(Boolean);
+    const ids=chosen.map(name=>byName.get(europeTravelName(shortModelName(name)))?.id).filter(Boolean);
     const slug=brand.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
     return {
       id:'paris-ss27-post-dior-'+String(index+1).padStart(2,'0')+'-'+slug,

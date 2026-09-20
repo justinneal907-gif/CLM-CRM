@@ -1,0 +1,3429 @@
+{
+  "version": 1,
+  "sourceCommit": "63d9cbb0f0bc832e4c50117971cf8b82e4225767 + model alias repair",
+  "recoveredOn": "2026-09-20",
+  "drafts": [
+    {
+      "id": "paris-ss27-post-dior-01-burc-akyol",
+      "date": "2026-09-29",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Leila Azizi / SUUN Consultancy",
+      "company": "Burc Akyol",
+      "recipientEmail": "sayhi@suunconsultancy.com",
+      "brandProject": "Burc Akyol — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Tuesday, September 29, 2026 · 16:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Burc Akyol · Tuesday, September 29, 2026 · 16:00.",
+      "parsedBrief": {
+        "project": "Burc Akyol",
+        "shootDate": "2026-09-29",
+        "dateText": "Tuesday, September 29, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Burc Akyol",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Ambre Prognitz",
+        "Agang",
+        "Mary Timms",
+        "Sophia Pippen"
+      ],
+      "modelIds": [
+        "london-women-ambre-prognitz",
+        "new-york-women-agang",
+        "new-york-women-mary-timms",
+        "new-york-women-sophia-pippen"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Dior research · curated 2026-09-19",
+      "packageDepthReview": {
+        "date": "2026-09-19",
+        "addedModels": [
+          "Ambre Prognitz",
+          "Agang",
+          "Mary Timms"
+        ],
+        "basis": "Brand-specific recommendation from the September 19 Paris Fashion Week research; Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier excluded because they are unavailable for Europe SS27."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-02-maison-margiela",
+      "date": "2026-09-29",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Jess Hallett",
+      "company": "Maison Margiela",
+      "recipientEmail": "birgitta@streeters.com",
+      "brandProject": "Maison Margiela — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Tuesday, September 29, 2026 · 17:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Maison Margiela · Tuesday, September 29, 2026 · 17:30.",
+      "parsedBrief": {
+        "project": "Maison Margiela",
+        "shootDate": "2026-09-29",
+        "dateText": "Tuesday, September 29, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Maison Margiela",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Mary Timms",
+        "Maja Stockwell",
+        "Ambre Prognitz",
+        "Sophia Pippen"
+      ],
+      "modelIds": [
+        "new-york-women-mary-timms",
+        "new-york-women-maja-stockwell",
+        "london-women-ambre-prognitz",
+        "new-york-women-sophia-pippen"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Dior research · curated 2026-09-19",
+      "packageDepthReview": {
+        "date": "2026-09-19",
+        "addedModels": [
+          "Mary Timms",
+          "Maja Stockwell",
+          "Ambre Prognitz"
+        ],
+        "basis": "Brand-specific recommendation from the September 19 Paris Fashion Week research; Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier excluded because they are unavailable for Europe SS27."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-03-anrealage",
+      "date": "2026-09-29",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Paul Cadre",
+      "company": "Anrealage",
+      "recipientEmail": "",
+      "brandProject": "Anrealage — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Tuesday, September 29, 2026 · 19:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Anrealage · Tuesday, September 29, 2026 · 19:00.",
+      "parsedBrief": {
+        "project": "Anrealage",
+        "shootDate": "2026-09-29",
+        "dateText": "Tuesday, September 29, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Anrealage",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Agang",
+        "Camelia Boca",
+        "Sophia Pippen"
+      ],
+      "modelIds": [
+        "new-york-women-agang",
+        "milan-women-camelia-boca",
+        "new-york-women-sophia-pippen"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Dior research · curated 2026-09-19",
+      "packageDepthReview": {
+        "date": "2026-09-19",
+        "addedModels": [
+          "Agang",
+          "Camelia Boca"
+        ],
+        "basis": "Brand-specific recommendation from the September 19 Paris Fashion Week research; Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier excluded because they are unavailable for Europe SS27."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-04-saint-laurent",
+      "date": "2026-09-29",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Samuel Ellis Scheinman",
+      "company": "Saint Laurent",
+      "recipientEmail": "samuele@dmfashionstudio.com",
+      "brandProject": "Saint Laurent — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Tuesday, September 29, 2026 · 21:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Saint Laurent · Tuesday, September 29, 2026 · 21:00.",
+      "parsedBrief": {
+        "project": "Saint Laurent",
+        "shootDate": "2026-09-29",
+        "dateText": "Tuesday, September 29, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Saint Laurent",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Claudia Lucchini",
+        "Ambre Prognitz",
+        "Rachel Stone",
+        "Sophia Pippen"
+      ],
+      "modelIds": [
+        "new-york-women-claudia-lucchini",
+        "london-women-ambre-prognitz",
+        "new-york-women-rachel-stone",
+        "new-york-women-sophia-pippen"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Dior research · curated 2026-09-19",
+      "packageDepthReview": {
+        "date": "2026-09-19",
+        "addedModels": [
+          "Claudia Lucchini",
+          "Ambre Prognitz",
+          "Rachel Stone"
+        ],
+        "basis": "Brand-specific recommendation from the September 19 Paris Fashion Week research; Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier excluded because they are unavailable for Europe SS27."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-05-courreges",
+      "date": "2026-09-30",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Julia Lange / Mathilde Curel",
+      "company": "Courrèges",
+      "recipientEmail": "julia.lange@me.com, mathilde@jl-casting.com",
+      "brandProject": "Courrèges — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Wednesday, September 30, 2026 · 10:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Courrèges · Wednesday, September 30, 2026 · 10:30.",
+      "parsedBrief": {
+        "project": "Courrèges",
+        "shootDate": "2026-09-30",
+        "dateText": "Wednesday, September 30, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Courrèges",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Claudia Lucchini",
+        "Agang",
+        "Camelia Boca",
+        "Sophia Pippen"
+      ],
+      "modelIds": [
+        "new-york-women-claudia-lucchini",
+        "new-york-women-agang",
+        "milan-women-camelia-boca",
+        "new-york-women-sophia-pippen"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Dior research · curated 2026-09-19",
+      "packageDepthReview": {
+        "date": "2026-09-19",
+        "addedModels": [
+          "Claudia Lucchini",
+          "Agang",
+          "Camelia Boca"
+        ],
+        "basis": "Brand-specific recommendation from the September 19 Paris Fashion Week research; Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier excluded because they are unavailable for Europe SS27."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-06-the-row",
+      "date": "2026-09-30",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Ashley Brokaw",
+      "company": "The Row",
+      "recipientEmail": "",
+      "brandProject": "The Row — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Wednesday, September 30, 2026 · 12:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · The Row · Wednesday, September 30, 2026 · 12:00.",
+      "parsedBrief": {
+        "project": "The Row",
+        "shootDate": "2026-09-30",
+        "dateText": "Wednesday, September 30, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — The Row",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Rachel Stone",
+        "Ambre Prognitz",
+        "Sophia Pippen"
+      ],
+      "modelIds": [
+        "new-york-women-rachel-stone",
+        "london-women-ambre-prognitz",
+        "new-york-women-sophia-pippen"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Dior research · curated 2026-09-19",
+      "packageDepthReview": {
+        "date": "2026-09-19",
+        "addedModels": [
+          "Rachel Stone",
+          "Ambre Prognitz"
+        ],
+        "basis": "Brand-specific recommendation from the September 19 Paris Fashion Week research; Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier excluded because they are unavailable for Europe SS27."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-07-balmain",
+      "date": "2026-09-30",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Julia Lange / Tess Wilcox",
+      "company": "Balmain",
+      "recipientEmail": "julia.lange@me.com, tess.wilcox@gmail.com",
+      "brandProject": "Balmain — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Wednesday, September 30, 2026 · 13:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Balmain · Wednesday, September 30, 2026 · 13:30.",
+      "parsedBrief": {
+        "project": "Balmain",
+        "shootDate": "2026-09-30",
+        "dateText": "Wednesday, September 30, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Balmain",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Maja Stockwell",
+        "Callie Steg",
+        "Sophia Pippen"
+      ],
+      "modelIds": [
+        "new-york-women-maja-stockwell",
+        "new-york-women-callie-steg",
+        "new-york-women-sophia-pippen"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Dior research · curated 2026-09-19",
+      "packageDepthReview": {
+        "date": "2026-09-19",
+        "addedModels": [
+          "Maja Stockwell",
+          "Callie Steg"
+        ],
+        "basis": "Brand-specific recommendation from the September 19 Paris Fashion Week research; Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier excluded because they are unavailable for Europe SS27."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-08-dries-van-noten",
+      "date": "2026-09-30",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Ilai Dov / Piergiorgio Del Moro",
+      "company": "Dries Van Noten",
+      "recipientEmail": "pg@dmfashionstudio.com",
+      "brandProject": "Dries Van Noten — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Wednesday, September 30, 2026 · 15:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Dries Van Noten · Wednesday, September 30, 2026 · 15:00.",
+      "parsedBrief": {
+        "project": "Dries Van Noten",
+        "shootDate": "2026-09-30",
+        "dateText": "Wednesday, September 30, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Dries Van Noten",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Agang",
+        "Mary Timms",
+        "Ambre Prognitz",
+        "Sophia Pippen"
+      ],
+      "modelIds": [
+        "new-york-women-agang",
+        "new-york-women-mary-timms",
+        "london-women-ambre-prognitz",
+        "new-york-women-sophia-pippen"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Dior research · curated 2026-09-19",
+      "packageDepthReview": {
+        "date": "2026-09-19",
+        "addedModels": [
+          "Agang",
+          "Mary Timms",
+          "Ambre Prognitz"
+        ],
+        "basis": "Brand-specific recommendation from the September 19 Paris Fashion Week research; Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier excluded because they are unavailable for Europe SS27."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-09-stella-mccartney",
+      "date": "2026-09-30",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Julia Lange / Mathilde Curel / Sivan Currie",
+      "company": "Stella McCartney",
+      "recipientEmail": "julia.lange@me.com, mathilde@jl-casting.com, sivan.currie@gmail.com",
+      "brandProject": "Stella McCartney — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Wednesday, September 30, 2026 · 16:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Stella McCartney · Wednesday, September 30, 2026 · 16:00.",
+      "parsedBrief": {
+        "project": "Stella McCartney",
+        "shootDate": "2026-09-30",
+        "dateText": "Wednesday, September 30, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Stella McCartney",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Ambre Prognitz",
+        "Bianca Eigenfeld Own",
+        "Callie Steg",
+        "Sophia Pippen"
+      ],
+      "modelIds": [
+        "london-women-ambre-prognitz",
+        "germany-women-bianca-eigenfeld-own",
+        "new-york-women-callie-steg",
+        "new-york-women-sophia-pippen"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Dior research · curated 2026-09-19",
+      "packageDepthReview": {
+        "date": "2026-09-19",
+        "addedModels": [
+          "Ambre Prognitz",
+          "Bianca Eigenfeld Own",
+          "Callie Steg"
+        ],
+        "basis": "Brand-specific recommendation from the September 19 Paris Fashion Week research; Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier excluded because they are unavailable for Europe SS27."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-10-vaquera",
+      "date": "2026-09-30",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Rachel Chandler / Jane Morineau",
+      "company": "Vaquera",
+      "recipientEmail": "contact@midland.agency, casting@janemorineau.com",
+      "brandProject": "Vaquera — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Wednesday, September 30, 2026 · 17:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Vaquera · Wednesday, September 30, 2026 · 17:30.",
+      "parsedBrief": {
+        "project": "Vaquera",
+        "shootDate": "2026-09-30",
+        "dateText": "Wednesday, September 30, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Vaquera",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Seven Wright",
+        "Mary Timms",
+        "Sophia Pippen"
+      ],
+      "modelIds": [
+        "new-york-women-seven-wright",
+        "new-york-women-mary-timms",
+        "new-york-women-sophia-pippen"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Dior research · curated 2026-09-19",
+      "packageDepthReview": {
+        "date": "2026-09-19",
+        "addedModels": [
+          "Seven Wright",
+          "Mary Timms"
+        ],
+        "basis": "Brand-specific recommendation from the September 19 Paris Fashion Week research; Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier excluded because they are unavailable for Europe SS27."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-11-acne-studios",
+      "date": "2026-09-30",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Piergiorgio Del Moro",
+      "company": "Acne Studios",
+      "recipientEmail": "pg@dmfashionstudio.com",
+      "brandProject": "Acne Studios — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Wednesday, September 30, 2026 · 18:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Acne Studios · Wednesday, September 30, 2026 · 18:30.",
+      "parsedBrief": {
+        "project": "Acne Studios",
+        "shootDate": "2026-09-30",
+        "dateText": "Wednesday, September 30, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Acne Studios",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Claudia Lucchini",
+        "Mary Timms",
+        "Camelia Boca",
+        "Sophia Pippen"
+      ],
+      "modelIds": [
+        "new-york-women-claudia-lucchini",
+        "new-york-women-mary-timms",
+        "milan-women-camelia-boca",
+        "new-york-women-sophia-pippen"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Dior research · curated 2026-09-19",
+      "packageDepthReview": {
+        "date": "2026-09-19",
+        "addedModels": [
+          "Claudia Lucchini",
+          "Mary Timms",
+          "Camelia Boca"
+        ],
+        "basis": "Brand-specific recommendation from the September 19 Paris Fashion Week research; Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier excluded because they are unavailable for Europe SS27."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-12-tom-ford",
+      "date": "2026-09-30",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Giulia Massullo / Marco Coretti / Piergiorgio Del Moro",
+      "company": "Tom Ford",
+      "recipientEmail": "giulia@dmcasting.com, pg@dmfashionstudio.com",
+      "brandProject": "Tom Ford — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Wednesday, September 30, 2026 · 20:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Tom Ford · Wednesday, September 30, 2026 · 20:00.",
+      "parsedBrief": {
+        "project": "Tom Ford",
+        "shootDate": "2026-09-30",
+        "dateText": "Wednesday, September 30, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Tom Ford",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Callie Steg",
+        "Maja Stockwell",
+        "Sophia Pippen"
+      ],
+      "modelIds": [
+        "new-york-women-callie-steg",
+        "new-york-women-maja-stockwell",
+        "new-york-women-sophia-pippen"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Dior research · curated 2026-09-19",
+      "packageDepthReview": {
+        "date": "2026-09-19",
+        "addedModels": [
+          "Callie Steg",
+          "Maja Stockwell"
+        ],
+        "basis": "Brand-specific recommendation from the September 19 Paris Fashion Week research; Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier excluded because they are unavailable for Europe SS27."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-13-chloe",
+      "date": "2026-10-01",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Piergiorgio Del Moro",
+      "company": "Chloé",
+      "recipientEmail": "pg@dmfashionstudio.com",
+      "brandProject": "Chloé — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Thursday, October 1, 2026 · 10:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Chloé · Thursday, October 1, 2026 · 10:00.",
+      "parsedBrief": {
+        "project": "Chloé",
+        "shootDate": "2026-10-01",
+        "dateText": "Thursday, October 1, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Chloé",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Ambre Prognitz",
+        "Bianca Eigenfeld Own",
+        "Rachel Stone",
+        "Sophia Pippen"
+      ],
+      "modelIds": [
+        "london-women-ambre-prognitz",
+        "germany-women-bianca-eigenfeld-own",
+        "new-york-women-rachel-stone",
+        "new-york-women-sophia-pippen"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Dior research · curated 2026-09-19",
+      "packageDepthReview": {
+        "date": "2026-09-19",
+        "addedModels": [
+          "Ambre Prognitz",
+          "Bianca Eigenfeld Own",
+          "Rachel Stone"
+        ],
+        "basis": "Brand-specific recommendation from the September 19 Paris Fashion Week research; Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier excluded because they are unavailable for Europe SS27."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-14-alainpaul",
+      "date": "2026-10-01",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Andrea Prato / Daniel von der Graf",
+      "company": "Alainpaul",
+      "recipientEmail": "andrea@andcasting.co, daniel@andcasting.co",
+      "brandProject": "Alainpaul — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Thursday, October 1, 2026 · 11:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Alainpaul · Thursday, October 1, 2026 · 11:30.",
+      "parsedBrief": {
+        "project": "Alainpaul",
+        "shootDate": "2026-10-01",
+        "dateText": "Thursday, October 1, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Alainpaul",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Mary Timms",
+        "Agang",
+        "Ambre Prognitz",
+        "Sophia Pippen"
+      ],
+      "modelIds": [
+        "new-york-women-mary-timms",
+        "new-york-women-agang",
+        "london-women-ambre-prognitz",
+        "new-york-women-sophia-pippen"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Dior research · curated 2026-09-19",
+      "packageDepthReview": {
+        "date": "2026-09-19",
+        "addedModels": [
+          "Mary Timms",
+          "Agang",
+          "Ambre Prognitz"
+        ],
+        "basis": "Brand-specific recommendation from the September 19 Paris Fashion Week research; Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier excluded because they are unavailable for Europe SS27."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-15-carven",
+      "date": "2026-10-01",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Nico Mao / Rachel Chandler",
+      "company": "Carven",
+      "recipientEmail": "contact@midland.agency",
+      "brandProject": "Carven — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Thursday, October 1, 2026 · 12:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Carven · Thursday, October 1, 2026 · 12:30.",
+      "parsedBrief": {
+        "project": "Carven",
+        "shootDate": "2026-10-01",
+        "dateText": "Thursday, October 1, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Carven",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Claudia Lucchini",
+        "Agang",
+        "Camelia Boca",
+        "Sophia Pippen"
+      ],
+      "modelIds": [
+        "new-york-women-claudia-lucchini",
+        "new-york-women-agang",
+        "milan-women-camelia-boca",
+        "new-york-women-sophia-pippen"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Dior research · curated 2026-09-19",
+      "packageDepthReview": {
+        "date": "2026-09-19",
+        "addedModels": [
+          "Claudia Lucchini",
+          "Agang",
+          "Camelia Boca"
+        ],
+        "basis": "Brand-specific recommendation from the September 19 Paris Fashion Week research; Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier excluded because they are unavailable for Europe SS27."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-16-balenciaga",
+      "date": "2026-10-01",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Piergiorgio Del Moro / Alejandra Perez / Evagria Sergeeva",
+      "company": "Balenciaga",
+      "recipientEmail": "pg@dmfashionstudio.com, alejandra@dmcasting.com, evagria@dmcasting.com",
+      "brandProject": "Balenciaga — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Thursday, October 1, 2026 · 14:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Balenciaga · Thursday, October 1, 2026 · 14:00.",
+      "parsedBrief": {
+        "project": "Balenciaga",
+        "shootDate": "2026-10-01",
+        "dateText": "Thursday, October 1, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Balenciaga",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Agang",
+        "Maja Stockwell",
+        "Claudia Lucchini",
+        "Mary Timms"
+      ],
+      "modelIds": [
+        "new-york-women-agang",
+        "new-york-women-maja-stockwell",
+        "new-york-women-claudia-lucchini",
+        "new-york-women-mary-timms"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Agang",
+          "Maja Stockwell",
+          "Claudia Lucchini",
+          "Mary Timms"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 favored tall, directional, sharply distinctive runway faces across skin tones; current four-model package is Agang, Maja, Claudia and Mary."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-17-cecilie-bahnsen",
+      "date": "2026-10-01",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Emma Matell",
+      "company": "Cecilie Bahnsen",
+      "recipientEmail": "",
+      "brandProject": "Cecilie Bahnsen — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Thursday, October 1, 2026 · 15:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Cecilie Bahnsen · Thursday, October 1, 2026 · 15:30.",
+      "parsedBrief": {
+        "project": "Cecilie Bahnsen",
+        "shootDate": "2026-10-01",
+        "dateText": "Thursday, October 1, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Cecilie Bahnsen",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Bianca Eigenfeld Own",
+        "June Ramadhan",
+        "Ambre Prognitz"
+      ],
+      "modelIds": [
+        "germany-women-bianca-eigenfeld-own",
+        "new-york-women-june-ramadhan",
+        "london-women-ambre-prognitz"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Bianca Eigenfeld Own",
+          "June Ramadhan",
+          "Ambre Prognitz"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 cast balanced delicate romantic styling with distinctive youthful faces; Bianca, June and Ambre remain the strongest roster match."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-18-uma-wang",
+      "date": "2026-10-01",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Isadora Banaudi",
+      "company": "Uma Wang",
+      "recipientEmail": "",
+      "brandProject": "Uma Wang — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Thursday, October 1, 2026 · 16:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Uma Wang · Thursday, October 1, 2026 · 16:30.",
+      "parsedBrief": {
+        "project": "Uma Wang",
+        "shootDate": "2026-10-01",
+        "dateText": "Thursday, October 1, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Uma Wang",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Camelia Boca",
+        "Ambre Prognitz"
+      ],
+      "modelIds": [
+        "milan-women-camelia-boca",
+        "london-women-ambre-prognitz"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Camelia Boca",
+          "Ambre Prognitz"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 used elongated, mature, quietly unconventional faces with restrained styling; Camelia and Ambre lead, with Raquel as the stronger dark-featured counterpoint."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-19-rick-owens",
+      "date": "2026-10-01",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Angus Munro / AMC Casting",
+      "company": "Rick Owens",
+      "recipientEmail": "",
+      "brandProject": "Rick Owens — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Thursday, October 1, 2026 · 17:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Rick Owens · Thursday, October 1, 2026 · 17:30.",
+      "parsedBrief": {
+        "project": "Rick Owens",
+        "shootDate": "2026-10-01",
+        "dateText": "Thursday, October 1, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Rick Owens",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Maja Stockwell",
+        "Mary Timms",
+        "Claudia Lucchini",
+        "Agang"
+      ],
+      "modelIds": [
+        "new-york-women-maja-stockwell",
+        "new-york-women-mary-timms",
+        "new-york-women-claudia-lucchini",
+        "new-york-women-agang"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Maja Stockwell",
+          "Mary Timms",
+          "Claudia Lucchini",
+          "Agang"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 favored extreme height, severity and unconventional facial character; Maja and Mary lead, with Claudia added for prior Rick Owens runway history and Agang as the fourth directional fit."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-20-schiaparelli",
+      "date": "2026-10-01",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Caterina Matteucci / Diego Maffezzoni / Piergiorgio Del Moro",
+      "company": "Schiaparelli",
+      "recipientEmail": "caterina@cmcasting.it, pg@dmfashionstudio.com",
+      "brandProject": "Schiaparelli — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Thursday, October 1, 2026 · 19:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Schiaparelli · Thursday, October 1, 2026 · 19:00.",
+      "parsedBrief": {
+        "project": "Schiaparelli",
+        "shootDate": "2026-10-01",
+        "dateText": "Thursday, October 1, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Schiaparelli",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Callie Steg",
+        "Maja Stockwell",
+        "Claudia Lucchini",
+        "Agang"
+      ],
+      "modelIds": [
+        "new-york-women-callie-steg",
+        "new-york-women-maja-stockwell",
+        "new-york-women-claudia-lucchini",
+        "new-york-women-agang"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Callie Steg",
+          "Maja Stockwell",
+          "Claudia Lucchini",
+          "Agang"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 combined high-glamour authority with sharp editorial faces; Callie, Maja, Claudia and Agang form the strongest available four-model package."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-21-isabel-marant",
+      "date": "2026-10-01",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Piergiorgio Del Moro",
+      "company": "Isabel Marant",
+      "recipientEmail": "pg@dmfashionstudio.com",
+      "brandProject": "Isabel Marant — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Thursday, October 1, 2026 · 20:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Isabel Marant · Thursday, October 1, 2026 · 20:00.",
+      "parsedBrief": {
+        "project": "Isabel Marant",
+        "shootDate": "2026-10-01",
+        "dateText": "Thursday, October 1, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Isabel Marant",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Ambre Prognitz",
+        "Claudia Lucchini",
+        "Rachel Stone",
+        "Camelia Boca"
+      ],
+      "modelIds": [
+        "london-women-ambre-prognitz",
+        "new-york-women-claudia-lucchini",
+        "new-york-women-rachel-stone",
+        "milan-women-camelia-boca"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Ambre Prognitz",
+          "Claudia Lucchini",
+          "Rachel Stone",
+          "Camelia Boca"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 skewed toward lean, strong-featured, effortless editorial women; Ambre, Claudia, Rachel and Camelia are the strongest available four after Raquel became unavailable."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-22-loewe",
+      "date": "2026-10-02",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Ashley Brokaw",
+      "company": "Loewe",
+      "recipientEmail": "",
+      "brandProject": "Loewe — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Friday, October 2, 2026 · 11:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Loewe · Friday, October 2, 2026 · 11:30.",
+      "parsedBrief": {
+        "project": "Loewe",
+        "shootDate": "2026-10-02",
+        "dateText": "Friday, October 2, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Loewe",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Agang",
+        "Claudia Lucchini",
+        "Mary Timms",
+        "Maja Stockwell"
+      ],
+      "modelIds": [
+        "new-york-women-agang",
+        "new-york-women-claudia-lucchini",
+        "new-york-women-mary-timms",
+        "new-york-women-maja-stockwell"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Agang",
+          "Claudia Lucchini",
+          "Mary Timms",
+          "Maja Stockwell"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 under Ashley Brokaw emphasized distinctive, modern, sometimes unconventional faces and strong proportions; Agang, Claudia, Mary and Maja are the current four-model package."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-23-issey-miyake",
+      "date": "2026-10-02",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Finlay Macaulay",
+      "company": "Issey Miyake",
+      "recipientEmail": "",
+      "brandProject": "Issey Miyake — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Friday, October 2, 2026 · 13:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Issey Miyake · Friday, October 2, 2026 · 13:00.",
+      "parsedBrief": {
+        "project": "Issey Miyake",
+        "shootDate": "2026-10-02",
+        "dateText": "Friday, October 2, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Issey Miyake",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Adhar",
+        "Camelia Boca",
+        "Agang"
+      ],
+      "modelIds": [
+        "site-women7-adhar",
+        "milan-women-camelia-boca",
+        "new-york-women-agang"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Adhar",
+          "Camelia Boca",
+          "Agang"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 was diverse and character-led with clean, elongated silhouettes; Adhar, Camelia and Agang are the strongest current matches."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-24-casablanca",
+      "date": "2026-10-02",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Simone Schofer",
+      "company": "Casablanca",
+      "recipientEmail": "info@simoneschofer.com",
+      "brandProject": "Casablanca — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Friday, October 2, 2026 · 14:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Casablanca · Friday, October 2, 2026 · 14:30.",
+      "parsedBrief": {
+        "project": "Casablanca",
+        "shootDate": "2026-10-02",
+        "dateText": "Friday, October 2, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Casablanca",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Seven Wright",
+        "Callie Steg",
+        "Mobée"
+      ],
+      "modelIds": [
+        "new-york-women-seven-wright",
+        "new-york-women-callie-steg",
+        "new-york-women-mob-e"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Seven Wright",
+          "Callie Steg",
+          "Mobée"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 direction supports polished, energetic, fashion-commercial presence; Seven, Callie and Mobée remain the strongest package."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-25-lanvin",
+      "date": "2026-10-02",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Julia Lange",
+      "company": "Lanvin",
+      "recipientEmail": "julia.lange@me.com",
+      "brandProject": "Lanvin — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Friday, October 2, 2026 · 15:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Lanvin · Friday, October 2, 2026 · 15:30.",
+      "parsedBrief": {
+        "project": "Lanvin",
+        "shootDate": "2026-10-02",
+        "dateText": "Friday, October 2, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Lanvin",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Ambre Prognitz",
+        "Rachel Stone"
+      ],
+      "modelIds": [
+        "london-women-ambre-prognitz",
+        "new-york-women-rachel-stone"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Ambre Prognitz",
+          "Rachel Stone"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 favored elegant, refined, elongated women with individual faces; Raquel, Ambre and Rachel remain the best fit."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-26-ottolinger",
+      "date": "2026-10-02",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Franziska Bachofen-Echt / Liv Tendlarz",
+      "company": "Ottolinger",
+      "recipientEmail": "info@jesuiscasting.com",
+      "brandProject": "Ottolinger — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Friday, October 2, 2026 · 16:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Ottolinger · Friday, October 2, 2026 · 16:30.",
+      "parsedBrief": {
+        "project": "Ottolinger",
+        "shootDate": "2026-10-02",
+        "dateText": "Friday, October 2, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Ottolinger",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Maja Stockwell",
+        "Seven Wright"
+      ],
+      "modelIds": [
+        "new-york-women-maja-stockwell",
+        "new-york-women-seven-wright"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Maja Stockwell",
+          "Seven Wright"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 was strongly character-led, diverse and unconventional; A'Sha moves to the lead with Maja and Seven."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-27-givenchy",
+      "date": "2026-10-02",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Jess Hallett",
+      "company": "Givenchy",
+      "recipientEmail": "birgitta@streeters.com",
+      "brandProject": "Givenchy — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Friday, October 2, 2026 · 17:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Givenchy · Friday, October 2, 2026 · 17:30.",
+      "parsedBrief": {
+        "project": "Givenchy",
+        "shootDate": "2026-10-02",
+        "dateText": "Friday, October 2, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Givenchy",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Agang",
+        "Claudia Lucchini",
+        "Maja Stockwell",
+        "Mary Timms"
+      ],
+      "modelIds": [
+        "new-york-women-agang",
+        "new-york-women-claudia-lucchini",
+        "new-york-women-maja-stockwell",
+        "new-york-women-mary-timms"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Agang",
+          "Claudia Lucchini",
+          "Maja Stockwell",
+          "Mary Timms"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 under Jess Hallett mixed severe editorial faces, strong bone structure and broad skin-tone diversity; Agang, Claudia, Maja and Mary are the strongest available four."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-28-yohji-yamamoto",
+      "date": "2026-10-02",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Casting team not publicly verified",
+      "company": "Yohji Yamamoto",
+      "recipientEmail": "",
+      "brandProject": "Yohji Yamamoto — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Friday, October 2, 2026 · 19:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Yohji Yamamoto · Friday, October 2, 2026 · 19:00.",
+      "parsedBrief": {
+        "project": "Yohji Yamamoto",
+        "shootDate": "2026-10-02",
+        "dateText": "Friday, October 2, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Yohji Yamamoto",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Mary Timms",
+        "Maja Stockwell",
+        "Claudia Lucchini"
+      ],
+      "modelIds": [
+        "new-york-women-mary-timms",
+        "new-york-women-maja-stockwell",
+        "new-york-women-claudia-lucchini"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Mary Timms",
+          "Maja Stockwell",
+          "Claudia Lucchini"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 women's cast favored unconventional, mature and poetic faces rather than conventional glamour; Mary, Maja and Claudia remain strongest."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-29-victoria-beckham",
+      "date": "2026-10-02",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Ben Grimes / Sarah-Maria Booth",
+      "company": "Victoria Beckham",
+      "recipientEmail": "studio@bengrimescasting.com, sarah@sarahmariaboothcasting.com",
+      "brandProject": "Victoria Beckham — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Friday, October 2, 2026 · 20:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Victoria Beckham · Friday, October 2, 2026 · 20:00.",
+      "parsedBrief": {
+        "project": "Victoria Beckham",
+        "shootDate": "2026-10-02",
+        "dateText": "Friday, October 2, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Victoria Beckham",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Ambre Prognitz",
+        "Bianca Eigenfeld Own"
+      ],
+      "modelIds": [
+        "london-women-ambre-prognitz",
+        "germany-women-bianca-eigenfeld-own"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Ambre Prognitz",
+          "Bianca Eigenfeld Own"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 emphasized polished, lean, modern luxury with understated faces; Raquel, Ambre and Bianca remain strongest."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-30-junya-watanabe",
+      "date": "2026-10-03",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Nicolas Aksil",
+      "company": "Junya Watanabe",
+      "recipientEmail": "",
+      "brandProject": "Junya Watanabe — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Saturday, October 3, 2026 · 10:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Junya Watanabe · Saturday, October 3, 2026 · 10:30.",
+      "parsedBrief": {
+        "project": "Junya Watanabe",
+        "shootDate": "2026-10-03",
+        "dateText": "Saturday, October 3, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Junya Watanabe",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Mary Timms",
+        "Maja Stockwell",
+        "Claudia Lucchini"
+      ],
+      "modelIds": [
+        "new-york-women-mary-timms",
+        "new-york-women-maja-stockwell",
+        "new-york-women-claudia-lucchini"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Mary Timms",
+          "Maja Stockwell",
+          "Claudia Lucchini"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 featured strong, mature, highly individual women including Irina Shayk and Maggie Maurer; Mary and Maja move ahead of Claudia."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-31-celine",
+      "date": "2026-10-03",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Samuel Ellis Scheinman",
+      "company": "Celine",
+      "recipientEmail": "samuele@dmfashionstudio.com",
+      "brandProject": "Celine — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Saturday, October 3, 2026 · 12:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Celine · Saturday, October 3, 2026 · 12:00.",
+      "parsedBrief": {
+        "project": "Celine",
+        "shootDate": "2026-10-03",
+        "dateText": "Saturday, October 3, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Celine",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Claudia Lucchini",
+        "Ambre Prognitz",
+        "Rachel Stone",
+        "Maja Stockwell"
+      ],
+      "modelIds": [
+        "new-york-women-claudia-lucchini",
+        "london-women-ambre-prognitz",
+        "new-york-women-rachel-stone",
+        "new-york-women-maja-stockwell"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Claudia Lucchini",
+          "Ambre Prognitz",
+          "Rachel Stone",
+          "Maja Stockwell"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 used a large, polished but characterful cast with clean proportions; Claudia, Ambre, Rachel and Maja provide four distinct but coherent options."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-32-noir-kei-ninomiya",
+      "date": "2026-10-03",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Nicolas Aksil",
+      "company": "Noir Kei Ninomiya",
+      "recipientEmail": "",
+      "brandProject": "Noir Kei Ninomiya — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Saturday, October 3, 2026 · 13:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Noir Kei Ninomiya · Saturday, October 3, 2026 · 13:00.",
+      "parsedBrief": {
+        "project": "Noir Kei Ninomiya",
+        "shootDate": "2026-10-03",
+        "dateText": "Saturday, October 3, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Noir Kei Ninomiya",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Mary Timms",
+        "Agang",
+        "Claudia Lucchini"
+      ],
+      "modelIds": [
+        "new-york-women-mary-timms",
+        "new-york-women-agang",
+        "new-york-women-claudia-lucchini"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Mary Timms",
+          "Agang",
+          "Claudia Lucchini"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 favored sharp, graphic, unconventional beauty and runway severity; Mary, Agang and Claudia remain strongest."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-33-vivienne-westwood",
+      "date": "2026-10-03",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Liz Goldson",
+      "company": "Vivienne Westwood",
+      "recipientEmail": "info@elizabethgoldson.com",
+      "brandProject": "Vivienne Westwood — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Saturday, October 3, 2026 · 14:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Vivienne Westwood · Saturday, October 3, 2026 · 14:00.",
+      "parsedBrief": {
+        "project": "Vivienne Westwood",
+        "shootDate": "2026-10-03",
+        "dateText": "Saturday, October 3, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Vivienne Westwood",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Seven Wright",
+        "Maja Stockwell"
+      ],
+      "modelIds": [
+        "new-york-women-seven-wright",
+        "new-york-women-maja-stockwell"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Seven Wright",
+          "Maja Stockwell"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 was eclectic and character-first with broad age, gender and facial variety; A'Sha leads Seven and Maja."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-34-hermes",
+      "date": "2026-10-03",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Julia Lange",
+      "company": "Hermès",
+      "recipientEmail": "julia.lange@me.com",
+      "brandProject": "Hermès — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Saturday, October 3, 2026 · 15:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Hermès · Saturday, October 3, 2026 · 15:00.",
+      "parsedBrief": {
+        "project": "Hermès",
+        "shootDate": "2026-10-03",
+        "dateText": "Saturday, October 3, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Hermès",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Rachel Stone",
+        "Camelia Boca",
+        "Ambre Prognitz",
+        "Bianca Eigenfeld Own"
+      ],
+      "modelIds": [
+        "new-york-women-rachel-stone",
+        "milan-women-camelia-boca",
+        "london-women-ambre-prognitz",
+        "germany-women-bianca-eigenfeld-own"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Rachel Stone",
+          "Camelia Boca",
+          "Ambre Prognitz",
+          "Bianca Eigenfeld Own"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 combined refined athleticism, quiet authority and highly polished individuality; Rachel, Camelia, Ambre and Bianca are the strongest available four after Raquel became unavailable."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-35-elie-saab",
+      "date": "2026-10-03",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Rosie Vogel",
+      "company": "Elie Saab",
+      "recipientEmail": "rosie@rosievogelcasting.com",
+      "brandProject": "Elie Saab — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Saturday, October 3, 2026 · 16:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Elie Saab · Saturday, October 3, 2026 · 16:30.",
+      "parsedBrief": {
+        "project": "Elie Saab",
+        "shootDate": "2026-10-03",
+        "dateText": "Saturday, October 3, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Elie Saab",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Bianca Eigenfeld Own",
+        "Callie Steg"
+      ],
+      "modelIds": [
+        "germany-women-bianca-eigenfeld-own",
+        "new-york-women-callie-steg"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Bianca Eigenfeld Own",
+          "Callie Steg"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 retained classic polished glamour with tall, refined faces; Bianca, Callie and Raquel remain strongest."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-36-comme-des-garcons",
+      "date": "2026-10-03",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Nicolas Aksil",
+      "company": "Comme des Garçons",
+      "recipientEmail": "",
+      "brandProject": "Comme des Garçons — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Saturday, October 3, 2026 · 17:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Comme des Garçons · Saturday, October 3, 2026 · 17:30.",
+      "parsedBrief": {
+        "project": "Comme des Garçons",
+        "shootDate": "2026-10-03",
+        "dateText": "Saturday, October 3, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Comme des Garçons",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Mary Timms",
+        "Agang",
+        "Maja Stockwell"
+      ],
+      "modelIds": [
+        "new-york-women-mary-timms",
+        "new-york-women-agang",
+        "new-york-women-maja-stockwell"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Mary Timms",
+          "Agang",
+          "Maja Stockwell"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 favored stark, unusual, highly editorial faces; Mary, Agang and Maja remain the strongest trio."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-37-ann-demeulemeester",
+      "date": "2026-10-03",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Alice Tessereaux / Ben Grimes / Tiago Martins",
+      "company": "Ann Demeulemeester",
+      "recipientEmail": "studio@bengrimescasting.com",
+      "brandProject": "Ann Demeulemeester — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Saturday, October 3, 2026 · 18:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Ann Demeulemeester · Saturday, October 3, 2026 · 18:30.",
+      "parsedBrief": {
+        "project": "Ann Demeulemeester",
+        "shootDate": "2026-10-03",
+        "dateText": "Saturday, October 3, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Ann Demeulemeester",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Mary Timms",
+        "Adhar",
+        "Ambre Prognitz"
+      ],
+      "modelIds": [
+        "new-york-women-mary-timms",
+        "site-women7-adhar",
+        "london-women-ambre-prognitz"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Mary Timms",
+          "Adhar",
+          "Ambre Prognitz"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 used a severe, androgynous, elongated cast with strong facial structure; Mary leads Adhar and Ambre."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-38-lacoste",
+      "date": "2026-10-04",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Barbara Blanchard / Julia Lange / Sivan Currie",
+      "company": "Lacoste",
+      "recipientEmail": "barbarablanchardcasting@gmail.com, julia.lange@me.com, sivan.currie@gmail.com",
+      "brandProject": "Lacoste — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Sunday, October 4, 2026 · 10:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Lacoste · Sunday, October 4, 2026 · 10:30.",
+      "parsedBrief": {
+        "project": "Lacoste",
+        "shootDate": "2026-10-04",
+        "dateText": "Sunday, October 4, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Lacoste",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Mobée",
+        "Seven Wright",
+        "Callie Steg"
+      ],
+      "modelIds": [
+        "new-york-women-mob-e",
+        "new-york-women-seven-wright",
+        "new-york-women-callie-steg"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Mobée",
+          "Seven Wright",
+          "Callie Steg"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 was athletic, youthful and diverse with clean fashion proportions; Mobée, Seven and Callie remain the strongest combination."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-39-niccolo-pasqualetti",
+      "date": "2026-10-04",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Simone Schofer",
+      "company": "Niccolò Pasqualetti",
+      "recipientEmail": "info@simoneschofer.com",
+      "brandProject": "Niccolò Pasqualetti — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Sunday, October 4, 2026 · 12:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Niccolò Pasqualetti · Sunday, October 4, 2026 · 12:00.",
+      "parsedBrief": {
+        "project": "Niccolò Pasqualetti",
+        "shootDate": "2026-10-04",
+        "dateText": "Sunday, October 4, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Niccolò Pasqualetti",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Agang",
+        "Claudia Lucchini",
+        "Camelia Boca"
+      ],
+      "modelIds": [
+        "new-york-women-agang",
+        "new-york-women-claudia-lucchini",
+        "milan-women-camelia-boca"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Agang",
+          "Claudia Lucchini",
+          "Camelia Boca"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 favored intellectual, lean, idiosyncratic faces; Agang, Claudia and Camelia remain strongest."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-40-miu-miu",
+      "date": "2026-10-04",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Ashley Brokaw",
+      "company": "Miu Miu",
+      "recipientEmail": "",
+      "brandProject": "Miu Miu — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Sunday, October 4, 2026 · 13:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Miu Miu · Sunday, October 4, 2026 · 13:00.",
+      "parsedBrief": {
+        "project": "Miu Miu",
+        "shootDate": "2026-10-04",
+        "dateText": "Sunday, October 4, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Miu Miu",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Mary Timms",
+        "Claudia Lucchini",
+        "Agang",
+        "Mobée"
+      ],
+      "modelIds": [
+        "new-york-women-mary-timms",
+        "new-york-women-claudia-lucchini",
+        "new-york-women-agang",
+        "new-york-women-mob-e"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Mary Timms",
+          "Claudia Lucchini",
+          "Agang",
+          "Mobée"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 mixed models with actors and character talent, rewarding individuality over generic perfection; Mary, Claudia, Agang and Mobée remain the four-model package, with Mobée retained for prior Miu Miu commercial history."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-41-akris",
+      "date": "2026-10-04",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Casting team not publicly verified",
+      "company": "Akris",
+      "recipientEmail": "",
+      "brandProject": "Akris — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Sunday, October 4, 2026 · 14:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Akris · Sunday, October 4, 2026 · 14:00.",
+      "parsedBrief": {
+        "project": "Akris",
+        "shootDate": "2026-10-04",
+        "dateText": "Sunday, October 4, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Akris",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Camelia Boca",
+        "Claudia Lucchini",
+        "Rachel Stone"
+      ],
+      "modelIds": [
+        "milan-women-camelia-boca",
+        "new-york-women-claudia-lucchini",
+        "new-york-women-rachel-stone"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Camelia Boca",
+          "Claudia Lucchini",
+          "Rachel Stone"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 was restrained and architectural with a compact cast of clean, precise faces; Camelia and Claudia replace the softer previous emphasis, with Rachel retained."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-42-valentino",
+      "date": "2026-10-04",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Eleonor Delecluse / Jane Morineau / Nico Mao / Rachel Chandler",
+      "company": "Valentino",
+      "recipientEmail": "casting@janemorineau.com, contact@midland.agency",
+      "brandProject": "Valentino — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Sunday, October 4, 2026 · 15:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Valentino · Sunday, October 4, 2026 · 15:30.",
+      "parsedBrief": {
+        "project": "Valentino",
+        "shootDate": "2026-10-04",
+        "dateText": "Sunday, October 4, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Valentino",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Maja Stockwell",
+        "Agang",
+        "Mary Timms",
+        "Claudia Lucchini"
+      ],
+      "modelIds": [
+        "new-york-women-maja-stockwell",
+        "new-york-women-agang",
+        "new-york-women-mary-timms",
+        "new-york-women-claudia-lucchini"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Maja Stockwell",
+          "Agang",
+          "Mary Timms",
+          "Claudia Lucchini"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 under Alessandro Michele used a very broad, character-rich cast; Maja, Agang, Mary and Claudia are the strongest available four after Raquel became unavailable."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-43-mugler",
+      "date": "2026-10-04",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Rachel Chandler / Midland",
+      "company": "Mugler",
+      "recipientEmail": "contact@midland.agency",
+      "brandProject": "Mugler — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Sunday, October 4, 2026 · 18:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Mugler · Sunday, October 4, 2026 · 18:30.",
+      "parsedBrief": {
+        "project": "Mugler",
+        "shootDate": "2026-10-04",
+        "dateText": "Sunday, October 4, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Mugler",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Claudia Lucchini",
+        "Callie Steg",
+        "Maja Stockwell",
+        "Seven Wright"
+      ],
+      "modelIds": [
+        "new-york-women-claudia-lucchini",
+        "new-york-women-callie-steg",
+        "new-york-women-maja-stockwell",
+        "new-york-women-seven-wright"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Claudia Lucchini",
+          "Callie Steg",
+          "Maja Stockwell",
+          "Seven Wright"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 paired sensuality with hard editorial structure and distinctive beauty; Claudia is moved first because of prior Mugler runway history, followed by Callie, Maja and Seven."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-44-jean-paul-gaultier",
+      "date": "2026-10-04",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Piergiorgio Del Moro",
+      "company": "Jean Paul Gaultier",
+      "recipientEmail": "pg@dmfashionstudio.com",
+      "brandProject": "Jean Paul Gaultier — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Sunday, October 4, 2026 · 20:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Jean Paul Gaultier · Sunday, October 4, 2026 · 20:00.",
+      "parsedBrief": {
+        "project": "Jean Paul Gaultier",
+        "shootDate": "2026-10-04",
+        "dateText": "Sunday, October 4, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Jean Paul Gaultier",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Maja Stockwell",
+        "Callie Steg",
+        "Claudia Lucchini",
+        "Seven Wright"
+      ],
+      "modelIds": [
+        "new-york-women-maja-stockwell",
+        "new-york-women-callie-steg",
+        "new-york-women-claudia-lucchini",
+        "new-york-women-seven-wright"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Maja Stockwell",
+          "Callie Steg",
+          "Claudia Lucchini",
+          "Seven Wright"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 under Duran Lantink used strong bodies, memorable faces and high-fashion theatricality; Maja, Callie, Claudia and Seven are the strongest available four."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-45-sacai",
+      "date": "2026-10-05",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Jussi Vuorenlehto / Piergiorgio Del Moro",
+      "company": "Sacai",
+      "recipientEmail": "pg@dmfashionstudio.com",
+      "brandProject": "Sacai — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Monday, October 5, 2026 · 10:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Sacai · Monday, October 5, 2026 · 10:00.",
+      "parsedBrief": {
+        "project": "Sacai",
+        "shootDate": "2026-10-05",
+        "dateText": "Monday, October 5, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Sacai",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Agang",
+        "Mary Timms",
+        "Maja Stockwell"
+      ],
+      "modelIds": [
+        "new-york-women-agang",
+        "new-york-women-mary-timms",
+        "new-york-women-maja-stockwell"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Agang",
+          "Mary Timms",
+          "Maja Stockwell"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "Most recent F/W 26 / Pre-Fall runway cast was broad, modern and strongly editorial; Agang, Mary and Maja remain strongest."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-46-shiatzy-chen",
+      "date": "2026-10-05",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Angus Munro / AMC Casting",
+      "company": "Shiatzy Chen",
+      "recipientEmail": "",
+      "brandProject": "Shiatzy Chen — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Monday, October 5, 2026 · 11:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Shiatzy Chen · Monday, October 5, 2026 · 11:30.",
+      "parsedBrief": {
+        "project": "Shiatzy Chen",
+        "shootDate": "2026-10-05",
+        "dateText": "Monday, October 5, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Shiatzy Chen",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Camelia Boca",
+        "Bianca Eigenfeld Own"
+      ],
+      "modelIds": [
+        "milan-women-camelia-boca",
+        "germany-women-bianca-eigenfeld-own"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Camelia Boca",
+          "Bianca Eigenfeld Own"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 favored polished international runway faces with long lines and refined presentation; Camelia, Raquel and Bianca remain strongest."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-47-gabriela-hearst",
+      "date": "2026-10-05",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Jess Hallett",
+      "company": "Gabriela Hearst",
+      "recipientEmail": "birgitta@streeters.com",
+      "brandProject": "Gabriela Hearst — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Monday, October 5, 2026 · 13:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Gabriela Hearst · Monday, October 5, 2026 · 13:00.",
+      "parsedBrief": {
+        "project": "Gabriela Hearst",
+        "shootDate": "2026-10-05",
+        "dateText": "Monday, October 5, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Gabriela Hearst",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Ambre Prognitz",
+        "Rachel Stone",
+        "Bianca Eigenfeld Own"
+      ],
+      "modelIds": [
+        "london-women-ambre-prognitz",
+        "new-york-women-rachel-stone",
+        "germany-women-bianca-eigenfeld-own"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Ambre Prognitz",
+          "Rachel Stone",
+          "Bianca Eigenfeld Own"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 mixed established and newer models with natural authority and mature luxury; Ambre, Rachel and Bianca remain strongest."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-48-zimmermann",
+      "date": "2026-10-05",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Anita Bitton / Calvin Wilson",
+      "company": "Zimmermann",
+      "recipientEmail": "anita@establishmentnewyork.com",
+      "brandProject": "Zimmermann — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Monday, October 5, 2026 · 14:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Zimmermann · Monday, October 5, 2026 · 14:30.",
+      "parsedBrief": {
+        "project": "Zimmermann",
+        "shootDate": "2026-10-05",
+        "dateText": "Monday, October 5, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Zimmermann",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Callie Steg",
+        "Bianca Eigenfeld Own"
+      ],
+      "modelIds": [
+        "new-york-women-callie-steg",
+        "germany-women-bianca-eigenfeld-own"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Callie Steg",
+          "Bianca Eigenfeld Own"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 retained polished feminine glamour with a diverse luxury cast; Callie, Bianca and Raquel remain strongest."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-49-kiko-kostadinov",
+      "date": "2026-10-05",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Henry Thomas",
+      "company": "Kiko Kostadinov",
+      "recipientEmail": "",
+      "brandProject": "Kiko Kostadinov — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Monday, October 5, 2026 · 16:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Kiko Kostadinov · Monday, October 5, 2026 · 16:00.",
+      "parsedBrief": {
+        "project": "Kiko Kostadinov",
+        "shootDate": "2026-10-05",
+        "dateText": "Monday, October 5, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Kiko Kostadinov",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Mary Timms",
+        "Agang",
+        "Maja Stockwell"
+      ],
+      "modelIds": [
+        "new-york-women-mary-timms",
+        "new-york-women-agang",
+        "new-york-women-maja-stockwell"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Mary Timms",
+          "Agang",
+          "Maja Stockwell"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "Recent F/W 26 casting is strongly directional, lean and character-led; Mary, Agang and Maja remain strongest."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-50-agnes-b",
+      "date": "2026-10-05",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Casting team not publicly verified",
+      "company": "Agnes b.",
+      "recipientEmail": "",
+      "brandProject": "Agnes b. — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Monday, October 5, 2026 · 17:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Agnes b. · Monday, October 5, 2026 · 17:30.",
+      "parsedBrief": {
+        "project": "Agnes b.",
+        "shootDate": "2026-10-05",
+        "dateText": "Monday, October 5, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Agnes b.",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Ambre Prognitz",
+        "June Ramadhan",
+        "Bianca Eigenfeld Own"
+      ],
+      "modelIds": [
+        "london-women-ambre-prognitz",
+        "new-york-women-june-ramadhan",
+        "germany-women-bianca-eigenfeld-own"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Ambre Prognitz",
+          "June Ramadhan",
+          "Bianca Eigenfeld Own"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 used a small, natural, approachable character cast; Ambre, June and Bianca remain the best roster fit."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-51-chanel",
+      "date": "2026-10-05",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Anita Bitton / Establishment Casting",
+      "company": "Chanel",
+      "recipientEmail": "anita@establishmentnewyork.com",
+      "brandProject": "Chanel — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Monday, October 5, 2026 · 20:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Chanel · Monday, October 5, 2026 · 20:00.",
+      "parsedBrief": {
+        "project": "Chanel",
+        "shootDate": "2026-10-05",
+        "dateText": "Monday, October 5, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Chanel",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Claudia Lucchini",
+        "Agang",
+        "Maja Stockwell",
+        "Mary Timms"
+      ],
+      "modelIds": [
+        "new-york-women-claudia-lucchini",
+        "new-york-women-agang",
+        "new-york-women-maja-stockwell",
+        "new-york-women-mary-timms"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Claudia Lucchini",
+          "Agang",
+          "Maja Stockwell",
+          "Mary Timms"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 under Matthieu Blazy used a huge, diverse cast mixing exclusives, established names and distinctive new faces; Claudia, Agang, Maja and Mary are the strongest available four after Raquel became unavailable."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-52-ujoh",
+      "date": "2026-10-06",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Shimana / SMN Casting",
+      "company": "Ujoh",
+      "recipientEmail": "",
+      "brandProject": "Ujoh — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Tuesday, October 6, 2026 · 10:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Ujoh · Tuesday, October 6, 2026 · 10:00.",
+      "parsedBrief": {
+        "project": "Ujoh",
+        "shootDate": "2026-10-06",
+        "dateText": "Tuesday, October 6, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Ujoh",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Adhar",
+        "Camelia Boca",
+        "Ambre Prognitz"
+      ],
+      "modelIds": [
+        "site-women7-adhar",
+        "milan-women-camelia-boca",
+        "london-women-ambre-prognitz"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Adhar",
+          "Camelia Boca",
+          "Ambre Prognitz"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 was lean, international and cleanly directional; the cast included a model credited as Adhar Abiem, making roster model Adhar a particularly strong lead to test, though identity was not independently verified."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-53-litkovska",
+      "date": "2026-10-06",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Casting team not publicly verified",
+      "company": "Litkovska",
+      "recipientEmail": "",
+      "brandProject": "Litkovska — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Tuesday, October 6, 2026 · 11:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Litkovska · Tuesday, October 6, 2026 · 11:30.",
+      "parsedBrief": {
+        "project": "Litkovska",
+        "shootDate": "2026-10-06",
+        "dateText": "Tuesday, October 6, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Litkovska",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Adhar",
+        "Mary Timms"
+      ],
+      "modelIds": [
+        "site-women7-adhar",
+        "new-york-women-mary-timms"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Adhar",
+          "Mary Timms"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 used a small, severe, unconventional cast; A'Sha, Adhar and Mary remain strongest."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-54-christopher-esber",
+      "date": "2026-10-06",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Nicolas Bianciotto / Rocky Nolan / IKKI Casting",
+      "company": "Christopher Esber",
+      "recipientEmail": "nicolas@ikkicasting.com, contact@ikkicasting.com",
+      "brandProject": "Christopher Esber — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Tuesday, October 6, 2026 · 12:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Christopher Esber · Tuesday, October 6, 2026 · 12:30.",
+      "parsedBrief": {
+        "project": "Christopher Esber",
+        "shootDate": "2026-10-06",
+        "dateText": "Tuesday, October 6, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Christopher Esber",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Callie Steg",
+        "Seven Wright"
+      ],
+      "modelIds": [
+        "new-york-women-callie-steg",
+        "new-york-women-seven-wright"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Callie Steg",
+          "Seven Wright"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "Recent casting favors lean, sensual, body-aware modern fashion; Callie, Raquel and Seven remain strongest."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-55-cfcl",
+      "date": "2026-10-06",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "William Lhoest / WL Casting",
+      "company": "CFCL",
+      "recipientEmail": "info@wl-casting.com",
+      "brandProject": "CFCL — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Tuesday, October 6, 2026 · 13:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · CFCL · Tuesday, October 6, 2026 · 13:30.",
+      "parsedBrief": {
+        "project": "CFCL",
+        "shootDate": "2026-10-06",
+        "dateText": "Tuesday, October 6, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — CFCL",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Camelia Boca",
+        "Ambre Prognitz"
+      ],
+      "modelIds": [
+        "milan-women-camelia-boca",
+        "london-women-ambre-prognitz"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Camelia Boca",
+          "Ambre Prognitz"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 was clean, modern, international and quietly directional; Camelia, Ambre and Raquel remain strongest."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-56-situationist",
+      "date": "2026-10-06",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Simone Schofer",
+      "company": "Situationist",
+      "recipientEmail": "info@simoneschofer.com",
+      "brandProject": "Situationist — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Tuesday, October 6, 2026 · 15:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Situationist · Tuesday, October 6, 2026 · 15:30.",
+      "parsedBrief": {
+        "project": "Situationist",
+        "shootDate": "2026-10-06",
+        "dateText": "Tuesday, October 6, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Situationist",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Maja Stockwell",
+        "Agang",
+        "Mary Timms"
+      ],
+      "modelIds": [
+        "new-york-women-maja-stockwell",
+        "new-york-women-agang",
+        "new-york-women-mary-timms"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Maja Stockwell",
+          "Agang",
+          "Mary Timms"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 mixed highly editorial faces, strong bone structure and broad diversity; Maja, Agang and Mary remain strongest."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-57-pierre-cardin",
+      "date": "2026-10-06",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Casting team not publicly verified",
+      "company": "Pierre Cardin",
+      "recipientEmail": "",
+      "brandProject": "Pierre Cardin — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Tuesday, October 6, 2026 · 17:00 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Pierre Cardin · Tuesday, October 6, 2026 · 17:00.",
+      "parsedBrief": {
+        "project": "Pierre Cardin",
+        "shootDate": "2026-10-06",
+        "dateText": "Tuesday, October 6, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Pierre Cardin",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Camelia Boca",
+        "Bianca Eigenfeld Own"
+      ],
+      "modelIds": [
+        "milan-women-camelia-boca",
+        "germany-women-bianca-eigenfeld-own"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Camelia Boca",
+          "Bianca Eigenfeld Own"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 used a very small, graphic, international cast; Raquel, Camelia and Bianca remain strongest."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    },
+    {
+      "id": "paris-ss27-post-dior-58-louis-vuitton",
+      "date": "2026-10-06",
+      "purpose": "submission",
+      "contactId": "",
+      "contactName": "Ashley Brokaw",
+      "company": "Louis Vuitton",
+      "recipientEmail": "",
+      "brandProject": "Louis Vuitton — Paris Fashion Week S/S 2027",
+      "packageLink": "",
+      "brief": "Paris Fashion Week · Tuesday, October 6, 2026 · 18:30 · Curated from the current Chez Les Mannequins roster. Casting contact is based on the latest documented/public research available as of September 19, 2026; the S/S 2027 assignment may still be unconfirmed.",
+      "castingBriefRaw": "Paris Fashion Week S/S 2027 · Louis Vuitton · Tuesday, October 6, 2026 · 18:30.",
+      "parsedBrief": {
+        "project": "Louis Vuitton",
+        "shootDate": "2026-10-06",
+        "dateText": "Tuesday, October 6, 2026",
+        "location": "Paris, France",
+        "nicheClues": [
+          "High Fashion / Editorial",
+          "Luxury / Runway"
+        ]
+      },
+      "subject": "S/S 2027 Model Package — Louis Vuitton",
+      "includeStats": true,
+      "includePhotos": true,
+      "includeSources": true,
+      "models": [
+        "Claudia Lucchini",
+        "Agang",
+        "Rachel Stone",
+        "Maja Stockwell"
+      ],
+      "modelIds": [
+        "new-york-women-claudia-lucchini",
+        "new-york-women-agang",
+        "new-york-women-rachel-stone",
+        "new-york-women-maja-stockwell"
+      ],
+      "html": "",
+      "source": "Paris Fashion Week S/S 2027 post-Carven Models.com cast review · curated 2026-09-20",
+      "packageDepthReview": {
+        "date": "2026-09-20",
+        "addedModels": [
+          "Claudia Lucchini",
+          "Agang",
+          "Rachel Stone",
+          "Maja Stockwell"
+        ],
+        "basis": "Selection reviewed against the brand’s most recent available Models.com runway cast, weighting the latest show most heavily and comparing cast proportions, facial character, hair/overall presentation and diversity to the current CRM roster. Kalaba, Daisy Ibi, Sal Soliman, A'Sha-Peets and Raquel Pélissier remain excluded from Europe travel packages.",
+        "note": "F/W 26 under Ashley Brokaw used a broad but tightly high-fashion cast with distinctive modern faces; Claudia, Agang, Rachel and Maja are the strongest available four."
+      },
+      "photoSelections": {
+        "new-york-women-sophia-pippen": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2"
+      }
+    }
+  ],
+  "models": [
+    {
+      "id": "new-york-women-agang",
+      "name": "Agang",
+      "location": "New York",
+      "division": "Women",
+      "measurements": "Height: 5’11’’ | Bust: 30’’ | Waist: 25’’ | Hip: 33’’ | Shoe: 9.5 | Hair: Black | Eyes: Dark Brown",
+      "profileUrl": "https://www.chezlesmannequins.com/women/agang",
+      "photoUrl": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/aff9d40c-388a-4ad1-8246-9ff9546a2196/B48F0DF8-1838-4BB4-B0EB-27459CCFD603.JPG",
+      "photoFilename": "B48F0DF8-1838-4BB4-B0EB-27459CCFD603.JPG",
+      "source": "Chez Les Mannequins website sync",
+      "activeBoard": true,
+      "sourceDate": "2026-09-17",
+      "notes": "Published on Chez Les Mannequins website. Linked from the current board page.",
+      "niche": "High Fashion / Editorial",
+      "secondaryNiche": "Luxury / Runway",
+      "stats": "Height: 5’11’’ | Bust: 30’’ | Waist: 25’’ | Hip: 33’’ | Shoe: 9.5 | Hair: Black | Eyes: Dark Brown",
+      "profile": "https://www.chezlesmannequins.com/women/agang",
+      "photo": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/aff9d40c-388a-4ad1-8246-9ff9546a2196/B48F0DF8-1838-4BB4-B0EB-27459CCFD603.JPG",
+      "availabilityStatus": "Unknown",
+      "statusFrom": "",
+      "statusTo": "",
+      "holdProject": "",
+      "availabilityNotes": "",
+      "hair": "Black",
+      "eyes": "Dark Brown",
+      "appearanceReviewed": "2026-09-16",
+      "appearanceBasis": "Portfolio imagery / agency profile research"
+    },
+    {
+      "id": "new-york-women-claudia-lucchini",
+      "name": "Claudia",
+      "location": "New York",
+      "division": "Women",
+      "measurements": "Height: 5’10’’ | Bust: 30’’ | Waist: 23’’ | Hip: 32’’ | Shoe: 9 US Women | Hair: Brown | Eyes: Blue-Green",
+      "profileUrl": "https://www.chezlesmannequins.com/women/c-l-a-u-d-i-a",
+      "photoUrl": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/e1274941-6408-4bf7-87c6-c0f5baaea721/IMG_1806.jpg",
+      "photoFilename": "IMG_1806.jpg",
+      "source": "Chez Les Mannequins website sync",
+      "activeBoard": true,
+      "sourceDate": "2026-09-17",
+      "notes": "Published on Chez Les Mannequins website. Linked from the current board page.",
+      "niche": "High Fashion / Editorial",
+      "secondaryNiche": "Luxury / Runway",
+      "stats": "Height: 5’10’’ | Bust: 30’’ | Waist: 23’’ | Hip: 32’’ | Shoe: 9 US Women | Hair: Brown | Eyes: Blue-Green",
+      "profile": "https://www.chezlesmannequins.com/women/c-l-a-u-d-i-a",
+      "photo": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/e1274941-6408-4bf7-87c6-c0f5baaea721/IMG_1806.jpg",
+      "availabilityStatus": "Unknown",
+      "statusFrom": "",
+      "statusTo": "",
+      "holdProject": "",
+      "availabilityNotes": "",
+      "hair": "Brown",
+      "eyes": "Blue-Green",
+      "appearanceReviewed": "2026-09-16",
+      "appearanceBasis": "Portfolio imagery / agency profile research"
+    },
+    {
+      "id": "new-york-women-callie-steg",
+      "name": "Callie",
+      "location": "New York",
+      "division": "Women",
+      "measurements": "Height: 6’1’’ | Bust: 32’’ | Waist: 24’’ | Hip: 36.5’’ | Shoe: 10 | Hair: Copper Brown | Eyes: Blue",
+      "profileUrl": "https://www.chezlesmannequins.com/women/c-a-l-l-i-e",
+      "photoUrl": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/f062c9b9-5ac7-4304-a07d-15dfec50d878/Screen+Shot+2026-08-15+at+9.29.52+PM.png",
+      "photoFilename": "Screen+Shot+2026-08-15+at+9.29.52+PM.png",
+      "source": "Chez Les Mannequins website sync",
+      "activeBoard": true,
+      "hair": "Copper Brown",
+      "eyes": "Blue",
+      "sourceDate": "2026-09-17",
+      "notes": "Published on Chez Les Mannequins website. Linked from the current board page.",
+      "niche": "Fashion-Commercial",
+      "secondaryNiche": "Beauty",
+      "stats": "Height: 6’1’’ | Bust: 32’’ | Waist: 24’’ | Hip: 36.5’’ | Shoe: 10 | Hair: Copper Brown | Eyes: Blue",
+      "profile": "https://www.chezlesmannequins.com/women/c-a-l-l-i-e",
+      "photo": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/f062c9b9-5ac7-4304-a07d-15dfec50d878/Screen+Shot+2026-08-15+at+9.29.52+PM.png",
+      "availabilityStatus": "Unknown",
+      "statusFrom": "",
+      "statusTo": "",
+      "holdProject": "",
+      "availabilityNotes": "",
+      "appearanceReviewed": "2026-09-16",
+      "appearanceBasis": "Portfolio imagery / agency profile research"
+    },
+    {
+      "id": "new-york-women-june-ramadhan",
+      "name": "June",
+      "location": "New York",
+      "division": "Women",
+      "measurements": "Height: 5’9’’ | Bust: 30’’ | Waist: 23’’ | Hip: 33’’ | Shoe: 10 US Women | Hair: Black | Eyes: Brown",
+      "profileUrl": "https://www.chezlesmannequins.com/women/june",
+      "photoUrl": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/e0a1959e-df24-4093-8673-1675bf35ae97/IMG_0660.jpg",
+      "photoFilename": "IMG_0660.jpg",
+      "source": "Chez Les Mannequins website sync",
+      "activeBoard": true,
+      "sourceDate": "2026-09-17",
+      "notes": "Published on Chez Les Mannequins website. Linked from the current board page.",
+      "niche": "Fashion-Commercial",
+      "secondaryNiche": "Beauty",
+      "stats": "Height: 5’9’’ | Bust: 30’’ | Waist: 23’’ | Hip: 33’’ | Shoe: 10 US Women | Hair: Black | Eyes: Brown",
+      "profile": "https://www.chezlesmannequins.com/women/june",
+      "photo": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/e0a1959e-df24-4093-8673-1675bf35ae97/IMG_0660.jpg",
+      "availabilityStatus": "Unknown",
+      "statusFrom": "",
+      "statusTo": "",
+      "holdProject": "",
+      "availabilityNotes": "",
+      "hair": "Black",
+      "eyes": "Brown",
+      "appearanceReviewed": "2026-09-16",
+      "appearanceBasis": "Portfolio imagery / agency profile research"
+    },
+    {
+      "id": "new-york-women-maja-stockwell",
+      "name": "Maja Stockwell",
+      "location": "New York",
+      "division": "Women",
+      "measurements": "Height: 6’2’’ | Bust: 32 | Waist: 26 | Hip: 35 | Hair: Blonde | Eyes: Green",
+      "profileUrl": "https://www.chezlesmannequins.com/women/maja",
+      "photoUrl": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/62c21951-2581-496a-9645-c89ddbcd01d0/Screenshot+2026-04-11+at+4.07.02%E2%80%AFPM.png",
+      "photoFilename": "Screenshot+2026-04-11+at+4.07.02%E2%80%AFPM.png",
+      "source": "Chez Les Mannequins website sync",
+      "activeBoard": true,
+      "sourceDate": "2026-09-17",
+      "notes": "Published on Chez Les Mannequins website. Linked from the current board page.",
+      "niche": "Luxury / Runway",
+      "secondaryNiche": "High Fashion / Editorial",
+      "stats": "Height: 6’2’’ | Bust: 32 | Waist: 26 | Hip: 35 | Hair: Blonde | Eyes: Green",
+      "profile": "https://www.chezlesmannequins.com/women/maja",
+      "photo": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/62c21951-2581-496a-9645-c89ddbcd01d0/Screenshot+2026-04-11+at+4.07.02%E2%80%AFPM.png",
+      "availabilityStatus": "Unknown",
+      "statusFrom": "",
+      "statusTo": "",
+      "holdProject": "",
+      "availabilityNotes": "",
+      "hair": "Blonde",
+      "eyes": "Green",
+      "appearanceReviewed": "2026-09-16",
+      "appearanceBasis": "Portfolio imagery / agency profile research"
+    },
+    {
+      "id": "new-york-women-mary-timms",
+      "name": "Mary",
+      "location": "New York",
+      "division": "Women",
+      "measurements": "Height: 5’10’’ | Bust: 30’’ | Waist: 20’’ | Hip: 33’’ | Shoe: 11 US Women | Hair: Black | Eyes: Brown",
+      "profileUrl": "https://www.chezlesmannequins.com/women/mary",
+      "photoUrl": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/bb204b6e-a460-431b-9d9d-644c0b0e410a/IMG_3712.JPG",
+      "photoFilename": "IMG_3712.JPG",
+      "source": "Chez Les Mannequins website sync",
+      "activeBoard": true,
+      "sourceDate": "2026-09-17",
+      "notes": "Published on Chez Les Mannequins website. Linked from the current board page.",
+      "niche": "High Fashion / Editorial",
+      "secondaryNiche": "Luxury / Runway",
+      "stats": "Height: 5’10’’ | Bust: 30’’ | Waist: 20’’ | Hip: 33’’ | Shoe: 11 US Women | Hair: Black | Eyes: Brown",
+      "profile": "https://www.chezlesmannequins.com/women/mary",
+      "photo": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/bb204b6e-a460-431b-9d9d-644c0b0e410a/IMG_3712.JPG",
+      "availabilityStatus": "Unknown",
+      "statusFrom": "",
+      "statusTo": "",
+      "holdProject": "",
+      "availabilityNotes": "",
+      "hair": "Black",
+      "eyes": "Brown",
+      "appearanceReviewed": "2026-09-16",
+      "appearanceBasis": "Portfolio imagery / agency profile research"
+    },
+    {
+      "id": "new-york-women-mob-e",
+      "name": "Mobée",
+      "location": "New York",
+      "division": "Women",
+      "measurements": "Height: 6’0’’ | Bust: 32’’ | Waist: 26’’ | Hip: 33’’ | Shoe: 10 | Dress: 2 | Hair: Black | Eyes: Brown",
+      "profileUrl": "https://www.chezlesmannequins.com/women/mobee",
+      "photoUrl": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/c1bcc77b-defa-4ec2-a839-f0cbbdc80fa2/IMG_1270.jpg",
+      "photoFilename": "IMG_1270.jpg",
+      "source": "Chez Les Mannequins website sync",
+      "activeBoard": true,
+      "sourceDate": "2026-09-17",
+      "notes": "Published on Chez Les Mannequins website. Linked from the current board page.",
+      "niche": "Sport / Athleisure",
+      "secondaryNiche": "Fashion-Commercial",
+      "stats": "Height: 6’0’’ | Bust: 32’’ | Waist: 26’’ | Hip: 33’’ | Shoe: 10 | Dress: 2 | Hair: Black | Eyes: Brown",
+      "profile": "https://www.chezlesmannequins.com/women/mobee",
+      "photo": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/c1bcc77b-defa-4ec2-a839-f0cbbdc80fa2/IMG_1270.jpg",
+      "availabilityStatus": "Unknown",
+      "statusFrom": "",
+      "statusTo": "",
+      "holdProject": "",
+      "availabilityNotes": "",
+      "hair": "Black",
+      "eyes": "Brown",
+      "appearanceReviewed": "2026-09-16",
+      "appearanceBasis": "Portfolio imagery / agency profile research"
+    },
+    {
+      "id": "new-york-women-rachel-stone",
+      "name": "Rachel",
+      "location": "New York",
+      "division": "Women",
+      "measurements": "Height: 5’10’’ | Bust: 32’’ | Waist: 24.5’’ | Hip: 33.5’’ | Shoe: 7 US Women | Hair: Blonde | Eyes: Blue",
+      "profileUrl": "https://www.chezlesmannequins.com/women/rachel-26ja2",
+      "photoUrl": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/1759017662298-DKZMTRROZWBZSDT4FUVN/Screenshot%2B2025-05-27%2B192514.png",
+      "photoFilename": "Screenshot%2B2025-05-27%2B192514.png",
+      "source": "Chez Les Mannequins website sync",
+      "activeBoard": true,
+      "sourceDate": "2026-09-17",
+      "notes": "Published on Chez Les Mannequins website. Linked from the current board page.",
+      "niche": "High Fashion / Editorial",
+      "secondaryNiche": "Luxury / Runway",
+      "stats": "Height: 5’10’’ | Bust: 32’’ | Waist: 24.5’’ | Hip: 33.5’’ | Shoe: 7 US Women | Hair: Blonde | Eyes: Blue",
+      "profile": "https://www.chezlesmannequins.com/women/rachel-26ja2",
+      "photo": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/1759017662298-DKZMTRROZWBZSDT4FUVN/Screenshot%2B2025-05-27%2B192514.png",
+      "availabilityStatus": "Unknown",
+      "statusFrom": "",
+      "statusTo": "",
+      "holdProject": "",
+      "availabilityNotes": "",
+      "hair": "Blonde",
+      "eyes": "Blue",
+      "appearanceReviewed": "2026-09-16",
+      "appearanceBasis": "Portfolio imagery / agency profile research"
+    },
+    {
+      "id": "new-york-women-seven-wright",
+      "name": "Seven",
+      "location": "New York",
+      "division": "Women",
+      "measurements": "Height: 5’11’’ | Bust: 33’’ | Waist: 25’’ | Hip: 32.5’’ | Shoe: 9 US Women | Hair: Dark Brown | Eyes: Brown",
+      "profileUrl": "https://www.chezlesmannequins.com/women/seven",
+      "photoUrl": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/916c041d-8c66-45cf-9b55-78fef57ca6f3/unnamed.jpeg",
+      "photoFilename": "unnamed.jpeg",
+      "source": "Chez Les Mannequins website sync",
+      "activeBoard": true,
+      "hair": "Dark Brown",
+      "eyes": "Brown",
+      "sourceDate": "2026-09-17",
+      "notes": "Published on Chez Les Mannequins website. Linked from the current board page.",
+      "niche": "Fashion-Commercial",
+      "secondaryNiche": "Luxury / Runway",
+      "stats": "Height: 5’11’’ | Bust: 33’’ | Waist: 25’’ | Hip: 32.5’’ | Shoe: 9 US Women | Hair: Dark Brown | Eyes: Brown",
+      "profile": "https://www.chezlesmannequins.com/women/seven",
+      "photo": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/916c041d-8c66-45cf-9b55-78fef57ca6f3/unnamed.jpeg",
+      "availabilityStatus": "Unknown",
+      "statusFrom": "",
+      "statusTo": "",
+      "holdProject": "",
+      "availabilityNotes": "",
+      "appearanceReviewed": "2026-09-16",
+      "appearanceBasis": "Portfolio imagery / agency profile research"
+    },
+    {
+      "id": "london-women-ambre-prognitz",
+      "name": "Ambre",
+      "location": "London",
+      "division": "Women",
+      "measurements": "Height: 5’11’’ | Bust: 32’’ | Waist: 25’’ | Hip: 35’’ | Shoe: 9 | Hair: Brown | Eyes: Hazel",
+      "profileUrl": "https://www.chezlesmannequins.com/women-2/ambre-p2pyw",
+      "photoUrl": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/7c98eae6-8aff-4370-a45d-ea2157804587/IMG_2745.jpg",
+      "photoFilename": "IMG_2745.jpg",
+      "source": "Chez Les Mannequins website sync",
+      "activeBoard": true,
+      "sourceDate": "2026-09-17",
+      "notes": "Published on Chez Les Mannequins website. Linked from the current board page.",
+      "niche": "Luxury / Runway",
+      "secondaryNiche": "High Fashion / Editorial",
+      "stats": "Height: 5’11’’ | Bust: 32’’ | Waist: 25’’ | Hip: 35’’ | Shoe: 9 | Hair: Brown | Eyes: Hazel",
+      "profile": "https://www.chezlesmannequins.com/women-2/ambre-p2pyw",
+      "photo": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/7c98eae6-8aff-4370-a45d-ea2157804587/IMG_2745.jpg",
+      "availabilityStatus": "Unknown",
+      "statusFrom": "",
+      "statusTo": "",
+      "holdProject": "",
+      "availabilityNotes": "",
+      "hair": "Brown",
+      "eyes": "Hazel",
+      "appearanceReviewed": "2026-09-16",
+      "appearanceBasis": "Portfolio imagery / agency profile research"
+    },
+    {
+      "id": "milan-women-camelia-boca",
+      "name": "Camelia",
+      "location": "Milan",
+      "division": "Women",
+      "measurements": "Height: 177cm | Bust: 85 | Waist: 59 | Hip: 89 | Shoe: 39/40 | Hair: Brown | Eyes: Brown",
+      "profileUrl": "https://www.chezlesmannequins.com/women-3/camelia-boca",
+      "photoUrl": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/1676475396010-B5G4T6TTV7ACHQQ0YWBK/IMG_8227.jpg",
+      "photoFilename": "IMG_8227.jpg",
+      "source": "Chez Les Mannequins website sync",
+      "activeBoard": true,
+      "sourceDate": "2026-09-17",
+      "notes": "Published on Chez Les Mannequins website. Linked from the current board page.",
+      "niche": "High Fashion / Editorial",
+      "secondaryNiche": "Luxury / Runway",
+      "stats": "Height: 177cm | Bust: 85 | Waist: 59 | Hip: 89 | Shoe: 39/40 | Hair: Brown | Eyes: Brown",
+      "profile": "https://www.chezlesmannequins.com/women-3/camelia-boca",
+      "photo": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/1676475396010-B5G4T6TTV7ACHQQ0YWBK/IMG_8227.jpg",
+      "availabilityStatus": "Unknown",
+      "statusFrom": "",
+      "statusTo": "",
+      "holdProject": "",
+      "availabilityNotes": "",
+      "hair": "Brown",
+      "eyes": "Brown",
+      "appearanceReviewed": "2026-09-16",
+      "appearanceBasis": "Portfolio imagery / agency profile research"
+    },
+    {
+      "id": "new-york-women-sophia-pippen",
+      "name": "Sophia Pippen",
+      "location": "New York",
+      "division": "Women (supplemental)",
+      "measurements": "Height: 5’11’’ | Bust: 32’’ | Waist: 25’’ | Hip: 35’’ | Shoe: 10 US Women | Tattoos: No | Hair: Dark Brown | Eyes: Dark Brown",
+      "hair": "Dark Brown",
+      "eyes": "Dark Brown",
+      "profileUrl": "https://www.instagram.com/reel/Dau7LamBWMM/",
+      "profileLabel": "Size Reference",
+      "description": "Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian",
+      "photoUrl": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2",
+      "photoFilename": "sophia-pippen-1.jpg",
+      "photos": [
+        "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2",
+        "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-2.jpg?v=2"
+      ],
+      "source": "User-provided model description",
+      "sourceDate": "2026-09-17",
+      "activeBoard": false,
+      "notes": "Supplemental agency model. Measurements and description updated from user-provided agency information on September 17, 2026.",
+      "niche": "Fashion-Commercial",
+      "secondaryNiche": "Beauty",
+      "stats": "Height: 5’11’’ | Bust: 32’’ | Waist: 25’’ | Hip: 35’’ | Shoe: 10 US Women | Tattoos: No | Hair: Dark Brown | Eyes: Dark Brown",
+      "profile": "https://www.instagram.com/reel/Dau7LamBWMM/",
+      "photo": "https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/sophia-pippen-1.jpg?v=2",
+      "availabilityStatus": "Unknown",
+      "statusFrom": "",
+      "statusTo": "",
+      "holdProject": "",
+      "availabilityNotes": "",
+      "appearanceReviewed": "2026-09-16",
+      "appearanceBasis": "Portfolio imagery / agency profile research"
+    },
+    {
+      "id": "germany-women-bianca-eigenfeld-own",
+      "name": "Bianca",
+      "location": "Germany",
+      "division": "Women",
+      "measurements": "Height: 180cm | Bust: 85cm | Waist: 62cm | Hip: 90cm | Shoe: 41EU | Hair: Chestnut Brown | Eyes: Blue",
+      "profileUrl": "https://www.chezlesmannequins.com/search?q=Bianca",
+      "photoUrl": "",
+      "photoFilename": "",
+      "source": "Chez Les Mannequins public site search",
+      "activeBoard": true,
+      "notes": "Official Chez Les Mannequins site search returns Bianca Eigenfeld Own. The canonical profile slug and exact agency market are not exposed by the public result; Germany is retained from the existing CRM record.",
+      "niche": "Fashion-Commercial",
+      "secondaryNiche": "Beauty",
+      "stats": "Height: 180cm | Bust: 85cm | Waist: 62cm | Hip: 90cm | Shoe: 41EU | Hair: Chestnut Brown | Eyes: Blue",
+      "profile": "https://www.chezlesmannequins.com/search?q=Bianca",
+      "photo": "",
+      "sourceDate": "2026-09-14",
+      "availabilityStatus": "Unknown",
+      "statusFrom": "",
+      "statusTo": "",
+      "holdProject": "",
+      "availabilityNotes": "",
+      "hair": "Chestnut Brown",
+      "eyes": "Blue",
+      "appearanceReviewed": "2026-09-16",
+      "appearanceBasis": "Portfolio imagery / agency profile research"
+    },
+    {
+      "id": "site-women7-adhar",
+      "name": "Adhar",
+      "location": "International",
+      "division": "Women (legacy board)",
+      "measurements": "Height: 5’10’’ | Bust: 31’’ | Waist: 23.5’’ | Hip: 34’’ | City: Nairobi",
+      "profileUrl": "https://www.chezlesmannequins.com/women7/a-d-h-a-r",
+      "photoUrl": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/1656893416735-JHRLQWGSEU7D88SMA422/IMG_2850.jpg",
+      "photoFilename": "IMG_2850.jpg",
+      "source": "Chez Les Mannequins website sync",
+      "sourceDate": "2026-09-17",
+      "activeBoard": true,
+      "notes": "Published on Chez Les Mannequins website. Linked from the current board page.",
+      "niche": "Development",
+      "secondaryNiche": "",
+      "stats": "Height: 5’10’’ | Bust: 31’’ | Waist: 23.5’’ | Hip: 34’’ | City: Nairobi",
+      "profile": "https://www.chezlesmannequins.com/women7/a-d-h-a-r",
+      "photo": "https://images.squarespace-cdn.com/content/v1/604e73e30633472cafdd8d6c/1656893416735-JHRLQWGSEU7D88SMA422/IMG_2850.jpg",
+      "availabilityStatus": "Unknown",
+      "statusFrom": "",
+      "statusTo": "",
+      "holdProject": "",
+      "availabilityNotes": "",
+      "hair": "",
+      "eyes": "",
+      "appearanceReviewed": "2026-09-16",
+      "appearanceBasis": "Portfolio imagery / agency profile research"
+    }
+  ]
+}
