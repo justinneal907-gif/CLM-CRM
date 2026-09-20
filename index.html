@@ -1038,8 +1038,8 @@ function draftToneIdentity(d){
 function parisCasterDrafts(casterName){
   const n=normalizeName(casterName);
   return (db.drafts||[]).filter(d=>isParisSS27Draft(d)&&draftToneIdentity(d).names.includes(n)).slice().sort((a,b)=>{
-    const ak=String(a.date||'')+' '+String(a.parsedBrief?.time||a.time||a.castingBriefRaw||'');
-    const bk=String(b.date||'')+' '+String(b.parsedBrief?.time||b.time||b.castingBriefRaw||'');
+    const timeOf=d=>String(d.parsedBrief?.time||d.time||((String(d.castingBriefRaw||'').match(/·\\s*(\\d{1,2}:\\d{2})\\.?$/)||[])[1])||'99:99');
+    const ak=String(a.date||'')+' '+timeOf(a),bk=String(b.date||'')+' '+timeOf(b);
     if(ak!==bk)return ak.localeCompare(bk);
     return String(a.id||'').localeCompare(String(b.id||''));
   });
