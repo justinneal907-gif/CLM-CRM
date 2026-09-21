@@ -1420,7 +1420,99 @@ function renderEmailSelection(){
   renderSubmissionWarnings();
   renderPhotoLibrary();
 }
-function emailHtml(){const d={purpose:$('#emailPurpose').value,contactName:$('#emailContactName').value.trim(),brand:$('#emailBrand').value.trim(),link:$('#emailLink').value.trim(),brief:$('#emailContext').value.trim(),stats:$('#includeStats').checked,photos:$('#includePhotos').checked,sources:$('#includeSources').checked},picked=selectedModels(),first=d.contactName.split(/\s+/)[0]||'',sal=first?`Hi ${esc(first)},`:'Hi,';let lead='';if(d.purpose==='submission'){const h=d.link?`<a href="${esc(d.link)}" style="color:#4285f4;font-size:18px" target="_blank">HERE</a>`:'HERE';lead=`${h} are our model suggestions${d.brand?' for '+esc(d.brand):''}. We preselected a few models and put them below.`}else if(d.purpose==='followup')lead=`Following up with our model suggestions${d.brand?' for '+esc(d.brand):''}.`;else if(d.purpose==='availability')lead=`Sharing availability and model details${d.brand?' for '+esc(d.brand):''}.`;else lead=`I wanted to introduce a few models from our roster${d.brand?' for '+esc(d.brand):''}.`;const blocks=picked.map(m=>{const n=m.name;return `<div style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(n)}</b>${d.stats&&m.stats?' | '+formatStats(m.stats):''}</div>${d.sources&&m.profile?`<div><a href="${esc(m.profile)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftCredentialHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`}).join(''),extra=d.purpose!=='submission'&&d.brief?`<br><div>${esc(d.brief).replace(/\n/g,'<br>')}</div>`:'';return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000"><div>${sal}</div><br><div>${lead}</div>${extra}<br>${blocks||'<div>[Select one or more models]</div>'}<div style="margin:0 0 24px">Please see additional model suggestions <a href="https://canva.link/hkqja7ybl587pm8" style="color:#4285f4" target="_blank">HERE</a>.</div><div>Thank you,</div><div>Justin</div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`}
+/* PARIS CASTING RELATIONSHIP TONE — sent-mail audit 2026-09-21
+   Only Paris S/S 2027 drafts use this relationship-aware copy.
+   Exact addresses below were found in Justin's Work Gmail Sent mail.
+   New contacts stay professional on first contact; later Paris submissions become warmer. */
+const PARIS_PRIOR_SENT_EMAILS_2026_09_21=new Set([
+  'sayhi@suunconsultancy.com',
+  'samuele@dmfashionstudio.com',
+  'ashleybrokaw@me.com',
+  'pg@dmfashionstudio.com',
+  'casting@janemorineau.com',
+  'contact@midland.agency',
+  'sivan.currie@gmail.com',
+  'julia.lange@me.com',
+  'tess.wilcox@gmail.com',
+  'mathilde@jl-casting.com',
+  'info@simoneschofer.com',
+  'regina@thecastingagency.com',
+  'info@jesuiscasting.com',
+  'birgitta@streeters.com',
+  'caterina@cmcasting.it',
+  'studio@bengrimescasting.com',
+  'anita@establishmentnewyork.com',
+  'info@artpartner.com',
+  'sophie@trouble.management',
+  'rosie@rosievogelcasting.com'
+]);
+function parisDraftTime(d){
+  return String(d?.parsedBrief?.time||d?.time||((String(d?.castingBriefRaw||'').match(/·\\s*(\\d{1,2}:\\d{2})\\.?$/)||[])[1])||'99:99');
+}
+function parisDraftOrderKey(d){return String(d?.date||d?.parsedBrief?.shootDate||'9999-99-99')+' '+parisDraftTime(d)+' '+String(d?.id||'')}
+function parisIdentityOverlap(a,b){
+  const ai=draftCastingIdentity(a),bi=draftCastingIdentity(b);
+  return ai.emails.some(x=>bi.emails.includes(x))||ai.names.some(x=>bi.names.includes(x));
+}
+function parisDraftRelationshipTone(d){
+  d=d||activeDraftRecord()||db.draft||{};
+  if(!isParisSS27Draft(d))return {tone:'professional',reason:'standard draft'};
+  const id=draftCastingIdentity(d);
+  if(id.emails.some(e=>PARIS_PRIOR_SENT_EMAILS_2026_09_21.has(e)))return {tone:'personal',reason:'repeat contact from Sent mail'};
+  const currentKey=parisDraftOrderKey(d);
+  const earlier=(db.drafts||[]).filter(x=>x&&x.id!==d.id&&isParisSS27Draft(x)&&parisIdentityOverlap(d,x)&&parisDraftOrderKey(x)<currentKey);
+  return earlier.length?{tone:'personal',reason:'repeat Paris contact'}:{tone:'professional',reason:'first Paris contact'};
+}
+function draftGreetingNames(d){
+  const names=draftCastingIdentity(d).displayNames.map(x=>String(x||'').replace(/\s+[—–-].*$/,'').trim()).filter(Boolean);
+  const first=[...new Set(names.map(x=>x.split(/\s+/)[0]).filter(Boolean))].slice(0,3);
+  if(first.length===0){const raw=String(d?.contactName||'').trim();return raw?[raw.split(/\s+/)[0]]:[]}
+  return first;
+}
+function naturalNameList(names){
+  if(names.length<2)return names[0]||'';
+  if(names.length===2)return names[0]+' and '+names[1];
+  return names.slice(0,-1).join(', ')+' and '+names[names.length-1];
+}
+function emailHtml(){
+  const d={
+    purpose:$('#emailPurpose').value,
+    contactName:$('#emailContactName').value.trim(),
+    recipientEmail:$('#emailRecipient').value.trim(),
+    brand:$('#emailBrand').value.trim(),
+    link:$('#emailLink').value.trim(),
+    brief:$('#emailContext').value.trim(),
+    stats:$('#includeStats').checked,
+    photos:$('#includePhotos').checked,
+    sources:$('#includeSources').checked
+  };
+  const activeRecord=activeDraftRecord();
+  const toneDraft={...(activeRecord||db.draft||{}),id:activeRecord?.id||db.activeDraftId||db.draft?.id||'',contactName:d.contactName,recipientEmail:d.recipientEmail,brandProject:d.brand||activeRecord?.brandProject||db.draft?.brandProject||''};
+  const tone=parisDraftRelationshipTone(toneDraft);
+  const names=draftGreetingNames(toneDraft);
+  const greeting=names.length?`Hi ${esc(naturalNameList(names))},`:'Hi,';
+  const picked=selectedModels();
+  const h=d.link?`<a href="${esc(d.link)}" style="color:#4285f4;font-size:18px" target="_blank">HERE</a>`:'HERE';
+  let lead='';
+  if(d.purpose==='submission'){
+    if(tone.tone==='personal'){
+      lead=`Wanted to send over a few more models${d.brand?' for '+esc(d.brand):''} — I think these could be a strong fit. Feel free to keep them in mind for the rest of your Paris shows too.`;
+    }else{
+      lead=`${h} are our model suggestions${d.brand?' for '+esc(d.brand):''}. We preselected a few models and put them below.`;
+    }
+  }else if(d.purpose==='followup'){
+    lead=tone.tone==='personal'?`Just following up with a few more options${d.brand?' for '+esc(d.brand):''}.`:`Following up with our model suggestions${d.brand?' for '+esc(d.brand):''}.`;
+  }else if(d.purpose==='availability'){
+    lead=tone.tone==='personal'?`Sending over the latest availability${d.brand?' for '+esc(d.brand):''}.`:`Sharing availability and model details${d.brand?' for '+esc(d.brand):''}.`;
+  }else{
+    lead=tone.tone==='personal'?`Wanted to send over a few more models from our roster${d.brand?' for '+esc(d.brand):''}.`:`I wanted to introduce a few models from our roster${d.brand?' for '+esc(d.brand):''}.`;
+  }
+  const blocks=picked.map(m=>`<div style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&m.stats?' | '+formatStats(m.stats):''}</div>${d.sources&&m.profile?`<div><a href="${esc(m.profile)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftCredentialHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`).join('');
+  const extra=d.purpose!=='submission'&&d.brief?`<br><div>${esc(d.brief).replace(/\\n/g,'<br>')}</div>`:'';
+  const more=tone.tone==='personal'?`More model options <a href="https://canva.link/hkqja7ybl587pm8" style="color:#4285f4" target="_blank">HERE</a> if helpful.`:`Please see additional model suggestions <a href="https://canva.link/hkqja7ybl587pm8" style="color:#4285f4" target="_blank">HERE</a>.`;
+  const close=tone.tone==='personal'?'Best,':'Thank you,';
+  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000"><div>${greeting}</div><br><div>${lead}</div>${extra}<br>${blocks||'<div>[Select one or more models]</div>'}<div style="margin:0 0 24px">${more}</div><div>${close}</div><div>Justin</div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
+}
 
 /* EMAIL DRAFT BUILDER STABILITY FIX 2026-09-17 */
 let emailDraftRenderTimer=0;
