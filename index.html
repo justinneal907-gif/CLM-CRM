@@ -251,6 +251,76 @@ function applyCameliaGlobalDraftRemoval(data){
   return data;
 }
 
+const PARIS_BRAND_PHOTO_THEMES={
+  "Burc Akyol": "Sensual Parisian minimalism with sharp draping, exposed skin and evening sophistication. PHOTO DIRECTION: clean, sculptural, confident full-body or beauty images; minimal styling, strong posture, black/neutral tones.",
+  "Maison Margiela": "Conceptual, deconstructed and experimental; character and transformation matter more than conventional polish. PHOTO DIRECTION: unusual angles, raw/editorial frames, stark styling, distinctive expression and personality.",
+  "Anrealage": "Concept-driven fashion built around technology, geometry, light and visual experimentation. PHOTO DIRECTION: graphic composition, clean futuristic styling, unusual silhouettes, strong shape or color play.",
+  "Saint Laurent": "Dark, sleek Parisian sensuality with sharp tailoring, elongated lines and controlled glamour. PHOTO DIRECTION: black/neutral styling, strong cheekbones, elegant evening energy, confident and refined rather than soft.",
+  "Courrèges": "Futuristic youth, body-conscious geometry and clean modern minimalism. PHOTO DIRECTION: crisp white/black/silver palettes, sleek beauty, strong body line, minimal backgrounds and contemporary energy.",
+  "The Row": "Quiet luxury, restraint, natural sophistication and timeless proportion. PHOTO DIRECTION: muted tones, minimal makeup, elegant natural light, understated portraits and clean full-length images.",
+  "Balmain": "Power dressing, sculpted glamour and high-polish luxury with commanding presence. PHOTO DIRECTION: strong shoulders/pose, polished beauty, luxe styling, confident eye contact and dramatic but controlled energy.",
+  "Dries Van Noten": "Artful eclecticism, rich color, print, texture and intelligent individuality. PHOTO DIRECTION: expressive editorial images, interesting color/texture, thoughtful styling and personality rather than generic glamour.",
+  "Stella McCartney": "Modern ease, confident tailoring and natural, unfussy luxury. PHOTO DIRECTION: daylight, clean styling, relaxed confidence, movement and polished-but-effortless images.",
+  "Vaquera": "Subversive downtown fashion with exaggerated proportions, DIY attitude and anti-glam humor. PHOTO DIRECTION: raw, weird, playful, attitude-heavy images; unconventional poses, styling or framing work well.",
+  "Acne Studios": "Scandinavian cool with offbeat youth, understatement and experimental styling. PHOTO DIRECTION: cool minimal images, slightly strange expression or pose, modern street/editorial energy and restrained color.",
+  "Tom Ford": "Cinematic sexuality, sharp tailoring and highly polished glamour. PHOTO DIRECTION: luxe beauty, confident sensuality, strong eye contact, sleek evening styling and controlled sophistication.",
+  "Chloé": "Bohemian romance, softness, movement and natural feminine ease. PHOTO DIRECTION: warm natural light, flowing movement, soft beauty, airy styling and relaxed sophistication.",
+  "Alainpaul": "Movement-led minimalism influenced by dance, body line and sculptural restraint. PHOTO DIRECTION: full-body motion, elongated lines, simple backgrounds, clean styling and expressive physicality.",
+  "Carven": "Youthful Parisian modernity with playful tailoring, freshness and clean femininity. PHOTO DIRECTION: bright natural light, fresh beauty, polished but approachable styling and youthful elegance.",
+  "Balenciaga": "Directional urban severity, oversized proportion and character-first high fashion. PHOTO DIRECTION: stark or architectural images, unconventional beauty, strong attitude, street/editorial framing and memorable silhouette.",
+  "Cecilie Bahnsen": "Dreamy romantic volume, delicate texture and airy, whimsical femininity. PHOTO DIRECTION: soft natural light, ethereal beauty, gentle movement, romantic styling and light/clean backgrounds.",
+  "Uma Wang": "Earthy, poetic and textural luxury with muted color, artisanal depth and mature restraint. PHOTO DIRECTION: moody natural light, tactile fabrics, subdued palettes, quiet expression and thoughtful editorial framing.",
+  "Rick Owens": "Brutalist gothic futurism with extreme proportion, severity and otherworldly presence. PHOTO DIRECTION: dark/stark images, angular poses, long body lines, unconventional beauty and dramatic silhouette.",
+  "Schiaparelli": "Surrealist couture, sculptural glamour and bold theatrical luxury. PHOTO DIRECTION: dramatic beauty, strong posing, polished skin, statement styling, gold/black accents and high-impact editorial energy.",
+  "Isabel Marant": "Effortless Parisian bohemian-rock cool with relaxed sensuality. PHOTO DIRECTION: candid confidence, natural beauty, denim/leather or easy styling, movement and an unforced cool-girl attitude.",
+  "Loewe": "Artful luxury rooted in craft, intelligence and surreal or unexpected detail. PHOTO DIRECTION: refined but unusual images, expressive faces, tactile styling, interesting composition and strong character.",
+  "Issey Miyake": "Innovation through movement, pleating, geometry and optimistic modern design. PHOTO DIRECTION: dynamic full-body images, movement, clean lines, graphic silhouettes and simple backgrounds.",
+  "Casablanca": "Vibrant resort glamour blending sports-luxury, saturated color and upbeat polish. PHOTO DIRECTION: sunny, energetic, colorful images; clean beauty, confident lifestyle energy and polished movement.",
+  "Lanvin": "Refined Parisian elegance, graceful fluidity and heritage luxury with modern character. PHOTO DIRECTION: polished portraits, elegant full-length shots, soft movement, sophisticated styling and understated glamour.",
+  "Ottolinger": "Deconstructed cyber-club energy with body-conscious styling and raw experimental edge. PHOTO DIRECTION: urban/industrial images, asymmetry, attitude, unusual styling, close crops and strong body language.",
+  "Givenchy": "Severe modern luxury combining sharp tailoring, sensual minimalism and strong bone structure. PHOTO DIRECTION: clean angular portraits, monochrome or neutral styling, confident expression and precise full-body lines.",
+  "Yohji Yamamoto": "Poetic monochrome, drape, intellectual darkness and androgynous individuality. PHOTO DIRECTION: black-and-white or dark imagery, movement, long silhouettes, introspective expression and unconventional beauty.",
+  "Victoria Beckham": "Polished minimal femininity, sleek tailoring and understated contemporary luxury. PHOTO DIRECTION: clean neutral styling, precise beauty, elegant posture, refined full-length images and quiet confidence.",
+  "Junya Watanabe": "Conceptual construction, technical experimentation and punk-inflected sculptural fashion. PHOTO DIRECTION: graphic, unconventional images, strong silhouette, assertive expression and directional styling.",
+  "Celine": "Sleek bourgeois polish with rock attitude, sharp classics and youthful restraint. PHOTO DIRECTION: monochrome or neutral images, elegant tailoring, clean beauty, cool attitude and polished simplicity.",
+  "Noir Kei Ninomiya": "Black-focused sculptural avant-garde with intricate texture and dramatic silhouette. PHOTO DIRECTION: stark graphic images, severe beauty, strong contrast, sculptural posing and minimal backgrounds.",
+  "Vivienne Westwood": "Punk rebellion, eccentric British glamour and irreverent historical tailoring. PHOTO DIRECTION: theatrical personality, attitude, expressive posing, unusual styling and images that feel individual rather than pristine.",
+  "Hermès": "Quiet craftsmanship, equestrian poise and refined natural luxury. PHOTO DIRECTION: understated polish, natural light, composed posture, timeless styling and elegant, confident simplicity.",
+  "Elie Saab": "Red-carpet glamour, romantic embellishment and polished feminine luxury. PHOTO DIRECTION: luminous beauty, elegant gowns or refined styling, graceful posture, soft glamour and high-finish images.",
+  "Comme des Garçons": "Radical abstraction, conceptual shape and anti-conventional beauty. PHOTO DIRECTION: experimental, stark or strange images; unusual expression, silhouette and composition are stronger than traditional glamour.",
+  "Ann Demeulemeester": "Dark poetic romanticism with monochrome tailoring, androgyny and long rock-influenced lines. PHOTO DIRECTION: black/white imagery, lean silhouettes, moody expression, movement and understated intensity.",
+  "Lacoste": "Sporty French prep with youthful movement, clean lines and easy athletic polish. PHOTO DIRECTION: fresh energetic images, athletic posture, relaxed movement, clean daylight and modern casual styling.",
+  "Niccolò Pasqualetti": "Cerebral minimalism with sculptural proportion, gender-fluid restraint and art-school intelligence. PHOTO DIRECTION: minimal backgrounds, unusual composition, quiet expression, clean lines and directional silhouettes.",
+  "Miu Miu": "Playful intellectual youth with quirky femininity, retro tension and strong individual character. PHOTO DIRECTION: expressive, youthful and slightly offbeat images; personality beats perfect polish, with playful styling encouraged.",
+  "Akris": "Architectural Swiss minimalism, precision and quiet luxury. PHOTO DIRECTION: clean structured images, restrained color, precise posture, modern tailoring and sophisticated simplicity.",
+  "Valentino": "Romantic maximalism, couture richness and eclectic character with poetic glamour. PHOTO DIRECTION: expressive portraits, rich or ornate styling, dramatic color/detail and personality-driven elegance.",
+  "Mugler": "Body architecture, power sexuality and sharp futuristic glamour. PHOTO DIRECTION: strong body line, confident sensuality, sculptural poses, polished beauty and dramatic high-contrast imagery.",
+  "Jean Paul Gaultier": "Theatrical sensuality, irreverence, corsetry and character-rich fashion. PHOTO DIRECTION: bold personality, expressive posing, body confidence, dramatic styling and memorable rather than generic images.",
+  "Sacai": "Hybrid construction, technical layering and unexpected combinations of familiar garments. PHOTO DIRECTION: modern directional styling, layered looks, clean full-body images, movement and strong proportion.",
+  "Shiatzy Chen": "Refined East-West luxury with elegant craft, embroidery and polished femininity. PHOTO DIRECTION: graceful posture, refined beauty, rich detail, sophisticated color and polished full-length images.",
+  "Gabriela Hearst": "Artisanal luxury, natural materials and grounded, mature elegance. PHOTO DIRECTION: warm natural light, understated styling, confident calm expression, texture and refined authenticity.",
+  "Zimmermann": "Romantic resort glamour with florals, movement and polished femininity. PHOTO DIRECTION: sunlit or warm images, flowing movement, soft polished beauty, elegant color and sophisticated resort energy.",
+  "Kiko Kostadinov": "Cerebral utility, asymmetry and subculture-informed technical fashion. PHOTO DIRECTION: offbeat directional images, unusual color/shape, clean backgrounds, character and strong modern styling.",
+  "Agnes b.": "Understated French naturalism with effortless everyday character and candid simplicity. PHOTO DIRECTION: authentic daylight portraits, relaxed styling, natural expression and clean, unfussy images.",
+  "Chanel": "Modern classicism built on polished ease, heritage codes and contemporary refinement. PHOTO DIRECTION: clean luxury, poised beauty, sophisticated styling, strong posture and timeless-but-fresh portraits.",
+  "Ujoh": "Japanese precision with fluid tailoring, technical minimalism and elegant movement. PHOTO DIRECTION: elongated full-body images, clean backgrounds, understated styling, movement and refined modernity.",
+  "Litkovska": "Architectural deconstruction with Eastern European edge, strong structure and individualism. PHOTO DIRECTION: stark, angular or monochrome images, strong silhouette, assertive expression and conceptual styling.",
+  "Christopher Esber": "Sensual minimalism with cutouts, drape and sophisticated body awareness. PHOTO DIRECTION: sleek warm imagery, confident body line, minimal styling, refined sensuality and polished skin.",
+  "CFCL": "Knit-led modernity with sculptural simplicity, clean futurism and ease of movement. PHOTO DIRECTION: graphic full-body images, clean backgrounds, motion, simple styling and strong shape.",
+  "Situationist": "Dark Georgian minimalism with sharp tailoring, sensual severity and cool edge. PHOTO DIRECTION: moody monochrome imagery, angular poses, strong eye contact, lean silhouettes and controlled attitude.",
+  "Pierre Cardin": "Space-age geometry, retro-futurism and bold graphic shape. PHOTO DIRECTION: clean futuristic images, strong color blocking, geometric posing, simple backgrounds and graphic silhouette.",
+  "Louis Vuitton": "Polished global luxury combining craft, travel, art and modern statement styling. PHOTO DIRECTION: high-end refined images, strong styling, confident presence, clean beauty and sophisticated editorial versatility."
+};
+const PARIS_PHOTO_THEME_START='[PHOTO THEME]';
+const PARIS_PHOTO_THEME_END='[/PHOTO THEME]';
+function parisPhotoThemeNote(brand,existing=''){
+  const theme=PARIS_BRAND_PHOTO_THEMES[brand]||'';
+  const clean=String(existing||'').replace(/\[PHOTO THEME\][\s\S]*?\[\/PHOTO THEME\]\s*/g,'').trim();
+  if(!theme)return clean;
+  const block=PARIS_PHOTO_THEME_START+'\n'+theme+'\n'+PARIS_PHOTO_THEME_END;
+  return block+(clean?'\n\n'+clean:'');
+}
+
 function parisPostDiorDrafts(models){
   // Roster display names are shortened by applyModelIdentity. Resolve the
   // researched full names through the same aliases before linking records.
@@ -277,6 +347,7 @@ function parisPostDiorDrafts(models){
       includeStats:true,
       includePhotos:true,
       includeSources:true,
+      notes:parisPhotoThemeNote(brand,''),
       models:chosen,
       modelIds:ids,
       html:'',
@@ -301,7 +372,8 @@ function repairParisSS27Packages(data){
     const t=byId.get(d?.id);
     if(!t){repaired.push(d);continue}
     const packageLink=String(d?.packageLink||'').trim();
-    repaired.push({...d,...t,packageLink:packageLink||t.packageLink||'',html:''});
+    const notes=parisPhotoThemeNote(t.company,d?.notes||'');
+    repaired.push({...d,...t,packageLink:packageLink||t.packageLink||'',notes,html:''});
   }
   for(const t of templates)if(!existingById.has(t.id))repaired.push({...t});
 
@@ -312,14 +384,15 @@ function repairParisSS27Packages(data){
   if(activeTemplate){
     const original=data.draft||{};
     const packageLink=String(original.packageLink||'').trim();
-    data.draft={...original,...activeTemplate,packageLink:packageLink||activeTemplate.packageLink||'',html:''};
+    const notes=parisPhotoThemeNote(activeTemplate.company,original.notes||'');
+    data.draft={...original,...activeTemplate,packageLink:packageLink||activeTemplate.packageLink||'',notes,html:''};
     if(!Object.prototype.hasOwnProperty.call(original,'id'))delete data.draft.id;
     data.selected=[...(data.draft.modelIds||[])];
   }
 
   data.recovery={...(data.recovery||{}),
-    parisPackageRepairVersion:1,
-    parisPackageRepairUpdatedOn:'2026-09-20',
+    parisPackageRepairVersion:2,
+    parisPackageRepairUpdatedOn:'2026-09-21',
     parisPackageRepairCount:templates.length
   };
   return data;
