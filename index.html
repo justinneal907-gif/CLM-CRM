@@ -1187,10 +1187,9 @@ async function openInWorkGmail(){
   try{
     setStatus('Creating formatted draft in Work Gmail…');
     const draft=await createFormattedWorkGmailDraft();
-    const messageId=draft?.message?.id||'';
-    const url='https://mail.google.com/mail/u/'+encodeURIComponent(WORK_EMAIL)+'/#drafts'+(messageId?'?compose='+encodeURIComponent(messageId):'');
+    const url='https://mail.google.com/mail/?authuser='+encodeURIComponent(WORK_EMAIL)+'#drafts';
     if(tab)tab.location.href=url;else window.open(url,'_blank','noopener');
-    setStatus('Formatted Gmail draft created in '+WORK_EMAIL+'. Photos, links, bold text and spacing were sent through the Gmail API.');
+    setStatus('Formatted Gmail draft created in '+WORK_EMAIL+'. Opened the Drafts folder; the newest draft is the package you just created.');
   }catch(err){
     try{tab?.close()}catch{}
     console.error('Gmail API draft creation failed',err);
