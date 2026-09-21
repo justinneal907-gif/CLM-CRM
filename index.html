@@ -1450,23 +1450,33 @@ function parisDraftTime(d){
   return String(d?.parsedBrief?.time||d?.time||((String(d?.castingBriefRaw||'').match(/·\\s*(\\d{1,2}:\\d{2})\\.?$/)||[])[1])||'99:99');
 }
 function parisDraftOrderKey(d){return String(d?.date||d?.parsedBrief?.shootDate||'9999-99-99')+' '+parisDraftTime(d)+' '+String(d?.id||'')}
+function parisToneIdentity(d){
+  const c=d?.contactId?db.contacts.find(x=>x.id===d.contactId):null;
+  const raw=[...castingContactParts(d?.contactName),...castingContactParts(c?.name)];
+  const displayNames=[...new Set(raw.map(x=>String(x||'').replace(/\([^)]*\)/g,'').replace(/\s+[—–-].*$/,'').trim()).filter(Boolean).filter(x=>{
+    const n=normalizeName(x);
+    return n&&!/casting team|not publicly verified|casting route|general enquiries|general house contact/.test(n)&&!/^(team|casting|midland|establishment casting|amc casting|suun consultancy|dmcasting|ikki casting|wl casting|smn casting)$/.test(n);
+  }))];
+  const emails=[...new Set([...castingEmails(d?.recipientEmail),...castingEmails(c?.email)])];
+  return {names:displayNames.map(normalizeName),displayNames,emails};
+}
 function parisIdentityOverlap(a,b){
-  const ai=draftCastingIdentity(a),bi=draftCastingIdentity(b);
+  const ai=parisToneIdentity(a),bi=parisToneIdentity(b);
   return ai.emails.some(x=>bi.emails.includes(x))||ai.names.some(x=>bi.names.includes(x));
 }
 function parisDraftRelationshipTone(d){
   d=d||activeDraftRecord()||db.draft||{};
   if(!isParisSS27Draft(d))return {tone:'professional',reason:'standard draft'};
-  const id=draftCastingIdentity(d);
+  const id=parisToneIdentity(d);
   if(id.emails.some(e=>PARIS_PRIOR_SENT_EMAILS_2026_09_21.has(e)))return {tone:'personal',reason:'repeat contact from Sent mail'};
   const currentKey=parisDraftOrderKey(d);
   const earlier=(db.drafts||[]).filter(x=>x&&x.id!==d.id&&isParisSS27Draft(x)&&parisIdentityOverlap(d,x)&&parisDraftOrderKey(x)<currentKey);
   return earlier.length?{tone:'personal',reason:'repeat Paris contact'}:{tone:'professional',reason:'first Paris contact'};
 }
 function draftGreetingNames(d){
-  const names=draftCastingIdentity(d).displayNames.map(x=>String(x||'').replace(/\s+[—–-].*$/,'').trim()).filter(Boolean);
+  const names=parisToneIdentity(d).displayNames;
   const first=[...new Set(names.map(x=>x.split(/\s+/)[0]).filter(Boolean))].slice(0,3);
-  if(first.length===0){const raw=String(d?.contactName||'').trim();return raw?[raw.split(/\s+/)[0]]:[]}
+  if(first.length===0){const raw=String(d?.contactName||'').trim();return /casting team|not publicly verified|casting route/i.test(raw)?[]:(raw?[raw.split(/\s+/)[0]]:[])}
   return first;
 }
 function naturalNameList(names){
