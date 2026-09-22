@@ -129,6 +129,94 @@ dialog{border:0;border-radius:12px;max-width:680px;width:calc(100% - 30px);paddi
 .draft-photo-choice{position:relative}
 .multi-photo-badge{position:absolute;right:4px;top:4px;display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#fff;border:1px solid #9ba59e;font-weight:800;font-size:14px;line-height:1}
 .draft-photo-choice.active .multi-photo-badge{border-width:2px}
+
+/* COMPACT WORKSPACE UI 2026-09-22 — presentation only; CRM storage/schema unchanged */
+.app{grid-template-columns:196px 1fr}
+.sidebar{padding:18px 12px}
+.subbrand{margin-bottom:18px}
+.nav button{padding:8px 10px;margin:2px 0}
+.main{padding:18px 20px}
+.topbar{margin-bottom:14px;align-items:center}
+.topbar h1{font-size:23px;margin:2px 0}
+.workspace-note{font-size:12px}
+.btn{padding:7px 10px}
+.panel{padding:13px;margin-bottom:12px;border-radius:9px}
+.panel h2{font-size:18px;margin-bottom:8px}
+.panel h3{margin:12px 0 7px}
+.toolbar{gap:6px;margin-bottom:9px}
+.toolbar input,.toolbar select,.field input,.field select,.field textarea{padding:8px}
+.field{margin-bottom:9px}
+.stats{grid-template-columns:repeat(4,minmax(120px,1fr));gap:7px;margin-bottom:12px}
+.stat{padding:9px 11px;border-radius:8px}
+.stat b{display:inline;font-size:18px;margin-right:5px}
+.cards{grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:8px}
+.card{display:grid;grid-template-columns:96px minmax(0,1fr);border-radius:8px;min-height:145px}
+.model-photo{height:100%;min-height:145px}
+.card-body{padding:10px;min-width:0}
+.card-title{font-size:15px}
+.model-meta{font-size:12px;color:var(--muted);margin:2px 0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status-pill{display:inline-block;padding:2px 6px;border-radius:999px;background:#fff3cd;color:#5f4a00;font-size:10px;font-weight:800;margin:0 5px 4px 0}
+.status-pill.available{background:var(--soft);color:var(--accent)}
+.statsline{margin:4px 0 7px;min-height:0;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-actions{display:flex;gap:6px;align-items:center;margin-top:7px}
+.card-actions>.btn{flex:1}
+.action-menu{position:relative;display:inline-block}
+.action-menu>summary{list-style:none;border:1px solid #b8c2ba;background:#fff;padding:7px 10px;border-radius:7px;cursor:pointer;font-weight:800;line-height:1}
+.action-menu>summary::-webkit-details-marker{display:none}
+.action-menu[open]>.action-menu-popover{display:flex}
+.action-menu-popover{display:none;position:absolute;right:0;top:calc(100% + 5px);z-index:20;min-width:145px;padding:6px;gap:5px;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 28px #0002}
+.action-menu-popover .btn{width:100%;text-align:left;text-decoration:none;white-space:nowrap}
+.table-action-menu{position:relative}
+.table-action-menu .action-menu-popover{right:0}
+.metric-grid{gap:7px}
+.metric{padding:9px;border-radius:8px}
+.metric b{font-size:17px}
+.performance-details{border-top:1px solid var(--line);padding-top:9px}
+.performance-details>summary{cursor:pointer;font-weight:700;color:var(--muted)}
+.draft-card{padding:9px 10px;margin-top:6px;border-radius:7px}
+.draft-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.draft-card-title{min-width:0}
+.draft-card-meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.draft-card-models{font-size:12px;color:var(--muted);margin-top:3px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.draft-card-details{margin-top:7px;border-top:1px solid var(--line);padding-top:6px}
+.draft-card-details>summary{cursor:pointer;color:var(--muted);font-size:12px;font-weight:700}
+.draft-card-actions{display:flex;gap:6px;align-items:center;flex:0 0 auto}
+.draft-model-card{padding:8px;margin-bottom:7px;border-radius:8px}
+.draft-model-head{grid-template-columns:68px 1fr;gap:8px}
+.draft-model-thumb{width:68px;height:90px}
+.draft-photo-choice{flex-basis:54px}
+.draft-photo-choice img{width:50px;height:66px}
+.photo-library-panel{padding:9px}
+.photo-library-card img{height:125px}
+.field:has(> #brandLookSuggestion){display:none}
+th,td{padding:8px}
+.empty{padding:10px}
+.pipeline{gap:8px}
+.selected-model{padding:7px 0}
+.preview{padding:13px;min-height:260px}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cards{grid-template-columns:repeat(auto-fill,minmax(310px,1fr))}}
+@media(max-width:760px){
+  .main{padding:12px 10px 72px}
+  .topbar .actions{display:flex}
+  .topbar .actions>.btn,.topbar .actions>.action-menu{width:auto;flex:0 0 auto}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stat{padding:8px}.stat b{font-size:17px}
+  .cards{grid-template-columns:1fr}
+  .card{grid-template-columns:86px minmax(0,1fr);min-height:132px}
+  .model-photo{height:100%;min-height:132px}
+  .card-body{padding:9px}
+  .card-actions{display:flex;width:auto}
+  .card-actions>.btn{min-height:38px;width:auto}
+  .action-menu>summary{min-height:38px;padding:10px}
+  .draft-card-head{align-items:center}
+  .draft-card-actions .btn{min-height:38px}
+}
+@media(max-width:430px){
+  .topbar .actions{display:flex;width:auto}
+  .topbar .actions .btn{width:auto}
+  .draft-card-head{display:block}
+  .draft-card-actions{margin-top:7px}
+}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -136,9 +224,9 @@ dialog{border:0;border-radius:12px;max-width:680px;width:calc(100% - 30px);paddi
 <div class="app">
 <aside class="sidebar"><div class="brand">JN AGENCY DESK</div><div class="subbrand">Justin Neal · Chez Les Mannequins<br>PRIVATE WORKSPACE · RESPONSIVE</div><div class="nav" id="nav"></div></aside>
 <main class="main">
-<div class="topbar"><div><div class="eyebrow">JUSTIN NEAL / AGENCY DESK</div><h1 id="pageTitle">Today</h1><div class="muted">Dates use New York time · Private records · Desktop + mobile</div></div><div class="actions"><button class="btn" id="exportBtn">Export</button><button class="btn" id="refreshBtn">Refresh records</button><button class="btn primary" id="addBtn">Add task</button></div></div>
+<div class="topbar"><div><div class="eyebrow">JUSTIN NEAL / AGENCY DESK</div><h1 id="pageTitle">Today</h1><div class="muted workspace-note">New York time · Private workspace</div></div><div class="actions"><button class="btn" id="exportBtn">Back up data</button><button class="btn primary" id="addBtn">Add task</button><details class="action-menu"><summary aria-label="More workspace actions">•••</summary><div class="action-menu-popover"><button class="btn" id="refreshBtn">Refresh records</button></div></details></div></div>
 <div class="stats" id="stats"></div>
-<section id="view-today" class="view active"><div class="panel"><h2>Your booking pipeline</h2><p class="muted">Make the next connection.</p><div class="actions" style="margin-bottom:14px"><button class="btn" onclick="openRecordModal('contacts')">Add contact</button><button class="btn" onclick="openRecordModal('bookings')">Add booking</button><button class="btn" onclick="openRecordModal('tasks')">Add task</button><button class="btn primary" onclick="go('email')">Create package</button></div><div id="revenueDashboard" style="margin-bottom:12px"></div><div id="performanceDashboard" style="margin-bottom:12px"></div><div class="pipeline" id="todayPipeline"></div></div></section>
+<section id="view-today" class="view active"><div class="panel"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><h2 style="margin:0">Booking pipeline</h2><div class="actions"><button class="btn" onclick="openRecordModal('contacts')">Add contact</button><button class="btn" onclick="openRecordModal('bookings')">Add booking</button><button class="btn primary" onclick="go('email')">Create package</button></div></div><div id="revenueDashboard" style="margin:10px 0"></div><div id="performanceDashboard" style="margin-bottom:10px"></div><div class="pipeline" id="todayPipeline"></div></div></section>
 <section id="view-models" class="view"><div class="panel"><div class="toolbar"><input id="modelSearch" placeholder="Search models, location, division, niche or measurements"/><select id="locationFilter"><option value="">All locations</option></select><select id="divisionFilter"><option value="">All divisions</option></select><select id="nicheFilter"><option value="">All main niches</option></select><select id="availabilityFilter"><option value="">All availability</option></select><button class="btn" id="selectNicheBtn">Add niche group to package</button><button class="btn" id="clearFilters">Clear</button></div><div class="muted" id="modelStats" style="margin-bottom:12px"></div><div class="cards" id="modelCards"></div></div></section>
 <section id="view-contacts" class="view"><div class="panel"><div class="actions" style="margin-bottom:12px"><button class="btn primary" onclick="openRecordModal('contacts')">Add contact</button></div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Company</th><th>Email</th><th>Relationship</th><th>Notes</th><th></th></tr></thead><tbody id="contactsBody"></tbody></table></div></div></section>
 <section id="view-submissions" class="view"><div class="panel"><div class="actions" style="margin-bottom:12px"><button class="btn primary" onclick="openRecordModal('submissions')">New submission</button></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Contact</th><th>Project / Dates</th><th>Models</th><th>Status</th><th></th></tr></thead><tbody id="submissionsBody"></tbody></table></div></div></section>
@@ -1043,16 +1131,16 @@ function contactInsights(c){const match=s=>normalizeName([s.email||s.recipient,s
 function showContactInsights(id){const c=db.contacts.find(x=>x.id===id);if(!c)return;const x=contactInsights(c);$('#modelModal').innerHTML=`<h2>${esc(c.name||c.company||'Client intelligence')}</h2><p>${c.company?`<b>${esc(c.company)}</b><br>`:''}${esc(c.email||'')}</p><div class="metric-grid"><div class="metric"><b>${x.subs.length}</b>Submissions</div><div class="metric"><b>${x.responses}</b>Responses / holds</div><div class="metric"><b>${x.books.length}</b>Bookings</div><div class="metric"><b>${esc(x.last||'—')}</b>Last activity</div></div><h3>Brands / projects</h3><div>${x.projects.length?x.projects.map(p=>`<span class="pill">${esc(p)}</span>`).join(' '):'<span class="muted">No submission history yet.</span>'}</div><h3>Most submitted models</h3><div>${x.topModels.length?x.topModels.map(([n,k])=>`<div>${esc(n)} · ${k}</div>`).join(''):'<span class="muted">No history yet.</span>'}</div><h3>Internal relationship</h3><div>${esc(c.relationship||'Developing')}${c.preferredNiches?' · Preferred: '+esc(c.preferredNiches):''}</div><div class="actions" style="margin-top:16px"><button class="btn" onclick="openRecordModal('contacts','${c.id}');$('#modelDialog').close()">Edit contact</button><button class="btn" onclick="$('#modelDialog').close()">Close</button></div>`;$('#modelDialog').showModal()}
 function performanceByModel(){const rows=[];for(const m of db.models){const subs=db.submissions.filter(s=>(s.modelIds||[]).includes(m.id)||(s.models||[]).includes(m.name));if(!subs.length)continue;const responses=subs.filter(s=>SUBMISSION_RESPONSE_STATUSES.includes(s.status)).length;const booked=subs.filter(s=>s.status==='Booked').length+db.bookings.filter(b=>normalizeName(b.model)===normalizeName(m.name)&&['Booked','Completed','Paid'].includes(b.status)).length;rows.push({name:m.name,subs:subs.length,responses,booked,rate:subs.length?responses/subs.length:0})}return rows.sort((a,b)=>b.booked-a.booked||b.rate-a.rate||b.subs-a.subs)}
 function renderRevenueDashboard(){const el=$('#revenueDashboard');if(!el)return;const activeBookings=db.bookings.filter(b=>['Booked','Completed','Paid'].includes(b.status));const total=activeBookings.reduce((a,b)=>a+bookingTotal(b),0);const comm=activeBookings.reduce((a,b)=>a+bookingCommission(b),0);const unpaid=db.bookings.filter(b=>['Booked','Completed'].includes(b.status)).reduce((a,b)=>a+bookingCommission(b),0);const holds=db.bookings.filter(b=>['Inquiry','Hold','First Hold','Second Hold'].includes(b.status)).reduce((a,b)=>a+bookingTotal(b),0);el.innerHTML=`<div class="metric-grid"><div class="metric"><b>${fmtMoney(total)}</b>Booked gross</div><div class="metric"><b>${fmtMoney(comm)}</b>Your projected commission</div><div class="metric"><b>${fmtMoney(unpaid)}</b>Commission not yet paid</div><div class="metric"><b>${fmtMoney(holds)}</b>Potential value on holds</div></div>`}
-function renderPerformanceDashboard(){const el=$('#performanceDashboard');if(!el)return;const rows=performanceByModel().slice(0,5);if(!rows.length){el.innerHTML='';return}el.innerHTML=`<div class="panel" style="margin:0"><h3>Submission performance</h3>${rows.map(r=>`<div style="margin:9px 0"><b>${esc(r.name)}</b> <span class="muted">${r.subs} submitted · ${r.responses} response/hold · ${r.booked} booked</span><div class="mini-bar"><span style="width:${Math.round(Math.min(1,r.rate)*100)}%"></span></div></div>`).join('')}</div>`}
+function renderPerformanceDashboard(){const el=$('#performanceDashboard');if(!el)return;const rows=performanceByModel().slice(0,5);if(!rows.length){el.innerHTML='';return}el.innerHTML=`<details class="performance-details"><summary>Submission performance · top ${rows.length}</summary><div style="padding-top:5px">${rows.map(r=>`<div style="margin:7px 0"><b>${esc(r.name)}</b> <span class="muted">${r.subs} submitted · ${r.responses} response/hold · ${r.booked} booked</span><div class="mini-bar"><span style="width:${Math.round(Math.min(1,r.rate)*100)}%"></span></div></div>`).join('')}</div></details>`}
 function autoFollowUpForSubmission(s){if(db.settings?.autoFollowUp===false)return;const exists=db.tasks.some(t=>t.submissionId===s.id);if(exists)return;const profile=inferBrandProfile(s.project||'');const fast=profile?.niches?.some(n=>['High Fashion / Editorial','Luxury / Runway'].includes(n));let due=isoAddDays(s.date||nyDate(),fast?1:3);if(s.castingDate&&s.castingDate>nyDate())due=[due,isoAddDays(s.castingDate,-1)].sort()[0];db.tasks.push({id:uid(),task:'Follow up: '+(s.project||'model submission'),contact:s.contact||'',company:s.company||'',email:s.email||'',details:'Automatic follow-up for submitted package'+(s.models?.length?' · '+s.models.join(', '):''),due,priority:'Normal',status:'Open',submissionId:s.id})}
 function maintenanceSweep(data=db){if(data.settings?.closeStaleSubmissions===false)return false;const today=nyDate();let changed=false;for(const s of (data.submissions||[])){if(s.shootDate&&s.shootDate<today&&['Submitted','Requested','Casting','Callback','First Hold','Second Hold'].includes(s.status)){s.status='Closed / No Booking';changed=true}}return changed}
-function renderStats(){const vals=[['Models',db.models.length],['Contacts',db.contacts.length],['Submissions',db.submissions.length],['Bookings',db.bookings.length],['Tasks',db.tasks.filter(t=>String(t.status||'Open').toLowerCase()!=='done').length],['Saved packages',db.drafts.length]];$('#stats').innerHTML=vals.map(([k,v])=>`<div class="stat"><b>${v}</b>${k}</div>`).join('')}
+function renderStats(){const today=nyDate(),openTasks=db.tasks.filter(t=>String(t.status||'Open').toLowerCase()!=='done'),due=openTasks.filter(t=>!t.due||t.due<=today).length,ready=db.drafts.filter(d=>(d.recipientEmail||'').trim()&&(d.modelIds?.length||d.models?.length)).length,missing=db.drafts.filter(d=>!(d.recipientEmail||'').trim()).length,activeBookings=db.bookings.filter(b=>['Hold','First Hold','Second Hold','Booked'].includes(b.status)).length;const vals=[['Follow-ups due',due],['Packages ready',ready],['Missing contacts',missing],['Active holds / bookings',activeBookings]];$('#stats').innerHTML=vals.map(([k,v])=>`<div class="stat"><b>${v}</b>${k}</div>`).join('')}
 function setupFilters(){const loc=[...new Set(db.models.map(m=>m.location).filter(Boolean))].sort();const div=[...new Set(db.models.map(m=>m.division).filter(Boolean))].sort();const niches=NICHE_ORDER.filter(n=>db.models.some(m=>m.niche===n));$('#locationFilter').innerHTML='<option value="">All locations</option>'+loc.map(x=>`<option>${esc(x)}</option>`).join('');$('#divisionFilter').innerHTML='<option value="">All divisions</option>'+div.map(x=>`<option>${esc(x)}</option>`).join('');$('#nicheFilter').innerHTML='<option value="">All main niches</option>'+niches.map(x=>`<option>${esc(x)}</option>`).join('');if($('#availabilityFilter')){const cur=$('#availabilityFilter').value;$('#availabilityFilter').innerHTML='<option value="">All availability</option>'+AVAILABILITY_OPTIONS.map(x=>`<option>${esc(x)}</option>`).join('');$('#availabilityFilter').value=cur}if($('#emailNicheSelect'))$('#emailNicheSelect').innerHTML='<option value="">— Select main niche —</option>'+niches.map(x=>`<option>${esc(x)}</option>`).join('');if($('#emailNicheMarket')){const cur=$('#emailNicheMarket').value;$('#emailNicheMarket').innerHTML='<option value="New York">New York</option><option value="">All markets</option>'+loc.filter(x=>x!=='New York').map(x=>`<option>${esc(x)}</option>`).join('');$('#emailNicheMarket').value=[...$('#emailNicheMarket').options].some(o=>o.value===cur)?cur:'New York'}}
 function modelFilter(){const q=$('#modelSearch').value.trim().toLowerCase(),l=$('#locationFilter').value,d=$('#divisionFilter').value,n=$('#nicheFilter').value,a=$('#availabilityFilter')?.value||'';return db.models.filter(m=>(!l||m.location===l)&&(!d||m.division===d)&&(!n||m.niche===n)&&(!a||(m.availabilityStatus||'Unknown')===a)&&(!q||[m.name,m.location,m.division,m.niche,m.secondaryNiche,m.availabilityStatus,m.holdProject,m.stats,m.measurements].join(' ').toLowerCase().includes(q)))}
 function modelsForNiche(niche,market=''){return db.models.filter(m=>m.activeBoard!==false&&m.niche===niche&&(!market||m.location===market))}
 function addNicheGroup(niche,market=''){if(!niche)return 0;const group=modelsForNiche(niche,market);for(const m of group)if(!selected.includes(m.id))selected.push(m.id);save();renderEmailMatches();return group.length}
 function selectNicheFromModels(){const niche=$('#nicheFilter').value;if(!niche)return alert('Choose a main niche first.');const market=$('#locationFilter').value;const count=addNicheGroup(niche,market);alert(`${count} ${niche} model${count===1?'':'s'}${market?' from '+market:''} added to the package.`)}
-function renderModels(){const list=modelFilter();$('#modelStats').textContent=`${list.length} shown · ${db.models.length} total roster entries · ${selected.length} selected for package`+(db.models.some(m=>m.location==='Paris')?' · Paris retained as legacy/unlinked board':'');$('#modelCards').innerHTML=list.map(m=>`<article class="card"><div class="model-photo">${getPhoto(m)?`<img src="${esc(getPhoto(m))}" alt="${esc(m.name)}">`:`<div class="placeholder">${esc(initials(m.name))}</div>`}</div><div class="card-body"><b>${esc(m.name)}</b><div><span class="pill">${esc(m.location)}</span><span class="pill">${esc(m.division)}</span><span class="pill">${esc(m.niche||'Unclassified')}</span><span class="pill">${esc(m.availabilityStatus||'Unknown')}</span>${m.activeBoard===false?'<span class="pill">legacy board</span>':''}</div><div class="statsline">${esc(m.stats||m.measurements||'Measurements not listed')}</div>${m.holdProject?`<div class="muted tiny">${esc(m.holdProject)}${m.statusFrom||m.statusTo?' · '+esc([m.statusFrom,m.statusTo].filter(Boolean).join(' → ')):''}</div>`:''}<div class="actions"><button class="btn" onclick="openModel('${m.id}')">Details</button><button class="btn primary" onclick="createPackage('${m.id}')">Create Package</button>${m.profile?`<a class="btn" href="${esc(m.profile)}" target="_blank" rel="noopener">Portfolio</a>`:''}</div></div></article>`).join('')||'<div class="empty">No matching models.</div>'}
+function renderModels(){const list=modelFilter();$('#modelStats').textContent=`${list.length} shown · ${selected.length} selected for package`;$('#modelCards').innerHTML=list.map(m=>{const status=m.availabilityStatus||'Unknown',showStatus=status!=='Available'||m.activeBoard===false;return `<article class="card"><div class="model-photo">${getPhoto(m)?`<img src="${esc(getPhoto(m))}" alt="${esc(m.name)}">`:`<div class="placeholder">${esc(initials(m.name))}</div>`}</div><div class="card-body"><b class="card-title">${esc(m.name)}</b><div class="model-meta">${esc([m.location,m.division,m.niche||'Unclassified'].filter(Boolean).join(' · '))}</div>${showStatus?`<span class="status-pill ${status==='Available'?'available':''}">${esc(m.activeBoard===false?'Legacy board':status)}</span>`:''}<div class="statsline">${esc(m.stats||m.measurements||'Measurements not listed')}</div>${m.holdProject?`<div class="muted tiny">${esc(m.holdProject)}${m.statusFrom||m.statusTo?' · '+esc([m.statusFrom,m.statusTo].filter(Boolean).join(' → ')):''}</div>`:''}<div class="card-actions"><button class="btn primary" onclick="createPackage('${m.id}')">Create package</button><details class="action-menu"><summary aria-label="More actions for ${esc(m.name)}">•••</summary><div class="action-menu-popover"><button class="btn" onclick="openModel('${m.id}')">Details</button>${m.profile?`<a class="btn" href="${esc(m.profile)}" target="_blank" rel="noopener">Portfolio</a>`:''}</div></details></div></div></article>`}).join('')||'<div class="empty">No matching models.</div>'}
 function openModel(id){const m=db.models.find(x=>x.id===id);if(!m)return;$('#modelModal').innerHTML=`<h2>${esc(m.name)}</h2><p><span class="pill">${esc(m.location)}</span><span class="pill">${esc(m.division)}</span><span class="pill">${esc(m.niche||'Unclassified')}</span>${m.secondaryNiche?`<span class="pill">Secondary: ${esc(m.secondaryNiche)}</span>`:''}</p><div class="field"><label>Main niche</label><select id="modalNiche">${NICHE_ORDER.map(n=>`<option ${m.niche===n?'selected':''}>${esc(n)}</option>`).join('')}</select></div><div class="field"><label>Secondary niche</label><select id="modalSecondaryNiche"><option value="">— None —</option>${NICHE_ORDER.map(n=>`<option ${m.secondaryNiche===n?'selected':''}>${esc(n)}</option>`).join('')}</select></div><div class="field"><label>Availability / hold status</label><select id="modalAvailability">${AVAILABILITY_OPTIONS.map(n=>`<option ${m.availabilityStatus===n?'selected':''}>${esc(n)}</option>`).join('')}</select></div><div class="split" style="grid-template-columns:1fr 1fr"><div class="field"><label>Status from</label><input id="modalStatusFrom" type="date" value="${esc(m.statusFrom||'')}"></div><div class="field"><label>Status through</label><input id="modalStatusTo" type="date" value="${esc(m.statusTo||'')}"></div></div><div class="field"><label>Hold / booking project</label><input id="modalHoldProject" value="${esc(m.holdProject||'')}" placeholder="Client or project"></div><div class="field"><label>Availability notes</label><textarea id="modalAvailabilityNotes" rows="3">${esc(m.availabilityNotes||'')}</textarea></div><div class="field"><label>Measurements</label><textarea id="modalStats" rows="4">${esc(m.stats||m.measurements||'')}</textarea></div><div class="split" style="grid-template-columns:1fr 1fr"><div class="field"><label>Hair</label><input id="modalHair" value="${esc(m.hair||'')}"></div><div class="field"><label>Eyes</label><input id="modalEyes" value="${esc(m.eyes||'')}"></div></div><div class="field"><label>Primary photo URL</label><input id="modalPhoto" value="${esc(getPhoto(m))}"></div><div class="field"><label>Upload / replace primary photo</label><input id="modalFile" type="file" accept="image/*"></div><div class="field"><label>Portfolio source</label><input value="${esc(m.profile||m.profileUrl||'')}" readonly></div><div class="actions"><button class="btn primary" onclick="saveModel('${m.id}')">Save</button><button class="btn" onclick="createPackage('${m.id}');$('#modelDialog').close()">Create Package</button><button class="btn" onclick="$('#modelDialog').close()">Close</button></div>`;$('#modelDialog').showModal()}
 function fileToDataUrl(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
 async function saveModel(id){const m=db.models.find(x=>x.id===id);m.niche=$('#modalNiche').value;m.secondaryNiche=$('#modalSecondaryNiche').value;m.availabilityStatus=$('#modalAvailability').value;m.statusFrom=$('#modalStatusFrom').value;m.statusTo=$('#modalStatusTo').value;m.holdProject=$('#modalHoldProject').value.trim();m.availabilityNotes=$('#modalAvailabilityNotes').value.trim();m.hair=$('#modalHair').value.trim();m.eyes=$('#modalEyes').value.trim();m.stats=mergeAppearanceStats($('#modalStats').value,m.hair,m.eyes);m.measurements=m.stats;const url=$('#modalPhoto').value.trim();if(url)m.photo=url;const file=$('#modalFile').files[0];if(file){db.customPhotos=db.customPhotos||{};db.customPhotos[id]=await fileToDataUrl(file)}save();$('#modelDialog').close()}
@@ -1425,7 +1513,8 @@ function repeatCastingHtml(d,compact=false){
 
 function draftCardHtml(d,activeDraft=false){
   const privateNote=String(d.notes||'').trim(),privatePreview=privateNote?(privateNote.length>220?privateNote.slice(0,220).trimEnd()+'…':privateNote):'';
-  return `<div class="draft-card" style="${activeDraft?'border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset':''}"><b>${esc(d.subject||'Untitled draft')}</b>${activeDraft?' <span class="pill">OPEN</span>':''}${repeatCastingHtml(d,true)}<div class="muted">${esc(d.date||'')} · ${esc(d.brandProject||d.recipientEmail||'')} · ${esc((d.models||[]).join(', '))}${d.source?` · ${esc(d.source)}`:''}</div>${repeatCastingHtml(d,false)}${privatePreview?`<div class="draft-private-note"><b>PRIVATE NOTES</b><div>${esc(privatePreview).replace(/\\n/g,'<br>')}</div></div>`:''}<div class="actions" style="margin-top:8px"><button class="btn${activeDraft?' primary':''}" onclick="loadDraft('${d.id}')">${activeDraft?'Reload':'Open'}</button>${d.gmailUrl?`<a class="btn" href="${esc(d.gmailUrl)}" target="_blank" rel="noopener">Gmail</a>`:''}<button class="btn danger" onclick="deleteDraft('${d.id}')">Delete</button></div></div>`;
+  const brand=d.brandProject||d.company||d.recipientEmail||'No brand',models=(d.models||[]).join(', ')||'No models selected',recipient=d.contactName||d.recipientEmail||'Contact not assigned';
+  return `<div class="draft-card" style="${activeDraft?'border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset':''}"><div class="draft-card-head"><div class="draft-card-title"><b>${esc(brand)}</b>${activeDraft?' <span class="pill">OPEN</span>':''}${repeatCastingHtml(d,true)}<div class="draft-card-meta">${esc(d.date||'No date')} · ${esc(recipient)} · ${esc(d.subject||'Untitled draft')}</div><div class="draft-card-models">${esc(models)}</div></div><div class="draft-card-actions"><button class="btn${activeDraft?' primary':''}" onclick="loadDraft('${d.id}')">${activeDraft?'Reload':'Open'}</button><details class="action-menu"><summary aria-label="More package actions">•••</summary><div class="action-menu-popover">${d.gmailUrl?`<a class="btn" href="${esc(d.gmailUrl)}" target="_blank" rel="noopener">Open Gmail</a>`:''}<button class="btn danger" onclick="deleteDraft('${d.id}')">Delete</button></div></details></div></div>${privatePreview||d.source||repeatCastingInfo(d).matches.length?`<details class="draft-card-details"><summary>Package details</summary>${repeatCastingHtml(d,false)}${privatePreview?`<div class="draft-private-note"><b>PRIVATE NOTES</b><div>${esc(privatePreview).replace(/\\n/g,'<br>')}</div></div>`:''}${d.source?`<div class="muted tiny" style="margin-top:7px">${esc(d.source)}</div>`:''}</details>`:''}</div>`;
 }
 function renderDrafts(){
   const box=$('#savedDrafts');if(!box)return;
@@ -1804,6 +1893,22 @@ function renderEmailSelection(){
 }
 /* END MULTI-IMAGE DRAFT PACKAGE SUPPORT */
 
+/* COMPACT ACTION GROUPS — keeps every record action available without permanent button rows */
+function recordActionMenu(items,label='More actions'){return `<details class="action-menu table-action-menu"><summary aria-label="${esc(label)}">•••</summary><div class="action-menu-popover">${items.join('')}</div></details>`}
+function renderTables(){
+  $('#contactsBody').innerHTML=db.contacts.map(c=>`<tr><td>${esc(c.name||'')}</td><td>${esc(c.company||'')}</td><td>${c.email?`<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`:''}</td><td>${esc(c.relationship||'Developing')}<div class="muted tiny">${esc(c.preferredNiches||'')}</div></td><td>${esc(c.notes||'')}</td><td>${recordActionMenu([`<button class="btn" onclick="showContactInsights('${c.id}')">Insights</button>`,`<button class="btn" onclick="openRecordModal('contacts','${c.id}')">Edit</button>`,`<button class="btn danger" onclick="delRecord('contacts','${c.id}')">Delete</button>`],`Actions for ${c.name||'contact'}`)}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No contacts yet.</td></tr>';
+  $('#submissionsBody').innerHTML=db.submissions.map(s=>`<tr><td>${esc(s.date||'')}</td><td>${esc(s.contact||'')}<div class="muted">${esc([s.company,s.email||s.recipient].filter(Boolean).join(' · '))}</div></td><td>${esc(s.project||'')}<div class="muted tiny">${esc([s.castingDate?'Casting '+s.castingDate:'',s.shootDate?'Shoot '+s.shootDate:s.shootText||''].filter(Boolean).join(' · '))}</div></td><td>${esc(Array.isArray(s.models)?s.models.join(', '):s.models||'')}</td><td>${esc(s.status||'')}</td><td>${recordActionMenu([s.gmailUrl?`<a class="btn" href="${esc(s.gmailUrl)}" target="_blank" rel="noopener">Open email</a>`:'',`<button class="btn" onclick="openRecordModal('submissions','${s.id}')">Edit</button>`,`<button class="btn danger" onclick="delRecord('submissions','${s.id}')">Delete</button>`].filter(Boolean),`Actions for ${s.project||'submission'}`)}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No submissions yet.</td></tr>';
+  $('#bookingsBody').innerHTML=db.bookings.map(b=>`<tr><td>${esc(b.date||'')}</td><td>${esc(b.project||'')}</td><td>${esc(b.client||'')}<div class="muted">${esc([b.contact,b.email].filter(Boolean).join(' · '))}</div></td><td>${esc(b.model||'')}</td><td>${esc(fmtMoney(bookingTotal(b)))}</td><td>${esc(fmtMoney(bookingCommission(b)))}</td><td>${esc(b.status||'')}</td><td>${recordActionMenu([`<button class="btn" onclick="openRecordModal('bookings','${b.id}')">Edit</button>`,`<button class="btn danger" onclick="delRecord('bookings','${b.id}')">Delete</button>`],`Actions for ${b.project||'booking'}`)}</td></tr>`).join('')||'<tr><td colspan="8" class="muted">No bookings yet.</td></tr>';
+  $('#tasksBody').innerHTML=db.tasks.map(t=>`<tr><td>${esc(t.task||'')}<div class="muted" style="margin-top:4px">${esc([t.contact,t.company,t.email].filter(Boolean).join(' · '))}</div></td><td style="min-width:260px;white-space:pre-wrap">${esc(t.details||t.notes||'')}</td><td>${esc(t.due||'')}</td><td>${esc(t.priority||'')}</td><td>${esc(t.status||'')}</td><td>${recordActionMenu([`<button class="btn" onclick="openRecordModal('tasks','${t.id}')">Edit</button>`,`<button class="btn danger" onclick="delRecord('tasks','${t.id}')">Delete</button>`],`Actions for ${t.task||'task'}`)}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No tasks yet.</td></tr>';
+}
+function compactPackageActions(){
+  const copy=$('#copyEmailBtn'),row=copy?.closest('.actions');if(!row||row.dataset.compactActions)return;
+  row.dataset.compactActions='true';
+  const menu=document.createElement('details');menu.className='action-menu';menu.innerHTML='<summary aria-label="More package actions">•••</summary><div class="action-menu-popover"></div>';
+  const popover=menu.querySelector('.action-menu-popover');
+  ['copySubjectBtn','recordSubmissionBtn','jumpToCastingLeadsBtn'].forEach(id=>{const el=$('#'+id);if(el)popover.appendChild(el)});
+  row.appendChild(menu);
+}
 /* INDEXEDDB RUNTIME OVERRIDES */
 function persistWorkspaceSafe(showError=true){
   db.selected=[...selected];
@@ -1832,6 +1937,7 @@ async function bootstrapWorkspace(){
   hydrateDraft();
   renderGmailApiStatus();
   renderAll();
+  compactPackageActions();
   persistWorkspaceSafe(false);
 }
 bootstrapWorkspace();
@@ -1849,5 +1955,6 @@ $('#clearBriefBtn').onclick=clearParsedBrief;
 ['emailPurpose','emailContactName','emailCompany','emailRecipient','emailBrand','emailSubject','emailLink','emailContext','emailPrivateNotes','castingBriefRaw','includeStats','includePhotos','includeSources'].forEach(id=>{const el=$('#'+id);if(el)el.addEventListener('input',queueEmailDraftRender)});$('#emailBrand')?.addEventListener('change',()=>{renderBrandAdvisor();renderSubmissionWarnings();persistWorkspaceSafe(false)});
 $('#copyEmailBtn').onclick=copyEmail;$('#copySubjectBtn').onclick=async()=>{await navigator.clipboard.writeText($('#emailSubject').value);setStatus('Subject copied.')};$('#saveDraftBtn').onclick=saveDraft;$('#recordSubmissionBtn').onclick=recordSubmission;
 $('#exportBtn').onclick=exportAll;$('#exportDataBtn').onclick=exportAll;$('#exportRosterBtn').onclick=exportRoster;$('#importDataInput').onchange=e=>e.target.files[0]&&importAll(e.target.files[0]);$('#resetWorkspaceBtn').onclick=resetWorkspace;$('#refreshBtn').onclick=async()=>{db=await loadWorkspaceIndexedDB();selected=[...(db.selected||[])];hydrateDraft();renderAll()};$('#addBtn').onclick=()=>openRecordModal('tasks');$('#recordSave').onclick=saveRecord;$('#recordCancel').onclick=()=>{modalEditId=null;$('#recordDialog').close()};
+$('#suggestLookBtn')?.closest('.field')?.remove();
 </script>
 </body></html>
