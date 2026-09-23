@@ -3,9 +3,8 @@
    Requires one-time Gmail read authorization in addition to the existing compose scope. */
 (function(){
   'use strict';
-  const SYNC_VERSION='2026-09-23-v2';
+  const SYNC_VERSION='2026-09-23-v3';
   const SYNC_INTERVAL_MS=5*60*1000;
-  const GMAIL_SYNC_SCOPE='openid email https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly';
   const KNOWN_IDS_KEY='clm.crm.gmailSentSyncIds.v1';
   let syncTimer=null;
   let syncRunning=false;
@@ -201,11 +200,15 @@
   }
   async function syncSentMailNow(showStatus=false){
     if(syncRunning)return;
-    if(!gmailAccessToken||Date.now()>=gmailTokenExpiresAt){renderSyncStatus();return}
     syncRunning=true;
     try{
       if(showStatus&&typeof setStatus==='function')setStatus('Checking Work Gmail for sent model packages…');
-      const token=gmailAccessToken;
+      let token='';
+      try{token=await gmailToken()}catch(err){
+        renderSyncStatus();
+        if(showStatus&&typeof setStatus==='function')setStatus('Reconnect Work Gmail to sync sent mail.');
+        return;
+      }
       const list=await gmailListSent(token);
       const known=knownIds();
       let updates=0,checked=0;
@@ -237,41 +240,7 @@
   window.clmSyncSentMail=()=>syncSentMailNow(true);
 
   function installConnectUpgrade(){
-    if(typeof connectWorkGmailApi!=='function'||typeof gmailOAuthClientId!=='function')return;
-    connectWorkGmailApi=async function(forcePrompt=true){
-      const clientId=gmailOAuthClientId();
-      if(!clientId){
-        const details=$sync('#gmailApiSetup');if(details)details.open=true;
-        $sync('#gmailOAuthClientId')?.focus();
-        if(typeof renderGmailApiStatus==='function')renderGmailApiStatus();
-        throw new Error('Add your Google OAuth Web Client ID first.');
-      }
-      await waitForGoogleIdentity();
-      return await new Promise((resolve,reject)=>{
-        gmailTokenClient=google.accounts.oauth2.initTokenClient({
-          client_id:clientId,
-          scope:GMAIL_SYNC_SCOPE,
-          hint:WORK_EMAIL,
-          callback:async response=>{
-            if(response?.error){reject(new Error(response.error_description||response.error));return}
-            try{
-              const token=response.access_token;
-              const email=await verifyGmailApiAccount(token);
-              gmailAccessToken=token;
-              gmailTokenExpiresAt=Date.now()+Math.max(60,Number(response.expires_in||3600)-60)*1000;
-              gmailConnectedEmail=email;
-              if(typeof renderGmailApiStatus==='function')renderGmailApiStatus();
-              renderSyncStatus();
-              if(typeof setStatus==='function')setStatus('Work Gmail connected. Draft creation and automatic sent-mail sync are active.');
-              setTimeout(()=>syncSentMailNow(true),250);
-              resolve(token);
-            }catch(err){reject(err)}
-          },
-          error_callback:error=>reject(new Error(error?.message||error?.type||'Google authorization was cancelled.'))
-        });
-        gmailTokenClient.requestAccessToken({prompt:forcePrompt?'consent':''});
-      });
-    };
+    // Canonical Gmail authorization now lives in index.html.
   }
   function installStatusUpgrade(){
     if(typeof renderGmailApiStatus!=='function')return;
@@ -332,6 +301,7 @@
   function startTimer(){
     if(syncTimer)clearInterval(syncTimer);
     syncTimer=setInterval(()=>{if(gmailAccessToken&&Date.now()<gmailTokenExpiresAt)syncSentMailNow(false)},SYNC_INTERVAL_MS);
+    window.addEventListener('clm:gmail-connected',()=>setTimeout(()=>syncSentMailNow(false),250));
   }
   function init(){
     try{
@@ -344,6 +314,6 @@
       setTimeout(()=>{if(gmailAccessToken&&Date.now()<gmailTokenExpiresAt)syncSentMailNow(false)},1500);
     }catch(err){console.error('CLM email sync add-on failed to initialize',err)}
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
-  else init();
+  if(window.__clmWorkspaceReady)init();
+  else window.addEventListener('clm:workspace-ready',init,{once:true});
 })();
