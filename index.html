@@ -1503,6 +1503,13 @@ function buildGmailDraftRaw(to,subject,html){
   }
   return gmailBase64UrlUtf8(mime);
 }
+async function gmailDraftRequest(url,options){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),30000);
+  try{return await fetch(url,{...options,signal:controller.signal})}
+  catch(err){if(err.name==='AbortError')throw new Error('Gmail took too long to respond. Check Work Gmail Drafts before retrying to avoid a duplicate.');throw err}
+  finally{clearTimeout(timer)}
+}
 async function createFormattedWorkGmailDraft(){
   captureDraft();
   if(!selected.length)throw new Error('Select at least one model first.');
@@ -1515,8 +1522,11 @@ async function createFormattedWorkGmailDraft(){
   const linkedDraftId=String(active?.gmailDraftId||db.draft?.gmailDraftId||'').trim();
 
   async function writeDraft(method,url){
-    let token=await gmailToken();
-    let response=await fetch(url,{
+    let authTimeout;
+    let token;
+    try{token=await Promise.race([gmailToken(),new Promise((_,reject)=>{authTimeout=setTimeout(()=>reject(new Error('Google sign-in did not finish. Click Connect Work Gmail, complete sign-in, then create the draft again.')),45000)})])}
+    finally{clearTimeout(authTimeout)}
+    let response=await gmailDraftRequest(url,{
       method,
       headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
       body:JSON.stringify(linkedDraftId&&method==='PUT'?{id:linkedDraftId,message:{raw}}:{message:{raw}})
@@ -1525,7 +1535,7 @@ async function createFormattedWorkGmailDraft(){
       clearGmailSession();
       gmailAccessToken='';gmailTokenExpiresAt=0;gmailAuthState='idle';
       token=await connectWorkGmailApi(false);
-      response=await fetch(url,{
+      response=await gmailDraftRequest(url,{
         method,
         headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
         body:JSON.stringify(linkedDraftId&&method==='PUT'?{id:linkedDraftId,message:{raw}}:{message:{raw}})
@@ -1546,32 +1556,56 @@ async function createFormattedWorkGmailDraft(){
 
   const result=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(result?.error?.message||'Gmail could not create or update the draft.');
+  if(!result.id||!result.message?.id)throw new Error('Gmail returned no draft confirmation. Check Work Gmail Drafts before retrying.');
   return result;
 }
+let gmailDraftCreationInProgress=false;
+function showGmailDraftFeedback(message,url='',failed=false){
+  const button=$('#openWorkGmailBtn');
+  let feedback=$('#gmailDraftFeedback');
+  if(!feedback&&button){
+    feedback=document.createElement('div');feedback.id='gmailDraftFeedback';
+    feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');
+    feedback.style.cssText='margin:10px 0;padding:12px;border:1px solid #cbd5e1;border-radius:8px;line-height:1.5;overflow-wrap:anywhere';
+    button.closest('.actions').insertAdjacentElement('afterend',feedback);
+  }
+  if(feedback){
+    feedback.textContent=message;
+    feedback.style.color=failed?'#a22c25':'';
+    if(url){const link=document.createElement('a');link.href=url;link.target='_blank';link.rel='noopener';link.textContent='Open this draft in Work Gmail';link.style.cssText='display:block;margin-top:8px;font-weight:700';feedback.appendChild(link)}
+  }
+  setStatus(message);
+}
 async function openInWorkGmail(){
+  if(gmailDraftCreationInProgress)return;
   if(!gmailOAuthClientId()){
     const details=$('#gmailApiSetup');if(details)details.open=true;
     $('#gmailOAuthClientId')?.focus();
-    setStatus('One-time setup: paste a Google OAuth Web Client ID, save it, then connect Work Gmail.');
+    showGmailDraftFeedback('No Gmail draft was created. Add your Google OAuth Client ID and connect Work Gmail in the connection panel above.','',true);
     return;
   }
-  const tab=window.open('about:blank','_blank');
-  if(tab){
-    try{tab.document.write('<title>Creating Gmail draft…</title><p style="font-family:Arial;padding:24px">Creating formatted Gmail draft…</p>')}catch{}
-  }
+  gmailDraftCreationInProgress=true;
+  const button=$('#openWorkGmailBtn'),oldText=button?.textContent;
+  if(button){button.disabled=true;button.textContent='Creating Gmail draft…'}
+  let tab=null;
+  try{tab=window.open('about:blank','_blank')}catch{}
+  if(tab){try{tab.document.write('<title>Creating Gmail draft…</title><p style="font-family:Arial;padding:24px">Waiting for Work Gmail to confirm your draft…</p>')}catch{}}
   try{
-    setStatus('Creating formatted draft in Work Gmail…');
+    showGmailDraftFeedback('Creating your draft in '+WORK_EMAIL+'…');
     const draft=await createFormattedWorkGmailDraft();
-    const url='https://mail.google.com/mail/?authuser='+encodeURIComponent(WORK_EMAIL)+'#drafts';
-    if(tab)tab.location.href=url;else window.open(url,'_blank','noopener');
-    setStatus('Formatted Gmail draft created in '+WORK_EMAIL+' with '+AGENT_CC+' CC’d. Opened the Drafts folder; the newest draft is the package you just created.');
+    const threadId=draft.message?.threadId||draft.message?.id;
+    const url='https://mail.google.com/mail/u/?authuser='+encodeURIComponent(WORK_EMAIL)+'#drafts'+(threadId?'/'+encodeURIComponent(threadId):'');
+    showGmailDraftFeedback('Gmail confirmed your draft in '+WORK_EMAIL+'. Agency CC is included. Use the link below to open it.',url);
+    // A blocked or closed tab must not turn a successful write into an error.
+    try{if(tab&&!tab.closed)tab.location.href=url}catch{}
   }catch(err){
     try{tab?.close()}catch{}
     console.error('Gmail API draft creation failed',err);
-    const html=emailHtml();
-    const copied=await copyRichEmailForGmail(html);
-    setStatus((err?.message||'Could not create the Gmail draft.')+(copied?' The formatted package was copied as a fallback.':''));
+    showGmailDraftFeedback('Gmail draft creation was not confirmed: '+(err?.message||'Unknown error.')+' If Google sign-in was blocked or expired, click Connect Work Gmail and try again.','',true);
     renderGmailApiStatus();
+  }finally{
+    gmailDraftCreationInProgress=false;
+    if(button){button.disabled=false;button.textContent=oldText}
   }
 }
 function renderEmail(){if(!$('#emailPreview'))return;captureDraft();$('#emailPreview').innerHTML=emailHtml();renderEmailSelection();renderBrandAdvisor();renderBriefSummary();renderSubmissionWarnings();renderDraftScope()}
