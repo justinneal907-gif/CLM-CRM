@@ -5,7 +5,7 @@
 (function(){
   'use strict';
 
-  const TRACK_VERSION='2026-09-23-v2';
+  const TRACK_VERSION='2026-09-23-v3';
   const TRACK_BASE='https://countapi.mileshilliard.com/api/v1';
   const TRACK_POLL_MS=5*60*1000;
   let trackTimer=null;
@@ -20,6 +20,57 @@
     try{crypto.getRandomValues(a)}catch(err){for(let i=0;i<a.length;i++)a[i]=Math.floor(Math.random()*256)}
     return Array.from(a).map(function(x){return x.toString(16).padStart(2,'0')}).join('');
   }
+  function notificationPermission(){
+    if(!('Notification' in window))return 'unsupported';
+    return Notification.permission||'default';
+  }
+  function notificationBrand(record){
+    return String((record&&(record.brandProject||record.company||record.project||record.recipientEmail))||'Tracked package');
+  }
+  function notificationModels(record){
+    const models=record&&Array.isArray(record.models)?record.models.filter(Boolean):[];
+    if(!models.length)return '';
+    const shown=models.slice(0,5).join(', ');
+    return shown+(models.length>5?' +'+(models.length-5)+' more':'');
+  }
+  function notifyOpenSignal(record,before,value){
+    if(notificationPermission()!=='granted'||!record||value<=before)return;
+    const first=before<=0;
+    const brand=notificationBrand(record);
+    const models=notificationModels(record);
+    const title=(first?'Package opened: ':'Package reopened: ')+brand;
+    let body=first?'First open signal detected.':'Open signals: '+value+'.';
+    if(models)body+='\nModels: '+models;
+    try{
+      new Notification(title,{
+        body:body,
+        tag:'clm-open-'+record.openTrackingId,
+        renotify:true
+      });
+    }catch(err){
+      console.warn('CLM browser notification failed',err);
+    }
+  }
+  async function enableOpenNotifications(){
+    if(!('Notification' in window))throw new Error('This browser does not support desktop notifications.');
+    const permission=await Notification.requestPermission();
+    db.settings=Object.assign({},db.settings||{},{
+      openNotificationsPermission:permission,
+      openNotificationsUpdatedAt:nowIso()
+    });
+    if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+    renderTrackerStatus();
+    if(permission==='granted'){
+      try{
+        new Notification('CLM open alerts enabled',{
+          body:'You will be notified while the CRM is open, even when this tab is in the background.',
+          tag:'clm-open-alerts-enabled'
+        });
+      }catch(err){}
+    }
+    return permission;
+  }
+
   function currentDraft(){
     if(typeof db==='undefined'||!db)return null;
     if(db.activeDraftId){
@@ -303,11 +354,32 @@
     const d=currentDraft();
     const send=q('#sendTrackedDraftBtn');
     const check=q('#checkOpenTrackingBtn');
+    const alerts=q('#enableOpenNotificationsBtn');
     if(send){
       send.disabled=!(d&&d.gmailDraftId&&d.openTrackingId&&d.openTrackingState!=='send-uncertain');
       send.title=d&&d.openTrackingState==='send-uncertain'?'Check Work Gmail Sent Mail before retrying.':(send.disabled?'Create or update the Gmail draft from this CRM package first.':'Send the currently linked Gmail draft immediately with open tracking armed.');
     }
     if(check)check.disabled=!trackingRecords(true).length;
+    if(alerts){
+      const permission=notificationPermission();
+      if(permission==='granted'){
+        alerts.textContent='Open alerts on';
+        alerts.disabled=true;
+        alerts.title='Browser notifications are enabled. They work while the CRM page is open, including in a background tab.';
+      }else if(permission==='denied'){
+        alerts.textContent='Open alerts blocked';
+        alerts.disabled=true;
+        alerts.title='Notifications are blocked for this site. Re-enable them in your browser site settings.';
+      }else if(permission==='unsupported'){
+        alerts.textContent='Open alerts unsupported';
+        alerts.disabled=true;
+        alerts.title='This browser does not support desktop notifications.';
+      }else{
+        alerts.textContent='Enable open alerts';
+        alerts.disabled=false;
+        alerts.title='Allow desktop/browser notifications for new and repeat open signals.';
+      }
+    }
   }
 
   async function checkOpens(showStatus,includeOpened){
@@ -334,6 +406,7 @@
             record.openTrackingFirstDetectedAt=nowIso();
             newlyOpened++;
           }
+          if(value>before)notifyOpenSignal(record,before,value);
           if(value!==before||record.openTrackingLastCheckedAt)changed=true;
           mirrorToSubmissions(record);
           if(db.activeDraftId&&record.id===db.activeDraftId){
@@ -534,7 +607,7 @@
       if(typeof setStatus==='function')setStatus('Tracked email sent successfully. The CRM will check for open signals while it is open.');
       try{window.alert('Tracked email sent successfully to '+to+'.')}catch(err){}
       if(typeof window.clmSyncSentMail==='function')setTimeout(function(){window.clmSyncSentMail()},1500);
-      setTimeout(function(){checkOpens(false,false)},45000);
+      setTimeout(function(){checkOpens(false,true)},45000);
     }catch(err){
       if(phase==='send'){
         err.clmSendUncertain=true;
@@ -631,6 +704,20 @@
       });
       panel.appendChild(send);
     }
+    if(!q('#enableOpenNotificationsBtn')){
+      const alerts=document.createElement('button');
+      alerts.type='button';
+      alerts.id='enableOpenNotificationsBtn';
+      alerts.className='btn';
+      alerts.textContent='Enable open alerts';
+      alerts.addEventListener('click',function(){
+        enableOpenNotifications().catch(function(err){
+          console.error('Notification setup failed',err);
+          try{window.alert(err&&err.message?err.message:String(err));}catch(alertErr){}
+        });
+      });
+      panel.appendChild(alerts);
+    }
     if(!q('#checkOpenTrackingBtn')){
       const check=document.createElement('button');
       check.type='button';
@@ -643,7 +730,7 @@
   }
   function startTimer(){
     if(trackTimer)clearInterval(trackTimer);
-    trackTimer=setInterval(function(){checkOpens(false,false)},TRACK_POLL_MS);
+    trackTimer=setInterval(function(){checkOpens(false,true)},TRACK_POLL_MS);
   }
   function init(){
     try{
@@ -655,7 +742,7 @@
       db.settings=Object.assign({},db.settings||{},{openTrackingVersion:TRACK_VERSION});
       if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
       renderTrackerStatus();
-      setTimeout(function(){checkOpens(false,false)},3000);
+      setTimeout(function(){checkOpens(false,true)},3000);
     }catch(err){
       console.error('CLM open tracking failed to initialize',err);
     }
