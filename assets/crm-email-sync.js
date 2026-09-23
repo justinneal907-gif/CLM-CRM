@@ -101,7 +101,7 @@
   async function gmailMessageMeta(token,id){
     const u=new URL('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+encodeURIComponent(id));
     u.searchParams.set('format','metadata');
-    ['Subject','To','Date','X-CLM-Tracking-ID','X-CLM-Tracking-State'].forEach(x=>u.searchParams.append('metadataHeaders',x));
+    ['Subject','To','Date','X-CLM-Tracking-ID','X-CLM-Tracking-State','X-CLM-Signal-ID'].forEach(x=>u.searchParams.append('metadataHeaders',x));
     const r=await fetch(u,{headers:{Authorization:'Bearer '+token}});
     if(!r.ok)throw new Error('Could not read sent message '+id+'.');
     return await r.json();
@@ -209,6 +209,9 @@
       draft.submissionStatus='Submitted';
       changed=true;
     }
+    const modelSignalId=header(meta,'X-CLM-Signal-ID');
+    try{if(/^[a-f0-9]{32}$/.test(modelSignalId)&&typeof window.clmMarkModelSignalSent==='function')
+      window.clmMarkModelSignalSent({modelSignalSubmissionId:modelSignalId,submittedAt:new Date(Number(meta.internalDate)||Date.now()).toISOString()},sub)}catch(err){console.warn('Model-signal update failed; sent-mail sync continues.',err)}
     return changed;
   }
   async function syncSentMailNow(showStatus=false){

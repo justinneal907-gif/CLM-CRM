@@ -1463,7 +1463,7 @@ function gmailInlineDataImages(html){
   });
   return {html:holder.innerHTML,parts};
 }
-function buildGmailDraftRaw(to,subject,html){
+function buildGmailDraftRaw(to,subject,html,signalId=''){
   const transformed=gmailInlineDataImages(html);
   const cleanHtml=transformed.html;
   const plain=gmailPlainText(cleanHtml);
@@ -1477,6 +1477,7 @@ function buildGmailDraftRaw(to,subject,html){
     'Subject: '+gmailMimeHeader(subject),
     'MIME-Version: 1.0'
   ];
+  if(/^[a-f0-9]{32}$/.test(signalId))headers.push('X-CLM-Signal-ID: '+signalId);
   let mime='';
   if(transformed.parts.length){
     headers.push('Content-Type: multipart/related; boundary="'+rel+'"');
@@ -1516,8 +1517,10 @@ async function createFormattedWorkGmailDraft(){
   const to=$('#emailRecipient').value.trim();
   const subject=$('#emailSubject').value.trim();
   if(!to)throw new Error('Add a recipient email first.');
-  const html=emailHtml();
-  const raw=buildGmailDraftRaw(to,subject,html);
+  const plainHtml=emailHtml();
+  const signalContext={id:db.activeDraftId,record:db.draft,models:typeof selectedModels==='function'?selectedModels():[]};
+  let html=typeof window.clmPrepareModelSignals==='function'?window.clmPrepareModelSignals(plainHtml,false,signalContext):plainHtml;
+  let raw=buildGmailDraftRaw(to,subject,html,db.settings?.modelSignalsEnabled?signalContext.record.modelSignalSubmissionId:'');
   const active=db.activeDraftId?(db.drafts||[]).find(x=>x.id===db.activeDraftId):null;
   const linkedDraftId=String(active?.gmailDraftId||db.draft?.gmailDraftId||'').trim();
 
@@ -1548,6 +1551,10 @@ async function createFormattedWorkGmailDraft(){
   if(linkedDraftId){
     response=await writeDraft('PUT','https://gmail.googleapis.com/gmail/v1/users/me/drafts/'+encodeURIComponent(linkedDraftId));
     if(response.status===404){
+      if(typeof window.clmPrepareModelSignals==='function'){
+        html=window.clmPrepareModelSignals(plainHtml,true,signalContext);
+        raw=buildGmailDraftRaw(to,subject,html,db.settings?.modelSignalsEnabled?signalContext.record.modelSignalSubmissionId:'');
+      }
       response=await writeDraft('POST','https://gmail.googleapis.com/gmail/v1/users/me/drafts');
     }
   }else{
@@ -2146,8 +2153,10 @@ $('#suggestLookBtn')?.closest('.field')?.remove();
   async function loadCrmRuntime(){
     try{
       setRuntimeStatus('Loading Gmail sync and open-tracking tools…');
-      await loadScript('clm-email-sync-runtime','assets/crm-email-sync.js?v=20260923-4','__clmEmailSyncLoaded');
-      await loadScript('clm-open-tracking-runtime','assets/crm-open-tracking.js?v=20260923-7','__clmOpenTrackingLoaded');
+      await loadScript('clm-email-sync-runtime','assets/crm-email-sync.js?v=20260923-5','__clmEmailSyncLoaded');
+      await loadScript('clm-open-tracking-runtime','assets/crm-open-tracking.js?v=20260923-8','__clmOpenTrackingLoaded');
+      await loadScript('clm-model-signals-core','assets/model-signals-core.js?v=20260923-1','CLMModelSignals');
+      await loadScript('clm-model-signals-runtime','assets/crm-model-signals.js?v=20260923-1','__clmModelSignalsLoaded');
       setTimeout(()=>{
         if(window.__clmEmailSyncLoaded&&window.__clmOpenTrackingLoaded)setRuntimeStatus('Gmail sync and open-tracking tools loaded.');
         else setRuntimeStatus('Email tools did not finish loading. Reload the CRM.');

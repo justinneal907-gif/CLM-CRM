@@ -44,8 +44,8 @@ assert.match(sync,/findDraftForMessage\(subject,to,messageId\)/);
 
 assert.doesNotMatch(loader,/crm-open-tracking\.js/);
 assert.doesNotMatch(loader,/crm-email-sync\.js/);
-assert.match(index,/crm-open-tracking\.js\?v=20260923-7/);
-assert.match(index,/crm-email-sync\.js\?v=20260923-4/);
+assert.match(index,/crm-open-tracking\.js\?v=20260923-8/);
+assert.match(index,/crm-email-sync\.js\?v=20260923-5/);
 assert.match(index,/GMAIL_SESSION_KEY/);
 assert.match(index,/sessionStorage\.setItem\(GMAIL_SESSION_KEY/);
 assert.match(index,/restoreWorkGmailSession/);

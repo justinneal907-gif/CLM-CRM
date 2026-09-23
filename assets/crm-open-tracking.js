@@ -581,6 +581,7 @@
       openTrackingLastCheckedAt:'',
       source:'Work Gmail tracked send'
     });
+    try{if(typeof window.clmMarkModelSignalSent==='function')window.clmMarkModelSignalSent(d,sub)}catch(err){console.warn('Model-signal update failed; Gmail send remains confirmed.',err)}
   }
 
   async function sendTrackedCurrentDraft(){

@@ -3,7 +3,7 @@ const source=fs.readFileSync('index.html','utf8');
 const api=source.slice(source.indexOf('async function gmailDraftRequest('),source.indexOf('let gmailDraftCreationInProgress='));
 const ui=source.slice(source.indexOf('let gmailDraftCreationInProgress='),source.indexOf('\nfunction renderEmail()',source.indexOf('let gmailDraftCreationInProgress=')));
 (async()=>{
- const ctx={selected:['model'],db:{draft:{},drafts:[],activeDraftId:''},captureDraft(){},$:s=>({value:s==='#emailRecipient'?'test@example.com':'Test package'}),emailHtml:()=>'<b>Package</b>',buildGmailDraftRaw:()=> 'mock-raw',gmailToken:async()=> 'mock-token',AbortController,setTimeout,clearTimeout,console};
+ const ctx={window:{},selected:['model'],db:{draft:{},drafts:[],activeDraftId:''},captureDraft(){},$:s=>({value:s==='#emailRecipient'?'test@example.com':'Test package'}),emailHtml:()=>'<b>Package</b>',buildGmailDraftRaw:()=> 'mock-raw',gmailToken:async()=> 'mock-token',AbortController,setTimeout,clearTimeout,console};
  vm.createContext(ctx);vm.runInContext(api,ctx);
  let calls=[];ctx.fetch=async(url,options)=>{calls.push({url,options});return {ok:true,status:200,json:async()=>({id:'draft1',message:{id:'msg1',threadId:'thread1'}})}};
  await ctx.createFormattedWorkGmailDraft();assert.equal(calls[0].options.method,'POST');
