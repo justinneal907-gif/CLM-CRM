@@ -5,9 +5,9 @@
 (function(){
   'use strict';
 
-  const TRACK_VERSION='2026-09-23-v3';
+  const TRACK_VERSION='2026-09-23-v5';
   const TRACK_BASE='https://countapi.mileshilliard.com/api/v1';
-  const TRACK_POLL_MS=5*60*1000;
+  const TRACK_POLL_MS=60*1000;
   let trackTimer=null;
   let trackChecking=false;
 
@@ -20,9 +20,41 @@
     try{crypto.getRandomValues(a)}catch(err){for(let i=0;i<a.length;i++)a[i]=Math.floor(Math.random()*256)}
     return Array.from(a).map(function(x){return x.toString(16).padStart(2,'0')}).join('');
   }
+  let notificationRegistrationPromise=null;
   function notificationPermission(){
+    if(!window.isSecureContext)return 'insecure';
     if(!('Notification' in window))return 'unsupported';
     return Notification.permission||'default';
+  }
+  async function notificationRegistration(){
+    if(!('serviceWorker' in navigator)||!window.isSecureContext)return null;
+    if(notificationRegistrationPromise)return notificationRegistrationPromise;
+    notificationRegistrationPromise=navigator.serviceWorker.register('./sw.js',{scope:'./'})
+      .then(reg=>navigator.serviceWorker.ready.then(()=>reg))
+      .catch(err=>{
+        notificationRegistrationPromise=null;
+        console.warn('CLM notification service worker unavailable',err);
+        return null;
+      });
+    return notificationRegistrationPromise;
+  }
+  async function showBrowserNotification(title,options){
+    if(notificationPermission()!=='granted')return false;
+    const opts=Object.assign({},options||{});
+    try{
+      const reg=await notificationRegistration();
+      if(reg&&typeof reg.showNotification==='function'){
+        await reg.showNotification(title,opts);
+        return true;
+      }
+    }catch(err){console.warn('Service-worker notification failed',err)}
+    try{
+      new Notification(title,opts);
+      return true;
+    }catch(err){
+      console.warn('Direct browser notification failed',err);
+      return false;
+    }
   }
   function notificationBrand(record){
     return String((record&&(record.brandProject||record.company||record.project||record.recipientEmail))||'Tracked package');
@@ -33,25 +65,23 @@
     const shown=models.slice(0,5).join(', ');
     return shown+(models.length>5?' +'+(models.length-5)+' more':'');
   }
-  function notifyOpenSignal(record,before,value){
-    if(notificationPermission()!=='granted'||!record||value<=before)return;
+  async function notifyOpenSignal(record,before,value){
+    if(notificationPermission()!=='granted'||!record||value<=before)return false;
     const first=before<=0;
     const brand=notificationBrand(record);
     const models=notificationModels(record);
     const title=(first?'Package opened: ':'Package reopened: ')+brand;
     let body=first?'First open signal detected.':'Open signals: '+value+'.';
     if(models)body+='\nModels: '+models;
-    try{
-      new Notification(title,{
-        body:body,
-        tag:'clm-open-'+record.openTrackingId,
-        renotify:true
-      });
-    }catch(err){
-      console.warn('CLM browser notification failed',err);
-    }
+    return showBrowserNotification(title,{
+      body:body,
+      tag:'clm-open-'+record.openTrackingId,
+      renotify:true,
+      data:{url:location.href}
+    });
   }
   async function enableOpenNotifications(){
+    if(!window.isSecureContext)throw new Error('Browser notifications require HTTPS.');
     if(!('Notification' in window))throw new Error('This browser does not support desktop notifications.');
     const permission=await Notification.requestPermission();
     db.settings=Object.assign({},db.settings||{},{
@@ -59,16 +89,28 @@
       openNotificationsUpdatedAt:nowIso()
     });
     if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+    if(permission==='granted')await notificationRegistration();
     renderTrackerStatus();
     if(permission==='granted'){
-      try{
-        new Notification('CLM open alerts enabled',{
-          body:'You will be notified while the CRM is open, even when this tab is in the background.',
-          tag:'clm-open-alerts-enabled'
-        });
-      }catch(err){}
+      await showBrowserNotification('CLM open alerts enabled',{
+        body:'Alerts are ready. Keep the CRM open in any tab; it can be in the background or minimized.',
+        tag:'clm-open-alerts-enabled'
+      });
     }
     return permission;
+  }
+  async function testOpenNotification(){
+    if(notificationPermission()!=='granted'){
+      await enableOpenNotifications();
+      if(notificationPermission()!=='granted')return;
+    }
+    const ok=await showBrowserNotification('CLM notification test',{
+      body:'Browser notifications are working for this CRM.',
+      tag:'clm-open-alert-test',
+      renotify:true,
+      data:{url:location.href}
+    });
+    if(typeof setStatus==='function')setStatus(ok?'Test notification requested. If you do not see it, check Windows/browser notification settings.':'The browser could not display the test notification.');
   }
 
   function currentDraft(){
@@ -370,10 +412,10 @@
         alerts.textContent='Open alerts blocked';
         alerts.disabled=true;
         alerts.title='Notifications are blocked for this site. Re-enable them in your browser site settings.';
-      }else if(permission==='unsupported'){
-        alerts.textContent='Open alerts unsupported';
+      }else if(permission==='unsupported'||permission==='insecure'){
+        alerts.textContent=permission==='insecure'?'Open alerts need HTTPS':'Open alerts unsupported';
         alerts.disabled=true;
-        alerts.title='This browser does not support desktop notifications.';
+        alerts.title=permission==='insecure'?'Notifications require a secure HTTPS page.':'This browser does not support desktop notifications.';
       }else{
         alerts.textContent='Enable open alerts';
         alerts.disabled=false;
@@ -406,7 +448,7 @@
             record.openTrackingFirstDetectedAt=nowIso();
             newlyOpened++;
           }
-          if(value>before)notifyOpenSignal(record,before,value);
+          if(value>before)await notifyOpenSignal(record,before,value);
           if(value!==before||record.openTrackingLastCheckedAt)changed=true;
           mirrorToSubmissions(record);
           if(db.activeDraftId&&record.id===db.activeDraftId){
@@ -451,6 +493,7 @@
       try{
         gmailAccessToken='';
         gmailTokenExpiresAt=0;
+        if(typeof clearGmailSession==='function')clearGmailSession();
         token=await connectWorkGmailApi(false);
         r=await request();
       }catch(err){
@@ -718,6 +761,18 @@
       });
       panel.appendChild(alerts);
     }
+    if(!q('#testOpenNotificationsBtn')){
+      const test=document.createElement('button');
+      test.type='button';
+      test.id='testOpenNotificationsBtn';
+      test.className='btn';
+      test.textContent='Test alert';
+      test.addEventListener('click',function(){testOpenNotification().catch(function(err){
+        console.error('Notification test failed',err);
+        if(typeof setStatus==='function')setStatus(err&&err.message?err.message:String(err));
+      })});
+      panel.appendChild(test);
+    }
     if(!q('#checkOpenTrackingBtn')){
       const check=document.createElement('button');
       check.type='button';
@@ -731,6 +786,9 @@
   function startTimer(){
     if(trackTimer)clearInterval(trackTimer);
     trackTimer=setInterval(function(){checkOpens(false,true)},TRACK_POLL_MS);
+    window.addEventListener('focus',function(){checkOpens(false,true)});
+    document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')checkOpens(false,true)});
+    window.addEventListener('online',function(){checkOpens(false,true)});
   }
   function init(){
     try{
@@ -765,6 +823,6 @@
   };
   window.clmCheckEmailOpens=function(){return checkOpens(true,true)};
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
-  else init();
+  if(window.__clmWorkspaceReady)init();
+  else window.addEventListener('clm:workspace-ready',init,{once:true});
 })();
