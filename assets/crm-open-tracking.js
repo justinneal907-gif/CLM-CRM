@@ -242,7 +242,8 @@
     if(!record||!record.openTrackingId)return '';
     if(Number(record.openTrackingCount||0)>0)return '<span class="pill" title="A remote image-load signal was detected. Privacy features can create false positives.">OPEN SIGNAL</span>';
     if(record.openTrackingState==='armed')return '<span class="pill" title="Open tracking was armed when this email was sent.">TRACKING</span>';
-    if(record.openTrackingState==='ready'&&record.submittedAt)return '<span class="pill" title="This draft was sent without using the tracked-send action.">NOT TRACKED</span>';
+    if(record.openTrackingState==='send-uncertain')return '<span class="pill" title="Gmail did not confirm the send result. Check Sent Mail before retrying.">SEND UNCERTAIN</span>';
+    if(record.openTrackingState==='ready'&&record.submittedAt&&!record.gmailDraftId)return '<span class="pill" title="This draft was sent without using the tracked-send action.">NOT TRACKED</span>';
     if(record.openTrackingState==='ready'&&record.gmailDraftId)return '<span class="pill" title="Review in Gmail, then use Send tracked draft in the CRM.">TRACKING READY</span>';
     return '';
   }
@@ -286,7 +287,9 @@
           row.innerHTML='<b>Open signal detected.</b>'+(detected?' First detected '+safe(detected)+'.':'')+' Image-load signals: '+count+'.';
         }else if(d.openTrackingState==='armed'){
           row.innerHTML='<b>Open tracking active.</b> No image-load signal detected yet.';
-        }else if(d.openTrackingState==='ready'&&d.submittedAt){
+        }else if(d.openTrackingState==='send-uncertain'){
+          row.innerHTML='<b>Send result uncertain.</b> Check Work Gmail Sent Mail before retrying. If it is not there, use <b>Create formatted Gmail draft</b> again to relink/retry safely.';
+        }else if(d.openTrackingState==='ready'&&d.submittedAt&&!d.gmailDraftId){
           row.innerHTML='<b>No open tracking for this sent email.</b> It was sent directly from Gmail instead of through <b>Send tracked draft</b>.';
         }else if(d.openTrackingState==='ready'&&d.gmailDraftId){
           row.innerHTML='<b>Tracking ready.</b> Review the Gmail draft, return here, then click <b>Send tracked draft</b>.';
@@ -301,8 +304,8 @@
     const send=q('#sendTrackedDraftBtn');
     const check=q('#checkOpenTrackingBtn');
     if(send){
-      send.disabled=!(d&&d.gmailDraftId&&d.openTrackingId);
-      send.title=send.disabled?'Create or update the Gmail draft from this CRM package first.':'Send the currently linked Gmail draft immediately with open tracking armed.';
+      send.disabled=!(d&&d.gmailDraftId&&d.openTrackingId&&d.openTrackingState!=='send-uncertain');
+      send.title=d&&d.openTrackingState==='send-uncertain'?'Check Work Gmail Sent Mail before retrying.':(send.disabled?'Create or update the Gmail draft from this CRM package first.':'Send the currently linked Gmail draft immediately with open tracking armed.');
     }
     if(check)check.disabled=!trackingRecords(true).length;
   }
@@ -498,9 +501,11 @@
     mime=injectPixel(mime,sendTrackingId);
     encoded=utf8ToBase64Url(mime);
 
+    let phase='prepare';
     try{
       if(typeof setStatus==='function')setStatus('Preparing the linked Gmail draft…');
       await updateGmailDraft(linkedDraftId,encoded);
+      phase='send';
       if(typeof setStatus==='function')setStatus('Sending through Work Gmail…');
       const sent=await sendGmailDraft(linkedDraftId);
       const messageId=(sent&&sent.id)||(sent&&sent.message&&sent.message.id)||'';
@@ -531,7 +536,12 @@
       if(typeof window.clmSyncSentMail==='function')setTimeout(function(){window.clmSyncSentMail()},1500);
       setTimeout(function(){checkOpens(false,false)},45000);
     }catch(err){
-      applyCurrentPatch({openTrackingState:'ready'});
+      if(phase==='send'){
+        err.clmSendUncertain=true;
+        applyCurrentPatch({openTrackingState:'send-uncertain'});
+      }else{
+        applyCurrentPatch({openTrackingState:'ready'});
+      }
       if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
       renderTrackerStatus();
       throw err;
@@ -606,8 +616,13 @@
         sendTrackedCurrentDraft().catch(function(err){
           console.error('Tracked send failed',err);
           const message=err&&err.message?err.message:String(err);
-          if(typeof setStatus==='function')setStatus('Tracked send failed: '+message);
-          try{window.alert('Tracked send failed. Nothing was sent.\n\n'+message);}catch(alertErr){}
+          if(err&&err.clmSendUncertain){
+            if(typeof setStatus==='function')setStatus('Gmail did not confirm the send. Check Sent Mail before retrying.');
+            try{window.alert('Gmail did not confirm whether this message sent. Check Work Gmail Sent Mail before retrying.\n\n'+message);}catch(alertErr){}
+          }else{
+            if(typeof setStatus==='function')setStatus('Tracked send failed before sending: '+message);
+            try{window.alert('Tracked send failed before Gmail sent the message.\n\n'+message);}catch(alertErr){}
+          }
           renderTrackerStatus();
         }).finally(function(){
           send.textContent=oldText;
@@ -650,8 +665,13 @@
     return sendTrackedCurrentDraft().catch(function(err){
       console.error(err);
       const message=err&&err.message?err.message:String(err);
-      if(typeof setStatus==='function')setStatus('Tracked send failed: '+message);
-      try{window.alert('Tracked send failed. Nothing was sent.\n\n'+message);}catch(alertErr){}
+      if(err&&err.clmSendUncertain){
+        if(typeof setStatus==='function')setStatus('Gmail did not confirm the send. Check Sent Mail before retrying.');
+        try{window.alert('Gmail did not confirm whether this message sent. Check Work Gmail Sent Mail before retrying.\n\n'+message);}catch(alertErr){}
+      }else{
+        if(typeof setStatus==='function')setStatus('Tracked send failed before sending: '+message);
+        try{window.alert('Tracked send failed before Gmail sent the message.\n\n'+message);}catch(alertErr){}
+      }
       renderTrackerStatus();
       throw err;
     });
