@@ -3,6 +3,8 @@
    Requires one-time Gmail read authorization in addition to the existing compose scope. */
 (function(){
   'use strict';
+  if(window.__clmEmailSyncLoaded)return;
+  window.__clmEmailSyncLoaded=true;
   const SYNC_VERSION='2026-09-23-v3';
   const SYNC_INTERVAL_MS=5*60*1000;
   const KNOWN_IDS_KEY='clm.crm.gmailSentSyncIds.v1';
@@ -292,11 +294,16 @@
   }
   function installManualSyncButton(){
     const panel=$sync('#gmailApiPanel .actions');
-    if(!panel||$sync('#syncGmailNowBtn'))return;
-    const btn=document.createElement('button');
-    btn.className='btn';btn.type='button';btn.id='syncGmailNowBtn';btn.textContent='Sync sent mail now';
+    if(!panel)return;
+    let btn=$sync('#syncGmailNowBtn');
+    if(!btn){
+      btn=document.createElement('button');
+      btn.className='btn';btn.type='button';btn.id='syncGmailNowBtn';btn.textContent='Sync sent mail now';
+      panel.appendChild(btn);
+    }
+    if(btn.dataset.clmBound==='1')return;
+    btn.dataset.clmBound='1';
     btn.addEventListener('click',()=>syncSentMailNow(true));
-    panel.appendChild(btn);
   }
   function startTimer(){
     if(syncTimer)clearInterval(syncTimer);
@@ -314,6 +321,14 @@
       setTimeout(()=>{if(gmailAccessToken&&Date.now()<gmailTokenExpiresAt)syncSentMailNow(false)},1500);
     }catch(err){console.error('CLM email sync add-on failed to initialize',err)}
   }
-  if(window.__clmWorkspaceReady)init();
-  else window.addEventListener('clm:workspace-ready',init,{once:true});
+  function initWhenReady(attempt){
+    attempt=Number(attempt||0);
+    if(typeof db!=='undefined'&&db&&$sync('#gmailApiPanel')){
+      init();
+      return;
+    }
+    if(attempt<100)setTimeout(()=>initWhenReady(attempt+1),100);
+    else console.error('CLM email sync could not find a ready CRM workspace.');
+  }
+  initWhenReady(0);
 })();
