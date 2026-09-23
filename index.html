@@ -271,11 +271,15 @@ const ORIGINAL_PHOTO_KEY='justinAgencyCRM.customPhotos.v1';
 const WORK_EMAIL='justin.neal.chezlesmannequins@gmail.com';
 const AGENT_CC='agent@chezlesmannequins.com';
 const GMAIL_OAUTH_CLIENT_ID_KEY='clm.crm.gmailOAuthClientId.v1';
-const GMAIL_COMPOSE_SCOPE='openid email https://www.googleapis.com/auth/gmail.compose';
+const GMAIL_SESSION_KEY='clm.crm.gmailSession.v2';
+const GMAIL_API_SCOPE='openid email https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly';
 let gmailAccessToken='';
 let gmailTokenExpiresAt=0;
 let gmailConnectedEmail='';
 let gmailTokenClient=null;
+let gmailRestorePromise=null;
+let gmailRefreshTimer=null;
+let gmailAuthState='idle';
 const MODEL_IDENTITY_OVERRIDES={"new-york-women-agang":{"name":"Agang","hair":"Black","eyes":"Dark Brown"},"new-york-women-claudia-lucchini":{"name":"Claudia","hair":"Brown","eyes":"Blue-Green"},"new-york-women-callie-steg":{"name":"Callie","hair":"Copper Brown","eyes":"Blue"},"new-york-women-dr-nialah-wilson-small":{"name":"Nialah","hair":"Black","eyes":"Brown"},"new-york-women-hadiyah-lawal":{"name":"Hadiyah","hair":"Black","eyes":"Brown"},"new-york-women-janel-cheatham":{"name":"Janel","hair":"Black","eyes":"Brown"},"new-york-women-june-ramadhan":{"name":"June","hair":"Black","eyes":"Brown"},"new-york-women-maja-stockwell":{"name":"Maja Stockwell","hair":"Blonde","eyes":"Green"},"new-york-women-mary-timms":{"name":"Mary","hair":"Black","eyes":"Brown"},"new-york-women-mob-e":{"name":"Mobée","hair":"Black","eyes":"Brown"},"new-york-women-molly-gardiner":{"name":"Molly","hair":"Auburn","eyes":"Blue"},"new-york-women-ni-simone":{"name":"Ni","hair":"Black","eyes":"Brown"},"new-york-women-rachel-stone":{"name":"Rachel","hair":"Blonde","eyes":"Blue"},"new-york-women-sal-soliman":{"name":"Sal","hair":"Black","eyes":"Brown"},"new-york-women-seven-wright":{"name":"Seven","hair":"Dark Brown","eyes":"Brown"},"new-york-women-shanel-cheatham":{"name":"Shanel","hair":"Black","eyes":"Brown"},"new-york-women-tinin":{"name":"Tinin","hair":"Dark Brown","eyes":"Brown"},"new-york-men-justin-bell":{"name":"Justin","hair":"Black","eyes":"Brown"},"new-york-men-matt-rossi":{"name":"Matt","hair":"Bald","eyes":"Blue"},"new-york-curve-sarah-mendez":{"name":"Sarah","hair":"Brown","eyes":"Brown"},"new-york-development-em0-spit":{"name":"Em0","hair":"Dark Brown","eyes":"Brown"},"new-york-development-victoria-sepiashvili":{"name":"Victoria","hair":"Brown","eyes":"Brown"},"london-women-aj-raubunch":{"name":"AJ","hair":"Brown","eyes":"Brown"},"london-women-ambre-prognitz":{"name":"Ambre","hair":"Brown","eyes":"Hazel"},"london-women-amy-allison":{"name":"Amy","hair":"Black","eyes":"Brown"},"london-women-daisy-ibi":{"name":"Daisy","hair":"Black","eyes":"Brown"},"london-women-molly-gardiner":{"name":"Molly","hair":"Auburn","eyes":"Blue"},"london-men-alex-connor":{"name":"Alex","hair":"Brown","eyes":"Blue"},"london-men-harry":{"name":"Harry","hair":"Brown","eyes":"Brown"},"london-men-mikael":{"name":"Mikael","hair":"Black","eyes":"Brown"},"milan-women-camelia-boca":{"name":"Camelia","hair":"Brown","eyes":"Brown"},"milan-women-molly-gardiner":{"name":"Molly","hair":"Auburn","eyes":"Blue"},"los-angeles-women-elle-pickens":{"name":"Elle","hair":"Dark Brown","eyes":"Brown"},"los-angeles-women-florencia-gordon":{"name":"Florencia","hair":"Dark Brown","eyes":"Brown"},"los-angeles-women-malia":{"name":"Malia","hair":"Brown","eyes":"Brown"},"los-angeles-men-justice-harper":{"name":"Justice","hair":"Black","eyes":"Brown"},"miami-women-alaina":{"name":"Alaina","hair":"Brown","eyes":"Brown"},"miami-women-anastasia":{"name":"Anastasia","hair":"Brown","eyes":"Brown"},"miami-women-ann-neika":{"name":"Ann-Neika","hair":"Dark Brown","eyes":"Brown"},"miami-women-darian":{"name":"Darian","hair":"Dark Brown","eyes":"Brown"},"miami-women-fianna-mchale":{"name":"Fianna","hair":"Brown","eyes":"Brown"},"miami-women-hadiyah-lawal":{"name":"Hadiyah","hair":"Black","eyes":"Brown"},"miami-women-merhoodjie-denaut":{"name":"Merhoodjie","hair":"Black","eyes":"Brown"},"miami-women-norma-huembes":{"name":"Norma","hair":"Brown","eyes":"Green"},"miami-women-phara-joseph":{"name":"Phara","hair":"Black","eyes":"Brown"},"miami-women-raquel":{"name":"Raquel","hair":"Dark Brown","eyes":"Dark Brown"},"miami-men-khafre-franklin":{"name":"Khafre","hair":"Black","eyes":"Brown"},"miami-men-stevenson-jean":{"name":"Stevenson","hair":"Black","eyes":"Brown"},"paris-women-legacy-kalaba":{"name":"Kalaba","hair":"Black","eyes":"Brown"},"paris-women-legacy-raquel-pelissier":{"name":"Raquel","hair":"Black","eyes":"Brown"},"new-york-women-sophia-pippen":{"name":"Sophia Pippen","hair":"Dark Brown","eyes":"Dark Brown"},"new-york-women-anhelena-sobol":{"name":"Anhelena","hair":"Brown","eyes":"Brown"},"germany-women-bianca-eigenfeld-own":{"name":"Bianca","hair":"Chestnut Brown","eyes":"Blue"}};
 const MODEL_NAME_ALIASES={"Claudia Lucchini":"Claudia","Callie Steg":"Callie","Dr. Nialah Wilson-Small":"Nialah","Hadiyah Lawal":"Hadiyah","Janel Cheatham":"Janel","June Ramadhan":"June","Mary Timms":"Mary","Molly Gardiner":"Molly","Ni Simone":"Ni","Rachel Stone":"Rachel","Sal Soliman":"Sal","Seven Wright":"Seven","Shanel Cheatham":"Shanel","Justin Bell":"Justin","Matt Rossi":"Matt","Sarah Mendez":"Sarah","Em0 Spit":"Em0","Victoria Sepiashvili":"Victoria","AJ Raubunch":"AJ","Ambre Prognitz":"Ambre","Amy Allison":"Amy","Daisy Ibi":"Daisy","Alex Connor":"Alex","Camelia Boca":"Camelia","Elle Pickens":"Elle","Florencia Gordon":"Florencia","Justice Harper":"Justice","Ann Neika":"Ann-Neika","Fianna McHale":"Fianna","Merhoodjie Denaut":"Merhoodjie","Norma Huembes":"Norma","Phara Joseph":"Phara","Khafre Franklin":"Khafre","Stevenson Jean":"Stevenson","Raquel Pélissier":"Raquel","Anhelena Sobol":"Anhelena","Bianca Eigenfeld Own":"Bianca"};
 function stripAppearanceStats(v){return String(v||'').split('|').map(x=>x.trim()).filter(Boolean).filter(x=>!/^hair\s*:/i.test(x)&&!/^eyes?\s*:/i.test(x)).join(' | ')}
@@ -1240,13 +1244,35 @@ async function copyRichEmailForGmail(html){
 function gmailOAuthClientId(){
   try{return String(localStorage.getItem(GMAIL_OAUTH_CLIENT_ID_KEY)||'').trim()}catch{return''}
 }
+function readGmailSession(){
+  try{
+    const value=JSON.parse(sessionStorage.getItem(GMAIL_SESSION_KEY)||'null');
+    if(!value||!value.accessToken||!Number(value.expiresAt))return null;
+    return value;
+  }catch{return null}
+}
+function saveGmailSession(){
+  if(!gmailAccessToken||!gmailTokenExpiresAt)return;
+  try{sessionStorage.setItem(GMAIL_SESSION_KEY,JSON.stringify({
+    accessToken:gmailAccessToken,
+    expiresAt:gmailTokenExpiresAt,
+    email:gmailConnectedEmail||WORK_EMAIL
+  }))}catch{}
+}
+function clearGmailSession(){
+  try{sessionStorage.removeItem(GMAIL_SESSION_KEY)}catch{}
+}
+function emitGmailConnected(){
+  try{window.dispatchEvent(new CustomEvent('clm:gmail-connected',{detail:{email:gmailConnectedEmail||WORK_EMAIL,expiresAt:gmailTokenExpiresAt}}))}catch{}
+}
 function renderGmailApiStatus(){
   const status=$('#gmailApiStatus'),input=$('#gmailOAuthClientId'),connect=$('#connectGmailApiBtn'),disconnect=$('#disconnectGmailApiBtn');
   if(input&&!input.matches(':focus'))input.value=gmailOAuthClientId();
   const connected=!!gmailAccessToken&&Date.now()<gmailTokenExpiresAt;
   if(status){
-    if(connected)status.innerHTML='<b>Connected:</b> '+esc(gmailConnectedEmail||WORK_EMAIL)+' · formatted drafts can be created directly in Gmail.';
-    else if(gmailOAuthClientId())status.innerHTML='<b>Configured:</b> click Connect Work Gmail to authorize draft creation.';
+    if(connected)status.innerHTML='<b>Connected:</b> '+esc(gmailConnectedEmail||WORK_EMAIL)+' · Gmail access is retained across reloads in this tab and refreshed silently when possible.';
+    else if(gmailAuthState==='restoring')status.innerHTML='<b>Restoring Gmail:</b> checking the existing Google session…';
+    else if(gmailOAuthClientId())status.innerHTML='<b>Configured:</b> Gmail will reconnect silently when possible; click Connect Work Gmail if Google requires interaction.';
     else status.innerHTML='<b>Setup required:</b> add a Google OAuth Web Client ID below, then connect Work Gmail.';
   }
   if(connect)connect.textContent=connected?'Reconnect Work Gmail':'Connect Work Gmail';
@@ -1260,7 +1286,8 @@ function saveGmailOAuthClientId(){
     return;
   }
   try{localStorage.setItem(GMAIL_OAUTH_CLIENT_ID_KEY,id)}catch{}
-  gmailAccessToken='';gmailTokenExpiresAt=0;gmailConnectedEmail='';gmailTokenClient=null;
+  clearGmailSession();
+  gmailAccessToken='';gmailTokenExpiresAt=0;gmailConnectedEmail='';gmailTokenClient=null;gmailAuthState='idle';
   renderGmailApiStatus();
   setStatus('Gmail OAuth Client ID saved locally in this browser. Click Connect Work Gmail.');
 }
@@ -1273,10 +1300,11 @@ function clearGmailOAuthClientId(){
 }
 function disconnectWorkGmailApi(showStatus=true){
   const token=gmailAccessToken;
-  gmailAccessToken='';gmailTokenExpiresAt=0;gmailConnectedEmail='';gmailTokenClient=null;
+  clearGmailSession();
+  gmailAccessToken='';gmailTokenExpiresAt=0;gmailConnectedEmail='';gmailTokenClient=null;gmailAuthState='idle';
   try{if(token&&window.google?.accounts?.oauth2?.revoke)google.accounts.oauth2.revoke(token,()=>{})}catch{}
   renderGmailApiStatus();
-  if(showStatus)setStatus('Work Gmail disconnected from this CRM session.');
+  if(showStatus)setStatus('Work Gmail disconnected. This browser session will no longer reconnect automatically.');
 }
 async function waitForGoogleIdentity(){
   for(let i=0;i<80;i++){
@@ -1304,32 +1332,100 @@ async function connectWorkGmailApi(forcePrompt=true){
     renderGmailApiStatus();
     throw new Error('Add your Google OAuth Web Client ID first.');
   }
+  if(!forcePrompt&&gmailAccessToken&&Date.now()<gmailTokenExpiresAt-120000)return gmailAccessToken;
+  gmailAuthState=forcePrompt?'connecting':'restoring';
+  renderGmailApiStatus();
   await waitForGoogleIdentity();
   return await new Promise((resolve,reject)=>{
     gmailTokenClient=google.accounts.oauth2.initTokenClient({
       client_id:clientId,
-      scope:GMAIL_COMPOSE_SCOPE,
+      scope:GMAIL_API_SCOPE,
       hint:WORK_EMAIL,
+      include_granted_scopes:true,
       callback:async response=>{
-        if(response?.error){reject(new Error(response.error_description||response.error));return}
+        if(response?.error){
+          gmailAuthState='idle';
+          renderGmailApiStatus();
+          reject(new Error(response.error_description||response.error));
+          return;
+        }
         try{
           const token=response.access_token;
           const email=await verifyGmailApiAccount(token);
           gmailAccessToken=token;
           gmailTokenExpiresAt=Date.now()+Math.max(60,Number(response.expires_in||3600)-60)*1000;
           gmailConnectedEmail=email;
+          gmailAuthState='connected';
+          saveGmailSession();
           renderGmailApiStatus();
-          setStatus('Work Gmail connected. The CRM can now create formatted Gmail drafts.');
+          emitGmailConnected();
+          if(forcePrompt)setStatus('Work Gmail connected. Draft creation and sent-mail sync are active.');
           resolve(token);
-        }catch(err){reject(err)}
+        }catch(err){
+          gmailAuthState='idle';
+          renderGmailApiStatus();
+          reject(err);
+        }
       },
-      error_callback:error=>reject(new Error(error?.message||error?.type||'Google authorization was cancelled.'))
+      error_callback:error=>{
+        gmailAuthState='idle';
+        renderGmailApiStatus();
+        reject(new Error(error?.message||error?.type||'Google authorization was cancelled.'));
+      }
     });
     gmailTokenClient.requestAccessToken({prompt:forcePrompt?'consent':''});
   });
 }
+async function restoreWorkGmailSession(){
+  if(gmailRestorePromise)return gmailRestorePromise;
+  gmailRestorePromise=(async()=>{
+    const cached=readGmailSession();
+    if(cached&&Number(cached.expiresAt)>Date.now()+60000){
+      gmailAccessToken=String(cached.accessToken||'');
+      gmailTokenExpiresAt=Number(cached.expiresAt)||0;
+      gmailConnectedEmail=String(cached.email||WORK_EMAIL);
+      gmailAuthState='connected';
+      renderGmailApiStatus();
+      emitGmailConnected();
+      return gmailAccessToken;
+    }
+    clearGmailSession();
+    if(!gmailOAuthClientId()){
+      gmailAuthState='idle';
+      renderGmailApiStatus();
+      return '';
+    }
+    gmailAuthState='restoring';
+    renderGmailApiStatus();
+    try{return await connectWorkGmailApi(false)}
+    catch(err){
+      console.info('Silent Gmail restore unavailable; manual reconnect may be required.',err);
+      gmailAuthState='idle';
+      renderGmailApiStatus();
+      return '';
+    }
+  })().finally(()=>{gmailRestorePromise=null});
+  return gmailRestorePromise;
+}
+function startGmailSessionKeeper(){
+  if(gmailRefreshTimer)clearInterval(gmailRefreshTimer);
+  gmailRefreshTimer=setInterval(()=>{
+    if(!gmailOAuthClientId())return;
+    const remaining=gmailTokenExpiresAt-Date.now();
+    if(gmailAccessToken&&remaining>0&&remaining<5*60*1000){
+      connectWorkGmailApi(false).catch(()=>{});
+    }else if(!gmailAccessToken||remaining<=0){
+      restoreWorkGmailSession().catch(()=>{});
+    }
+  },60*1000);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible')restoreWorkGmailSession().catch(()=>{});
+  });
+}
 async function gmailToken(){
-  if(gmailAccessToken&&Date.now()<gmailTokenExpiresAt)return gmailAccessToken;
+  if(gmailAccessToken&&Date.now()<gmailTokenExpiresAt-120000)return gmailAccessToken;
+  const restored=await restoreWorkGmailSession();
+  if(restored&&Date.now()<gmailTokenExpiresAt-120000)return restored;
   return connectWorkGmailApi(false);
 }
 function gmailBase64Utf8(value){
@@ -1426,7 +1522,8 @@ async function createFormattedWorkGmailDraft(){
       body:JSON.stringify(linkedDraftId&&method==='PUT'?{id:linkedDraftId,message:{raw}}:{message:{raw}})
     });
     if(response.status===401){
-      gmailAccessToken='';gmailTokenExpiresAt=0;
+      clearGmailSession();
+      gmailAccessToken='';gmailTokenExpiresAt=0;gmailAuthState='idle';
       token=await connectWorkGmailApi(false);
       response=await fetch(url,{
         method,
@@ -1965,6 +2062,10 @@ async function bootstrapWorkspace(){
   renderAll();
   compactPackageActions();
   persistWorkspaceSafe(false);
+  window.__clmWorkspaceReady=true;
+  try{window.dispatchEvent(new CustomEvent('clm:workspace-ready'))}catch{}
+  startGmailSessionKeeper();
+  restoreWorkGmailSession().catch(err=>console.info('Gmail session restore skipped',err));
 }
 bootstrapWorkspace();
 /* END INDEXEDDB RUNTIME OVERRIDES */
@@ -1983,4 +2084,6 @@ $('#copyEmailBtn').onclick=copyEmail;$('#copySubjectBtn').onclick=async()=>{awai
 $('#exportBtn').onclick=exportAll;$('#exportDataBtn').onclick=exportAll;$('#exportRosterBtn').onclick=exportRoster;$('#importDataInput').onchange=e=>e.target.files[0]&&importAll(e.target.files[0]);$('#resetWorkspaceBtn').onclick=resetWorkspace;$('#refreshBtn').onclick=async()=>{db=await loadWorkspaceIndexedDB();selected=[...(db.selected||[])];hydrateDraft();renderAll()};$('#addBtn').onclick=()=>openRecordModal('tasks');$('#recordSave').onclick=saveRecord;$('#recordCancel').onclick=()=>{modalEditId=null;$('#recordDialog').close()};
 $('#suggestLookBtn')?.closest('.field')?.remove();
 </script>
+<script src="assets/crm-email-sync.js?v=20260923-3"></script>
+<script src="assets/crm-open-tracking.js?v=20260923-5"></script>
 </body></html>
