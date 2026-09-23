@@ -449,10 +449,17 @@
     const okay=window.confirm('Send this tracked Gmail draft now?\n\nTo: '+to+'\nSubject: '+subject+'\n\nThis sends immediately. Open tracking is an approximate image-load signal, not a guaranteed human read.');
     if(!okay)return;
     if(typeof setStatus==='function')setStatus('Arming open tracking and sending the reviewed Gmail draft…');
-    await resetCounter(d.openTrackingId);
-    mime=setTopHeader(mime,'X-CLM-Tracking-ID',d.openTrackingId);
+    const sendTrackingId=randomHex(14);
+    applyCurrentPatch({
+      openTrackingId:sendTrackingId,
+      openTrackingState:'arming',
+      openTrackingCount:0,
+      openTrackingFirstDetectedAt:'',
+      openTrackingLastCheckedAt:''
+    });
+    mime=setTopHeader(mime,'X-CLM-Tracking-ID',sendTrackingId);
     mime=setTopHeader(mime,'X-CLM-Tracking-State','armed');
-    mime=injectPixel(mime,d.openTrackingId);
+    mime=injectPixel(mime,sendTrackingId);
     encoded=utf8ToBase64Url(mime);
     await updateGmailDraft(token,d.gmailDraftId,encoded);
     const sent=await sendGmailDraft(token,d.gmailDraftId);
@@ -466,6 +473,7 @@
       submittedAt:sentAt,
       submittedDate:nyDate(),
       submissionStatus:'Submitted',
+      openTrackingId:sendTrackingId,
       openTrackingState:'armed',
       openTrackingArmedAt:sentAt,
       openTrackingCount:0,
@@ -478,7 +486,8 @@
     if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
     if(typeof renderAll==='function')renderAll();
     renderTrackerStatus();
-    if(typeof setStatus==='function')setStatus('Tracked email sent. The CRM will check for open signals while it is open.');
+    if(typeof setStatus==='function')setStatus('Tracked email sent successfully. The CRM will check for open signals while it is open.');
+    try{window.alert('Tracked email sent successfully to '+to+'.')}catch(err){}
     if(typeof window.clmSyncSentMail==='function')setTimeout(function(){window.clmSyncSentMail()},1500);
     setTimeout(function(){checkOpens(false,false)},45000);
   }
@@ -543,9 +552,18 @@
       send.className='btn primary';
       send.textContent='Send tracked draft';
       send.addEventListener('click',function(){
+        if(send.disabled)return;
+        const oldText=send.textContent;
+        send.disabled=true;
+        send.textContent='Sending…';
         sendTrackedCurrentDraft().catch(function(err){
           console.error('Tracked send failed',err);
-          if(typeof setStatus==='function')setStatus(err&&err.message?err.message:String(err));
+          const message=err&&err.message?err.message:String(err);
+          if(typeof setStatus==='function')setStatus('Tracked send failed: '+message);
+          try{window.alert('Tracked send failed. Nothing was sent.\n\n'+message);}catch(alertErr){}
+          renderTrackerStatus();
+        }).finally(function(){
+          send.textContent=oldText;
           renderTrackerStatus();
         });
       });
@@ -584,8 +602,11 @@
   window.clmSendTrackedDraft=function(){
     return sendTrackedCurrentDraft().catch(function(err){
       console.error(err);
-      if(typeof setStatus==='function')setStatus(err&&err.message?err.message:String(err));
+      const message=err&&err.message?err.message:String(err);
+      if(typeof setStatus==='function')setStatus('Tracked send failed: '+message);
+      try{window.alert('Tracked send failed. Nothing was sent.\n\n'+message);}catch(alertErr){}
       renderTrackerStatus();
+      throw err;
     });
   };
   window.clmCheckEmailOpens=function(){return checkOpens(true,true)};
