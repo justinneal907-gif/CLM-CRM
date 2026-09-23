@@ -2113,7 +2113,7 @@ $('#suggestLookBtn')?.closest('.field')?.remove();
     try{
       setRuntimeStatus('Loading Gmail sync and open-tracking tools…');
       await loadScript('clm-email-sync-runtime','assets/crm-email-sync.js?v=20260923-4','__clmEmailSyncLoaded');
-      await loadScript('clm-open-tracking-runtime','assets/crm-open-tracking.js?v=20260923-6','__clmOpenTrackingLoaded');
+      await loadScript('clm-open-tracking-runtime','assets/crm-open-tracking.js?v=20260923-7','__clmOpenTrackingLoaded');
       setTimeout(()=>{
         if(window.__clmEmailSyncLoaded&&window.__clmOpenTrackingLoaded)setRuntimeStatus('Gmail sync and open-tracking tools loaded.');
         else setRuntimeStatus('Email tools did not finish loading. Reload the CRM.');

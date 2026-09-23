@@ -7,14 +7,16 @@
   if(window.__clmOpenTrackingLoaded)return;
   window.__clmOpenTrackingLoaded=true;
 
-  const TRACK_VERSION='2026-09-23-v5';
+  const TRACK_VERSION='2026-09-23-v7';
   const TRACK_BASE='https://countapi.mileshilliard.com/api/v1';
   const TRACK_POLL_MS=60*1000;
   let trackTimer=null;
   let trackChecking=false;
+  let sendBusy=false;
+  let lastAttempt=0;
 
   function q(sel){return document.querySelector(sel)}
-  function safe(value){return typeof esc==='function'?esc(String(value||'')):String(value||'')}
+  function safe(value){return typeof esc==='function'?esc(String(value||'')):String(value||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
   function nowIso(){return new Date().toISOString()}
   function randomHex(bytes){
     bytes=bytes||16;
@@ -68,11 +70,11 @@
     return shown+(models.length>5?' +'+(models.length-5)+' more':'');
   }
   async function notifyOpenSignal(record,before,value){
-    if(notificationPermission()!=='granted'||!record||value<=before)return false;
+    if(db.settings?.openAlertsEnabled===false||notificationPermission()!=='granted'||!record||value<=before)return false;
     const first=before<=0;
     const brand=notificationBrand(record);
     const models=notificationModels(record);
-    const title=(first?'Package opened: ':'Package reopened: ')+brand;
+    const title=(first?'Open signal: ':'New open signal: ')+brand;
     let body=first?'First open signal detected.':'Open signals: '+value+'.';
     if(models)body+='\nModels: '+models;
     return showBrowserNotification(title,{
@@ -87,6 +89,7 @@
     if(!('Notification' in window))throw new Error('This browser does not support desktop notifications.');
     const permission=await Notification.requestPermission();
     db.settings=Object.assign({},db.settings||{},{
+      openAlertsEnabled:permission==='granted',
       openNotificationsPermission:permission,
       openNotificationsUpdatedAt:nowIso()
     });
@@ -126,14 +129,6 @@
     }
     return db.draft||null;
   }
-  function applyCurrentPatch(patch){
-    if(typeof db==='undefined'||!db)return;
-    db.draft=Object.assign({},db.draft||{},patch);
-    if(db.activeDraftId){
-      const saved=(db.drafts||[]).find(function(x){return x.id===db.activeDraftId});
-      if(saved)Object.assign(saved,patch);
-    }
-  }
   function trackingNamespace(){
     db.settings=Object.assign({},db.settings||{});
     let value=String(db.settings.openTrackingNamespace||'').toLowerCase().replace(/[^a-f0-9]/g,'');
@@ -141,13 +136,6 @@
       value=randomHex(16);
       db.settings.openTrackingNamespace=value;
     }
-    return value;
-  }
-  function ensureTrackingId(){
-    const d=currentDraft();
-    let value=String((d&&d.openTrackingId)||(db.draft&&db.draft.openTrackingId)||'').toLowerCase().replace(/[^a-f0-9]/g,'');
-    if(value.length<20)value=randomHex(14);
-    applyCurrentPatch({openTrackingId:value});
     return value;
   }
   function counterKey(id){
@@ -236,6 +224,14 @@
     }
     return '';
   }
+  function decodeMimeHeader(value){
+    return String(value||'').replace(/(\?=)\s+(=\?)/g,'$1$2').replace(/=\?([^?]+)\?([BQ])\?([^?]*)\?=/ig,(word,charset,encoding,payload)=>{
+      try{
+        const binary=encoding.toUpperCase()==='B'?atob(payload):payload.replace(/_/g,' ').replace(/=([0-9a-f]{2})/ig,(_,hex)=>String.fromCharCode(parseInt(hex,16)));
+        return new TextDecoder(charset).decode(Uint8Array.from(binary,c=>c.charCodeAt(0)));
+      }catch{return word}
+    });
+  }
   function addPixelToHtml(html,id){
     let out=String(html||'').replace(/<img\b[^>]*data-clm-open-track=["']?1["']?[^>]*>/ig,'');
     const pixel=pixelHtml(id);
@@ -273,44 +269,48 @@
   }
 
   async function counterValue(id){
-    const r=await fetch(TRACK_BASE+'/get/'+encodeURIComponent(counterKey(id)),{cache:'no-store'});
-    if(r.status===404)return 0;
-    if(!r.ok)throw new Error('Open-tracking counter is unavailable ('+r.status+').');
-    const data=await r.json().catch(function(){return {}});
-    const n=Number(data&&data.value!==undefined?data.value:(data&&data.count!==undefined?data.count:0));
-    return Number.isFinite(n)?n:0;
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),12000);
+    try{
+      const r=await fetch(TRACK_BASE+'/get/'+encodeURIComponent(counterKey(id)),{cache:'no-store',signal:controller.signal});
+      if(r.status===404)return 0;
+      if(!r.ok)throw new Error('Tracking service unavailable ('+r.status+').');
+      const data=await r.json();
+      const value=data?.value??data?.count;
+      if(value===null||value===undefined||value===''||!Number.isFinite(Number(value))||Number(value)<0)
+        throw new Error('Tracking service returned an invalid count.');
+      return Number(value);
+    }finally{clearTimeout(timeout)}
   }
-  async function resetCounter(id){
-    const r=await fetch(TRACK_BASE+'/set/'+encodeURIComponent(counterKey(id))+'?value=0',{cache:'no-store'});
-    if(!r.ok)throw new Error('Open tracking could not be armed ('+r.status+').');
+  function patchTracker(record,patch){
+    const all=[...(db.drafts||[]),...(db.submissions||[]),db.draft];
+    all.forEach(item=>{if(item&&item.openTrackingId===record.openTrackingId)Object.assign(item,patch)});
+    Object.assign(record,patch);
+  }
+  function draftTarget(){
+    return {id:db.activeDraftId||'',record:db.draft};
+  }
+  function patchTarget(target,patch){
+    const saved=target.id&&(db.drafts||[]).find(x=>x.id===target.id);
+    if(saved)Object.assign(saved,patch);
+    if(target.id?db.activeDraftId===target.id:db.draft===target.record)Object.assign(db.draft,patch);
+    Object.assign(target.record,patch);
+    return saved||target.record;
   }
 
-  function mirrorToSubmissions(record){
-    if(!record||typeof db==='undefined'||!db)return;
-    (db.submissions||[]).forEach(function(sub){
-      const sameMessage=record.gmailMessageId&&sub.gmailMessageId===record.gmailMessageId;
-      const sameTracker=record.openTrackingId&&sub.openTrackingId===record.openTrackingId;
-      const sameDraftWithoutMessage=!record.gmailMessageId&&record.id&&sub.draftId===record.id&&!sub.gmailMessageId;
-      if(!sameMessage&&!sameTracker&&!sameDraftWithoutMessage)return;
-      sub.openTrackingId=record.openTrackingId||sub.openTrackingId||'';
-      sub.openTrackingState=record.openTrackingState||sub.openTrackingState||'';
-      sub.openTrackingCount=Number(record.openTrackingCount||0);
-      sub.openTrackingFirstDetectedAt=record.openTrackingFirstDetectedAt||'';
-      sub.openTrackingLastCheckedAt=record.openTrackingLastCheckedAt||'';
-    });
-  }
-  function trackingRecords(includeOpened){
+  function trackingRecords(includeOpened,includeHistory=false){
     if(typeof db==='undefined'||!db)return [];
-    const all=[].concat(db.drafts||[],db.submissions||[]);
+    const all=[].concat(db.submissions||[],db.drafts||[]);
     if(db.draft)all.push(db.draft);
     const seen=new Set();
     const out=[];
     const cutoff=Date.now()-45*24*60*60*1000;
     all.forEach(function(record){
-      if(!record||record.openTrackingState!=='armed'||!record.openTrackingId)return;
+      if(!record||!record.openTrackingId)return;
+      if(!includeHistory&&record.openTrackingState!=='armed')return;
       if(!includeOpened&&Number(record.openTrackingCount||0)>0)return;
       const sentMs=Date.parse(record.submittedAt||record.openTrackingArmedAt||record.date||'');
-      if(Number.isFinite(sentMs)&&sentMs<cutoff)return;
+      if(!includeHistory&&Number.isFinite(sentMs)&&sentMs<cutoff)return;
       const key=record.openTrackingId;
       if(seen.has(key))return;
       seen.add(key);
@@ -328,7 +328,7 @@
     let ready=0;
     const seen=new Set();
     (db.drafts||[]).concat(db.draft||[]).forEach(function(record){
-      if(!record||record.openTrackingState!=='ready'||!record.gmailDraftId||record.submittedAt)return;
+      if(!record||record.openTrackingState!=='ready'||!record.gmailDraftId)return;
       if(record.openTrackingId&&seen.has(record.openTrackingId))return;
       if(record.openTrackingId)seen.add(record.openTrackingId);
       ready++;
@@ -346,7 +346,7 @@
     return '';
   }
   function renderTrackerStatus(){
-    const anchor=q('#gmailSentSyncStatus')||q('#gmailApiStatus');
+    const anchor=q('#trackingSummary');
     if(anchor){
       let el=q('#gmailOpenTrackingStatus');
       if(!el){
@@ -357,12 +357,9 @@
         anchor.insertAdjacentElement('afterend',el);
       }
       const x=trackingSummary();
-      if(x.open)el.innerHTML='<b>Open tracking:</b> '+x.open+' open signal'+(x.open===1?'':'s')+' detected.';
-      else if(x.waiting)el.innerHTML='<b>Open tracking:</b> '+x.waiting+' tracked email'+(x.waiting===1?'':'s')+' awaiting a signal.';
-      else if(x.ready)el.innerHTML='<b>Open tracking:</b> '+x.ready+' Gmail draft'+(x.ready===1?'':'s')+' ready for tracked send.';
-      else el.innerHTML='<b>Open tracking:</b> ready for new CRM Gmail drafts.';
+      el.innerHTML='<b>'+x.open+'</b> with signals · <b>'+x.waiting+'</b> awaiting a signal · <b>'+x.ready+'</b> ready to send';
       const permission=notificationPermission();
-      const alertText=permission==='granted'?'on':permission==='denied'?'blocked':permission==='default'?'not enabled':permission==='insecure'?'requires HTTPS':'unsupported';
+      const alertText=permission==='granted'?(db.settings?.openAlertsEnabled===false?'paused':'on'):permission==='denied'?'blocked':permission==='default'?'not enabled':permission==='insecure'?'requires HTTPS':'unsupported';
       el.innerHTML+='<br><b>Browser alerts:</b> '+alertText+'.';
     }
 
@@ -389,9 +386,9 @@
         }else if(d.openTrackingState==='armed'){
           row.innerHTML='<b>Open tracking active.</b> No image-load signal detected yet.';
         }else if(d.openTrackingState==='send-uncertain'){
-          row.innerHTML='<b>Send result uncertain.</b> Check Work Gmail Sent Mail before retrying. If it is not there, use <b>Create formatted Gmail draft</b> again to relink/retry safely.';
+          row.innerHTML='<b>Send result uncertain.</b> Check Work Gmail Sent Mail before retrying. If it is not there, confirm that in the tracking history below before retrying.';
         }else if(d.openTrackingState==='ready'&&d.submittedAt&&!d.gmailDraftId){
-          row.innerHTML='<b>No open tracking for this sent email.</b> It was sent directly from Gmail instead of through <b>Send tracked draft</b>.';
+          row.innerHTML='<b>No open tracking for this sent email.</b> Only messages sent using <b>Send tracked draft</b> can be checked here.';
         }else if(d.openTrackingState==='ready'&&d.gmailDraftId){
           row.innerHTML='<b>Tracking ready.</b> Review the Gmail draft, return here, then click <b>Send tracked draft</b>.';
         }else{
@@ -406,15 +403,15 @@
     const check=q('#checkOpenTrackingBtn');
     const alerts=q('#enableOpenNotificationsBtn');
     if(send){
-      send.disabled=!(d&&d.gmailDraftId&&d.openTrackingId&&d.openTrackingState!=='send-uncertain');
+      send.disabled=sendBusy||!(d&&d.gmailDraftId&&d.openTrackingId&&d.openTrackingState==='ready');
       send.title=d&&d.openTrackingState==='send-uncertain'?'Check Work Gmail Sent Mail before retrying.':(send.disabled?'Create or update the Gmail draft from this CRM package first.':'Send the currently linked Gmail draft immediately with open tracking armed.');
     }
-    if(check)check.disabled=!trackingRecords(true).length;
+    if(check){check.disabled=trackChecking||!trackingRecords(true).length;check.textContent=trackChecking?'Checking…':'Check now';}
     if(alerts){
       const permission=notificationPermission();
       if(permission==='granted'){
-        alerts.textContent='Open alerts on';
-        alerts.disabled=true;
+        alerts.textContent=db.settings?.openAlertsEnabled===false?'Enable open alerts':'Pause open alerts';
+        alerts.disabled=false;
         alerts.title='Browser notifications are enabled. They work while the CRM page is open, including in a background tab.';
       }else if(permission==='denied'){
         alerts.textContent='Open alerts blocked';
@@ -430,56 +427,42 @@
         alerts.title='Allow desktop/browser notifications for new and repeat open signals.';
       }
     }
+    renderTrackingHistory();
   }
 
   async function checkOpens(showStatus,includeOpened){
-    if(trackChecking)return;
+    if(trackChecking||(!showStatus&&Date.now()-lastAttempt<30000))return;
     const records=trackingRecords(!!includeOpened);
-    if(!records.length){
-      renderTrackerStatus();
-      if(showStatus&&typeof setStatus==='function')setStatus('No tracked sent emails need an open check.');
-      return;
-    }
-    trackChecking=true;
+    if(!records.length){renderTrackerStatus();return}
+    trackChecking=true;lastAttempt=Date.now();renderTrackerStatus();
+    let succeeded=0,failed=0,newSignals=0,cursor=0;
     try{
-      if(showStatus&&typeof setStatus==='function')setStatus('Checking tracked email opens…');
-      let newlyOpened=0;
-      let changed=false;
-      for(let i=0;i<records.length;i++){
-        const record=records[i];
-        try{
-          const before=Number(record.openTrackingCount||0);
-          const value=await counterValue(record.openTrackingId);
-          record.openTrackingCount=value;
-          record.openTrackingLastCheckedAt=nowIso();
-          if(value>0&&!record.openTrackingFirstDetectedAt){
-            record.openTrackingFirstDetectedAt=nowIso();
-            newlyOpened++;
+      // Bound concurrency so one slow counter cannot stall every email.
+      await Promise.all(Array.from({length:Math.min(4,records.length)},async()=>{
+        while(cursor<records.length){
+          const record=records[cursor++];
+          try{
+            const before=Number(record.openTrackingCount||0);
+            const value=Math.max(before,await counterValue(record.openTrackingId));
+            const stamp=nowIso();
+            patchTracker(record,{openTrackingCount:value,openTrackingLastCheckedAt:stamp,openTrackingError:'',
+              openTrackingFirstDetectedAt:record.openTrackingFirstDetectedAt||(value>0?stamp:''),
+              openTrackingLastDetectedAt:value>before?stamp:(record.openTrackingLastDetectedAt||'')});
+            succeeded++;
+            if(value>before){newSignals++;void notifyOpenSignal(record,before,value).catch(()=>{})}
+          }catch(err){
+            failed++;
+            patchTracker(record,{openTrackingError:err.name==='AbortError'?'Check timed out. Try again.':String(err.message||err)});
           }
-          if(value>before)await notifyOpenSignal(record,before,value);
-          if(value!==before||record.openTrackingLastCheckedAt)changed=true;
-          mirrorToSubmissions(record);
-          if(db.activeDraftId&&record.id===db.activeDraftId){
-            Object.assign(db.draft,{
-              openTrackingCount:record.openTrackingCount,
-              openTrackingFirstDetectedAt:record.openTrackingFirstDetectedAt||'',
-              openTrackingLastCheckedAt:record.openTrackingLastCheckedAt||''
-            });
-          }
-        }catch(err){
-          console.warn('CLM open tracking check failed for one email',err);
         }
-      }
-      db.settings=Object.assign({},db.settings||{},{openTrackingLastCheckAt:nowIso(),openTrackingVersion:TRACK_VERSION});
-      if(changed&&typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
-      if(typeof renderAll==='function')renderAll();
-      renderTrackerStatus();
-      if(showStatus&&typeof setStatus==='function'){
-        setStatus(newlyOpened?'Detected '+newlyOpened+' new email open signal'+(newlyOpened===1?'':'s')+'.':'Open tracking checked; no new signals.');
-      }
-    }finally{
-      trackChecking=false;
-    }
+      }));
+      db.settings=Object.assign({},db.settings||{},{openTrackingLastAttemptAt:nowIso(),openTrackingVersion:TRACK_VERSION,
+        openTrackingCheckSummary:failed?failed+' of '+records.length+' checks failed. Previous results kept.':
+          'Checked '+succeeded+' emails. '+newSignals+' with new signals.'});
+      if(succeeded)db.settings.openTrackingLastCheckAt=nowIso();
+      if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+      if(showStatus&&typeof setStatus==='function')setStatus(db.settings.openTrackingCheckSummary);
+    }finally{trackChecking=false;renderTrackerStatus()}
   }
 
   async function gmailTrackedFetch(url,options){
@@ -488,13 +471,16 @@
     const request=async function(){
       const opts=Object.assign({},options||{});
       opts.headers=Object.assign({},opts.headers||{},{Authorization:'Bearer '+token});
+      const controller=new AbortController();
+      opts.signal=controller.signal;
+      const timeout=setTimeout(()=>controller.abort(),30000);
       try{return await fetch(url,opts)}
       catch(err){
         const e=new Error('Network error while contacting Gmail. Check your connection and try again.');
         e.cause=err;
         e.clmNetwork=true;
         throw e;
-      }
+      }finally{clearTimeout(timeout)}
     };
     let r=await request();
     if(r.status===401){
@@ -559,12 +545,12 @@
     });
     if(!sub){
       let modelNames=[];
-      try{if(typeof selectedModels==='function')modelNames=selectedModels().map(function(m){return m.name})}catch(err){}
+      try{modelNames=(d.modelIds||[]).map(id=>(db.models||[]).find(m=>m.id===id)?.name).filter(Boolean)}catch(err){}
       if(!modelNames.length&&d&&Array.isArray(d.models))modelNames=d.models.slice();
       sub={
         id:'gmail-sent-'+(messageId||randomHex(8)),
         date:date,
-        draftId:(d&&d.id)||(db.activeDraftId||''),
+        draftId:(d&&d.id)||'',
         contact:(d&&d.contactName)||'',
         company:(d&&(d.company||d.brandProject))||'',
         email:to||(d&&d.recipientEmail)||'',
@@ -587,7 +573,10 @@
       gmailUrl:gmailUrl||sub.gmailUrl||'',
       openTrackingId:(d&&d.openTrackingId)||sub.openTrackingId||'',
       openTrackingState:'armed',
+      openTrackingArmedAt:nowIso(),
       openTrackingCount:0,
+        openTrackingError:'',
+        openTrackingLastDetectedAt:'',
       openTrackingFirstDetectedAt:'',
       openTrackingLastCheckedAt:'',
       source:'Work Gmail tracked send'
@@ -595,14 +584,19 @@
   }
 
   async function sendTrackedCurrentDraft(){
+    if(sendBusy)throw new Error('A tracked send is already in progress.');
+    const target=draftTarget();
     const d=currentDraft();
+    if(d?.openTrackingState==='send-uncertain')throw new Error('Check Sent Mail before retrying this uncertain send.');
     if(!d||!d.gmailDraftId||!d.openTrackingId)throw new Error('Create or update this package as a Work Gmail draft first.');
+    sendBusy=true;renderTrackerStatus();
+    try{
     const linkedDraftId=d.gmailDraftId;
     if(typeof setStatus==='function')setStatus('Loading the linked Gmail draft…');
     let encoded=await loadGmailDraftRaw(linkedDraftId);
     let mime=base64UrlToUtf8(encoded);
     const to=topHeader(mime,'To')||d.recipientEmail||'';
-    const subject=topHeader(mime,'Subject')||d.subject||'Model package';
+    const subject=decodeMimeHeader(topHeader(mime,'Subject'))||d.subject||'Model package';
     let repeat='';
     if(d.submittedAt){
       let prior='';
@@ -613,29 +607,36 @@
     if(!okay)return;
 
     const sendTrackingId=randomHex(14);
-    applyCurrentPatch({
-      openTrackingId:sendTrackingId,
-      openTrackingState:'arming',
-      openTrackingCount:0,
-      openTrackingFirstDetectedAt:'',
-      openTrackingLastCheckedAt:''
-    });
     mime=setTopHeader(mime,'X-CLM-Tracking-ID',sendTrackingId);
     mime=setTopHeader(mime,'X-CLM-Tracking-State','armed');
     mime=injectPixel(mime,sendTrackingId);
     encoded=utf8ToBase64Url(mime);
 
+    patchTarget(target,{
+      openTrackingId:sendTrackingId,
+      openTrackingState:'arming',
+      openTrackingCount:0,
+        openTrackingError:'',
+        openTrackingLastDetectedAt:'',
+      openTrackingFirstDetectedAt:'',
+      openTrackingLastCheckedAt:''
+    });
     let phase='prepare';
     try{
       if(typeof setStatus==='function')setStatus('Preparing the linked Gmail draft…');
+      await counterValue(sendTrackingId);
       await updateGmailDraft(linkedDraftId,encoded);
       phase='send';
+      patchTarget(target,{openTrackingState:'send-uncertain'});
       if(typeof setStatus==='function')setStatus('Sending through Work Gmail…');
+      if(typeof persistWorkspaceSafe==='function')await persistWorkspaceSafe(false);
+      if(typeof idbWriteQueue!=='undefined')await idbWriteQueue;
       const sent=await sendGmailDraft(linkedDraftId);
       const messageId=(sent&&sent.id)||(sent&&sent.message&&sent.message.id)||'';
+      if(!messageId)throw new Error('Gmail returned no sent message ID. Check Sent Mail.');
       const sentAt=nowIso();
       const gmailUrl=messageId?'https://mail.google.com/mail/u/?authuser='+encodeURIComponent(typeof WORK_EMAIL==='undefined'?'':WORK_EMAIL)+'#sent/'+messageId:'';
-      applyCurrentPatch({
+      patchTarget(target,{
         gmailDraftId:'',
         gmailMessageId:messageId,
         gmailUrl:gmailUrl,
@@ -646,10 +647,12 @@
         openTrackingState:'armed',
         openTrackingArmedAt:sentAt,
         openTrackingCount:0,
+        openTrackingError:'',
+        openTrackingLastDetectedAt:'',
         openTrackingFirstDetectedAt:'',
         openTrackingLastCheckedAt:''
       });
-      const updated=currentDraft();
+      const updated=patchTarget(target,{});
       recordTrackedSubmission(updated,messageId,to,subject);
       db.settings=Object.assign({},db.settings||{},{openTrackingVersion:TRACK_VERSION});
       if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
@@ -662,29 +665,36 @@
     }catch(err){
       if(phase==='send'){
         err.clmSendUncertain=true;
-        applyCurrentPatch({openTrackingState:'send-uncertain'});
+        patchTarget(target,{openTrackingState:'send-uncertain'});
       }else{
-        applyCurrentPatch({openTrackingState:'ready'});
+        patchTarget(target,{openTrackingState:'ready'});
       }
       if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
       renderTrackerStatus();
       throw err;
     }
+    }finally{sendBusy=false;renderTrackerStatus()}
   }
 
   function installDraftCreationHook(){
     if(typeof createFormattedWorkGmailDraft!=='function'||createFormattedWorkGmailDraft.__clmOpenTracking)return;
     const original=createFormattedWorkGmailDraft;
     const wrapped=async function(){
+      if(currentDraft()?.openTrackingState==='send-uncertain')throw new Error('Check Sent Mail and resolve the uncertain send before creating another draft.');
+      if(sendBusy)throw new Error('Wait for the current send to finish.');
+      if(typeof saveDraft==='function')saveDraft();
+      const target=draftTarget();
       const result=await original.apply(this,arguments);
-      const id=ensureTrackingId();
-      applyCurrentPatch({
+      const id=randomHex(14);
+      patchTarget(target,{
         gmailDraftId:(result&&result.id)||'',
         gmailDraftMessageId:(result&&result.message&&result.message.id)||'',
         openTrackingId:id,
         openTrackingState:'ready',
         openTrackingCreatedAt:nowIso(),
         openTrackingCount:0,
+        openTrackingError:'',
+        openTrackingLastDetectedAt:'',
         openTrackingFirstDetectedAt:'',
         openTrackingLastCheckedAt:''
       });
@@ -723,8 +733,95 @@
     wrapped.__clmOpenTracking=true;
     renderAll=wrapped;
   }
+  function installTrackingPanel(){
+    if(q('#openTrackingPanel'))return;
+    const anchor=q('#gmailApiPanel');
+    if(!anchor)return;
+    const panel=document.createElement('section');
+    panel.id='openTrackingPanel';panel.className='field';panel.setAttribute('aria-label','Email open tracking');
+    panel.innerHTML=`<style>
+      #openTrackingPanel{border:1px solid var(--line,#d8dfe8);border-radius:12px;padding:16px;margin:16px 0;background:var(--panel,#fff);font-size:14px}
+      #openTrackingPanel h3{margin:0 0 8px;font-size:18px}
+      #openTrackingPanel .tracking-help{line-height:1.55;margin:10px 0;color:var(--muted,#536174)}
+      #openTrackingPanel .tracking-tools{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+      #openTrackingPanel .tracking-tools input{flex:1;min-width:140px}
+      #openTrackingPanel .tracking-tools select{width:auto;max-width:100%}
+      #openTrackingPanel .tracking-list{max-height:460px;overflow:auto}
+      #openTrackingPanel .tracking-item{border-top:1px solid var(--line,#d8dfe8);padding:12px 0;overflow-wrap:anywhere}
+      #openTrackingPanel .tracking-item-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+      #openTrackingPanel .tracking-meta{font-size:13px;color:var(--muted,#536174);line-height:1.6;margin:5px 0}
+      #openTrackingPanel .tracking-error{color:#a22c25;margin-top:5px}
+      #trackingCheckResult{margin-top:8px;line-height:1.5}
+      #openTrackingPanel button,#openTrackingPanel input,#openTrackingPanel select{font-size:14px}
+    </style><h3>Email open tracking</h3>
+    <div id="trackingSummary"></div>
+    <p class="tracking-help">Create a formatted Gmail draft below, review it in Gmail, then return here to send with tracking. Sending directly in Gmail does not enable this tracker.</p>
+    <div id="trackingActions" class="actions"></div>
+    <div id="trackingCheckResult" role="status" aria-live="polite"></div>
+    <details><summary>What the results mean</summary><p class="tracking-help">Signals mean the tracking address was requested, not proof that your casting director read the email. Your own views, CC recipients and privacy tools may trigger signals; blocked images and mail proxies may hide opens or repeat views. This legacy counter does not return a normal image, so some mail apps may not load it. No signal does not mean unread.</p><p class="tracking-help">Checks run about once a minute while this CRM is open. Background tabs may check less often. Automatic checks cover the last 45 days; older results stay in history. Times show when the CRM detected a signal, in your device’s timezone.</p></details>
+    <div class="tracking-tools"><input id="trackingSearch" type="search" aria-label="Search tracked emails" placeholder="Search brand, recipient or model"><select id="trackingFilter" aria-label="Filter tracked emails"><option value="all">All tracked emails</option><option value="signals">With signals</option><option value="waiting">Awaiting signal</option><option value="ready">Ready to send</option><option value="attention">Needs attention</option></select></div>
+    <div id="trackingHistory" class="tracking-list"></div>`;
+    anchor.insertAdjacentElement('afterend',panel);
+    ['sendTrackedDraftBtn','enableOpenNotificationsBtn','testOpenNotificationsBtn','checkOpenTrackingBtn'].forEach(id=>{
+      const button=q('#'+id);if(button)q('#trackingActions').appendChild(button);
+    });
+    q('#trackingSearch').addEventListener('input',renderTrackingHistory);
+    q('#trackingFilter').addEventListener('change',renderTrackingHistory);
+    panel.addEventListener('click',event=>{
+      const button=event.target.closest('button[data-track-action]');if(!button)return;
+      const record=trackingRecords(true,true).find(r=>r.openTrackingId===button.dataset.trackId);if(!record)return;
+      const draftId=record.draftId||record.id;
+      if(button.dataset.trackAction==='package'&&typeof loadDraft==='function')loadDraft(draftId);
+      if(button.dataset.trackAction==='resolve'){
+        if(!window.confirm('Have you checked Work Gmail Sent Mail and confirmed this email was NOT sent?\n\nContinue only if it is absent. The existing Gmail draft will be relinked when you create the formatted draft again.'))return;
+        patchTracker(record,{openTrackingState:'ready',openTrackingError:''});
+        if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+        renderTrackerStatus();
+      }
+    });
+  }
+  function trackingState(record){
+    if(record.openTrackingState==='send-uncertain')return {key:'attention',label:'Send unconfirmed'};
+    if(record.openTrackingError)return {key:'attention',label:'Check failed'};
+    if(Number(record.openTrackingCount||0)>0)return {key:'signals',label:'Signal detected'};
+    if(record.openTrackingState==='armed')return {key:'waiting',label:'No signal yet'};
+    if(record.openTrackingState==='ready'&&record.gmailDraftId)return {key:'ready',label:'Ready to send'};
+    return {key:'other',label:'Not tracking'};
+  }
+  function formatTrackingTime(value){
+    const date=new Date(value);return value&&Number.isFinite(date.getTime())?date.toLocaleString():'—';
+  }
+  function renderTrackingHistory(){
+    const el=q('#trackingHistory');if(!el)return;
+    const search=String(q('#trackingSearch')?.value||'').toLowerCase().trim();
+    const filter=q('#trackingFilter')?.value||'all';
+    const records=trackingRecords(true,true).filter(record=>{
+      const text=[record.brandProject,record.project,record.company,record.recipientEmail,record.email,record.subject,...(Array.isArray(record.models)?record.models:[])].join(' ').toLowerCase();
+      return (!search||text.includes(search))&&(filter==='all'||trackingState(record).key===filter);
+    }).sort((a,b)=>(Date.parse(b.submittedAt||b.openTrackingArmedAt||b.openTrackingCreatedAt||b.date)||0)-(Date.parse(a.submittedAt||a.openTrackingArmedAt||a.openTrackingCreatedAt||a.date)||0));
+    el.innerHTML=records.length?records.map(record=>{
+      const state=trackingState(record),draftId=record.draftId||record.id;
+      const hasDraft=(db.drafts||[]).some(d=>d.id===draftId);
+      const messageId=record.openTrackingState==='ready'?'':record.gmailMessageId;
+      const href='https://mail.google.com/mail/u/?authuser='+encodeURIComponent(typeof WORK_EMAIL==='undefined'?'':WORK_EMAIL)+(messageId?'#sent/'+encodeURIComponent(messageId):record.openTrackingState==='send-uncertain'?'#sent':'#drafts');
+      const sent=record.openTrackingState==='ready'?'':record.openTrackingArmedAt||record.submittedAt;
+      return '<article class="tracking-item"><div class="tracking-item-head"><strong>'+safe(record.brandProject||record.project||record.company||record.subject||'Model package')+'</strong><span>'+safe(state.label)+'</span></div>'+
+        '<div class="tracking-meta">'+safe(record.recipientEmail||record.email||'Recipient not recorded')+'<br>'+safe(record.subject||'')+'</div>'+
+        (record.models?.length?'<div class="tracking-meta">Models: '+safe(record.models.join(', '))+'</div>':'')+
+        '<div class="tracking-meta">'+(sent?'Sent: '+safe(formatTrackingTime(sent))+' · ':'')+'Signals: '+Number(record.openTrackingCount||0)+
+        '<br>First detected: '+safe(formatTrackingTime(record.openTrackingFirstDetectedAt))+'<br>Last checked: '+safe(formatTrackingTime(record.openTrackingLastCheckedAt))+'</div>'+
+        (record.openTrackingError?'<div class="tracking-error">'+safe(record.openTrackingError)+'</div>':'')+
+        (record.openTrackingState==='send-uncertain'?'<p>Check Sent Mail before retrying to avoid sending twice. If sent, use Sync sent mail now to confirm the result.</p>':'')+
+        '<div class="actions"><a class="btn" target="_blank" rel="noopener" href="'+safe(href)+'">'+(messageId?'View sent email':record.openTrackingState==='send-uncertain'?'Check Sent Mail':'Review in Gmail')+'</a>'+
+        (hasDraft?'<button class="btn" type="button" data-track-action="package" data-track-id="'+safe(record.openTrackingId)+'">Open package</button>':'')+
+        (record.openTrackingState==='send-uncertain'?'<button class="btn" type="button" data-track-action="resolve" data-track-id="'+safe(record.openTrackingId)+'">I confirmed it was not sent</button>':'')+'</div></article>';
+    }).join(''):'<p class="tracking-help">'+(search||filter!=='all'?'No emails match this filter.':'No tracked emails yet. Create a formatted Gmail draft to get started. Previously sent, untracked emails cannot be tracked retroactively.')+'</p>';
+    const status=q('#trackingCheckResult');
+    if(status)status.textContent=trackChecking?'Checking tracked emails…':db.settings?.openTrackingCheckSummary||'';
+  }
+
   function installButtons(){
-    const panel=q('#gmailApiPanel .actions');
+    const panel=q('#trackingActions');
     if(!panel)return;
     let send=q('#sendTrackedDraftBtn');
     if(!send){
@@ -766,6 +863,11 @@
     if(alerts.dataset.clmBound!=='1'){
       alerts.dataset.clmBound='1';
       alerts.addEventListener('click',function(){
+        if(notificationPermission()==='granted'&&db.settings?.openAlertsEnabled!==false){
+          db.settings.openAlertsEnabled=false;
+          if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+          renderTrackerStatus();return;
+        }
         enableOpenNotifications().catch(function(err){
           console.error('Notification setup failed',err);
           try{window.alert(err&&err.message?err.message:String(err));}catch(alertErr){}
@@ -807,6 +909,7 @@
   }
   function init(){
     try{
+      installTrackingPanel();
       installDraftCreationHook();
       installDraftCardHook();
       installRenderHook();

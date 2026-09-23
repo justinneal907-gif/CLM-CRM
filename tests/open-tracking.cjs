@@ -32,7 +32,7 @@ assert.match(tracker,/checkOpens\(false,true\)/);
 assert.match(tracker,/if\(r\.status===401\)/);
 assert.match(tracker,/Create or update this package as a Work Gmail draft first/);
 assert.doesNotMatch(tracker,/if\(d\.submittedAt\)throw new Error\('This package is already marked as submitted\.'\)/);
-assert.match(tracker,/sameDraftWithoutMessage/);
+assert.match(tracker,/patchTracker/);
 assert.match(tracker,/priorForDraft/);
 
 assert.match(index,/linkedDraftId/);
@@ -44,8 +44,8 @@ assert.match(sync,/findDraftForMessage\(subject,to,messageId\)/);
 
 assert.doesNotMatch(loader,/crm-open-tracking\.js/);
 assert.doesNotMatch(loader,/crm-email-sync\.js/);
-assert.match(index,/crm-open-tracking\.js\?v=20260923-5/);
-assert.match(index,/crm-email-sync\.js\?v=20260923-3/);
+assert.match(index,/crm-open-tracking\.js\?v=20260923-7/);
+assert.match(index,/crm-email-sync\.js\?v=20260923-4/);
 assert.match(index,/GMAIL_SESSION_KEY/);
 assert.match(index,/sessionStorage\.setItem\(GMAIL_SESSION_KEY/);
 assert.match(index,/restoreWorkGmailSession/);

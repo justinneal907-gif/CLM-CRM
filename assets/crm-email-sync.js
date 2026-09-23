@@ -5,7 +5,7 @@
   'use strict';
   if(window.__clmEmailSyncLoaded)return;
   window.__clmEmailSyncLoaded=true;
-  const SYNC_VERSION='2026-09-23-v3';
+  const SYNC_VERSION='2026-09-23-v4';
   const SYNC_INTERVAL_MS=5*60*1000;
   const KNOWN_IDS_KEY='clm.crm.gmailSentSyncIds.v1';
   let syncTimer=null;
@@ -101,7 +101,7 @@
   async function gmailMessageMeta(token,id){
     const u=new URL('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+encodeURIComponent(id));
     u.searchParams.set('format','metadata');
-    ['Subject','To','Date'].forEach(x=>u.searchParams.append('metadataHeaders',x));
+    ['Subject','To','Date','X-CLM-Tracking-ID','X-CLM-Tracking-State'].forEach(x=>u.searchParams.append('metadataHeaders',x));
     const r=await fetch(u,{headers:{Authorization:'Bearer '+token}});
     if(!r.ok)throw new Error('Could not read sent message '+id+'.');
     return await r.json();
@@ -160,7 +160,10 @@
     if(!/model package|s\/s\s*2027|ss\s*2027/i.test(subject))return false;
     const to=header(meta,'To');
     const date=nyDateFromMs(meta.internalDate);
-    const draft=findDraftForMessage(subject,to,messageId);
+    const trackingId=header(meta,'X-CLM-Tracking-ID');
+    const tracked=header(meta,'X-CLM-Tracking-State')==='armed'&&/^[a-f0-9]{20,}$/.test(trackingId);
+    const exactTracked=tracked?(db.drafts||[]).find(d=>d.openTrackingId===trackingId):null;
+    const draft=exactTracked||findDraftForMessage(subject,to,messageId);
     const gmailUrl='https://mail.google.com/mail/u/?authuser='+encodeURIComponent(WORK_EMAIL)+'#sent/'+messageId;
     let sub=existingSubmissionForMessage(messageId,subject,date,to,draft);
     let changed=false;
@@ -190,7 +193,15 @@
       db.submissions.push(sub);
       changed=true;
     }
-    if(draft){
+    if(tracked){
+      const patch={openTrackingId:trackingId,openTrackingState:'armed',openTrackingArmedAt:new Date(Number(meta.internalDate)||Date.now()).toISOString()};
+      Object.assign(sub,patch);
+      if(exactTracked){
+        Object.assign(exactTracked,patch,{gmailDraftId:''});
+        if(db.activeDraftId===exactTracked.id)Object.assign(db.draft,patch,{gmailDraftId:'',gmailMessageId:messageId,gmailUrl});
+      }
+    }
+    if(draft&&(!draft.gmailMessageId||draft.gmailMessageId===messageId||!draft.submittedAt||Number(meta.internalDate)>=Date.parse(draft.submittedAt))){
       draft.submittedAt=draft.submittedAt||new Date(Number(meta.internalDate)||Date.now()).toISOString();
       draft.submittedDate=draft.submittedDate||date;
       draft.gmailMessageId=messageId;
