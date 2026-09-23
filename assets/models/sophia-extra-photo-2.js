@@ -5,7 +5,7 @@ window.addEventListener('load',()=>{
   const loadOpenTracking=()=>{
     if(document.querySelector('script[data-clm-open-tracking]'))return;
     const t=document.createElement('script');
-    t.src='assets/crm-open-tracking.js?v=20260923-2';
+    t.src='assets/crm-open-tracking.js?v=20260923-3';
     t.dataset.clmOpenTracking='1';
     document.body.appendChild(t);
   };
@@ -14,7 +14,7 @@ window.addEventListener('load',()=>{
     return;
   }
   const s=document.createElement('script');
-  s.src='assets/crm-email-sync.js?v=20260923-1';
+  s.src='assets/crm-email-sync.js?v=20260923-2';
   s.dataset.clmEmailSync='1';
   s.onload=loadOpenTracking;
   s.onerror=loadOpenTracking;
