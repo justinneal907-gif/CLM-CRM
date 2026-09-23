@@ -7,7 +7,7 @@
   if(window.__clmOpenTrackingLoaded)return;
   window.__clmOpenTrackingLoaded=true;
 
-  const TRACK_VERSION='2026-09-23-v9';
+  const TRACK_VERSION='2026-09-23-v10';
   const TRACK_BASE='https://countapi.mileshilliard.com/api/v1';
   const TRACK_POLL_MS=60*1000;
   let trackTimer=null;
@@ -61,7 +61,10 @@
     }
   }
   function notificationBrand(record){
-    return String((record&&(record.brandProject||record.company||record.project||record.recipientEmail))||'Tracked package');
+    return String((record&&(record.brandProject||record.project||record.company||record.subject))||'package');
+  }
+  function notificationDirector(record){
+    return String((record&&(record.contactName||record.contact||record.recipientName||record.recipientEmail||record.email))||'Casting director');
   }
   function notificationModels(record){
     const models=record&&Array.isArray(record.models)?record.models.filter(Boolean):[];
@@ -71,11 +74,11 @@
   }
   async function notifyOpenSignal(record,before,value){
     if(db.settings?.openAlertsEnabled===false||notificationPermission()!=='granted'||!record||value<=before)return false;
-    const first=before<=0;
+    const director=notificationDirector(record);
     const brand=notificationBrand(record);
     const models=notificationModels(record);
-    const title=(first?'Open signal: ':'New open signal: ')+brand;
-    let body=first?'First open signal detected.':'Open signals: '+value+'.';
+    const title=director+' has opened '+brand;
+    let body=value>1?'Open signals: '+value+'.':'Tracked open signal detected.';
     if(models)body+='\nModels: '+models;
     return showBrowserNotification(title,{
       body:body,
