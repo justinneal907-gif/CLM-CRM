@@ -7,7 +7,7 @@
   if(window.__clmOpenTrackingLoaded)return;
   window.__clmOpenTrackingLoaded=true;
 
-  const TRACK_VERSION='2026-09-23-v7';
+  const TRACK_VERSION='2026-09-23-v9';
   const TRACK_BASE='https://countapi.mileshilliard.com/api/v1';
   const TRACK_POLL_MS=60*1000;
   let trackTimer=null;
@@ -538,6 +538,41 @@
     if(typeof db==='undefined'||!db)return;
     const date=nyDate();
     const gmailUrl=messageId?'https://mail.google.com/mail/u/?authuser='+encodeURIComponent(typeof WORK_EMAIL==='undefined'?'':WORK_EMAIL)+'#sent/'+messageId:'';
+    const noModelFollowUp=!!(d&&d.purpose==='followup'&&!(Array.isArray(d.modelIds)&&d.modelIds.length)&&!(Array.isArray(d.models)&&d.models.length));
+    if(noModelFollowUp){
+      db.followUps=Array.isArray(db.followUps)?db.followUps:[];
+      let item=db.followUps.find(function(x){return messageId&&x.gmailMessageId===messageId});
+      if(!item){
+        item={
+          id:'gmail-followup-'+(messageId||randomHex(8)),
+          date:date,
+          draftId:(d&&d.id)||'',
+          contact:(d&&d.contactName)||'',
+          company:(d&&(d.company||d.brandProject))||'',
+          email:to||(d&&d.recipientEmail)||'',
+          project:(d&&(d.brandProject||d.company))||subject||(d&&d.subject)||'',
+          subject:subject||(d&&d.subject)||'',
+          gmailMessageId:messageId||'',
+          gmailUrl:gmailUrl,
+          source:'Work Gmail tracked follow-up'
+        };
+        db.followUps.push(item);
+      }
+      Object.assign(item,{
+        gmailMessageId:messageId||item.gmailMessageId||'',
+        gmailUrl:gmailUrl||item.gmailUrl||'',
+        openTrackingId:(d&&d.openTrackingId)||item.openTrackingId||'',
+        openTrackingState:'armed',
+        openTrackingArmedAt:nowIso(),
+        openTrackingCount:0,
+        openTrackingError:'',
+        openTrackingLastDetectedAt:'',
+        openTrackingFirstDetectedAt:'',
+        openTrackingLastCheckedAt:'',
+        source:'Work Gmail tracked follow-up'
+      });
+      return;
+    }
     const priorForDraft=!!(d&&d.id&&(db.submissions||[]).some(function(x){return x.draftId===d.id&&x.gmailMessageId}));
     let sub=(db.submissions||[]).find(function(x){
       if(messageId&&x.gmailMessageId===messageId)return true;
@@ -589,7 +624,7 @@
     const target=draftTarget();
     const d=currentDraft();
     if(d?.openTrackingState==='send-uncertain')throw new Error('Check Sent Mail before retrying this uncertain send.');
-    if(!d||!d.gmailDraftId||!d.openTrackingId)throw new Error('Create or update this package as a Work Gmail draft first.');
+    if(!d||!d.gmailDraftId||!d.openTrackingId)throw new Error('Create or update this email as a Work Gmail draft first.');
     sendBusy=true;renderTrackerStatus();
     try{
     const linkedDraftId=d.gmailDraftId;
@@ -602,7 +637,7 @@
     if(d.submittedAt){
       let prior='';
       try{prior=new Date(d.submittedAt).toLocaleString()}catch(err){}
-      repeat='\n\nThis CRM package has a previous submission'+(prior?' from '+prior:'')+'. This will send another email.';
+      repeat='\n\nThis CRM draft has already been sent'+(prior?' on '+prior:'')+'. This will send another email.';
     }
     const okay=window.confirm('Send this tracked Gmail draft now?\n\nTo: '+to+'\nSubject: '+subject+repeat+'\n\nThis sends immediately. Open tracking is an approximate image-load signal, not a guaranteed human read.');
     if(!okay)return;
