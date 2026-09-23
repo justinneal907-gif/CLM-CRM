@@ -22,6 +22,10 @@ assert.match(tracker,/sendTrackingId=randomHex/);
 assert.doesNotMatch(tracker,/await resetCounter\(d\.openTrackingId\)/);
 assert.match(tracker,/Gmail did not confirm whether this message sent/);
 assert.match(tracker,/send-uncertain/);
+assert.match(tracker,/Notification\.requestPermission/);
+assert.match(tracker,/new Notification\(/);
+assert.match(tracker,/Enable open alerts/);
+assert.match(tracker,/checkOpens\(false,true\)/);
 assert.match(tracker,/if\(r\.status===401\)/);
 assert.match(tracker,/Create or update this package as a Work Gmail draft first/);
 assert.doesNotMatch(tracker,/if\(d\.submittedAt\)throw new Error\('This package is already marked as submitted\.'\)/);
@@ -35,7 +39,7 @@ assert.match(index,/response\.status===404/);
 assert.match(sync,/if\(s\.gmailMessageId\)return false/);
 assert.match(sync,/findDraftForMessage\(subject,to,messageId\)/);
 
-assert.match(loader,/crm-open-tracking\.js\?v=20260923-3/);
+assert.match(loader,/crm-open-tracking\.js\?v=20260923-4/);
 assert.match(loader,/crm-email-sync\.js\?v=20260923-2/);
 
 console.log('open tracking and Gmail send consistency smoke test passed');
