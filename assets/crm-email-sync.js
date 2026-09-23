@@ -3,7 +3,7 @@
    Requires one-time Gmail read authorization in addition to the existing compose scope. */
 (function(){
   'use strict';
-  const SYNC_VERSION='2026-09-22-v1';
+  const SYNC_VERSION='2026-09-23-v2';
   const SYNC_INTERVAL_MS=5*60*1000;
   const GMAIL_SYNC_SCOPE='openid email https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.readonly';
   const KNOWN_IDS_KEY='clm.crm.gmailSentSyncIds.v1';
@@ -105,38 +105,53 @@
     if(!r.ok)throw new Error('Could not read sent message '+id+'.');
     return await r.json();
   }
-  function findDraftForMessage(subject,to){
+  function findDraftForMessage(subject,to,messageId){
+    const exactByMessage=messageId?(db?.drafts||[]).find(d=>d.gmailMessageId===messageId):null;
+    if(exactByMessage)return exactByMessage;
     const subjectKey=norm(subject);
     const tos=emailList(to);
     let candidates=(db?.drafts||[]).filter(d=>norm(d.subject)===subjectKey);
     if(candidates.length===1)return candidates[0];
     if(candidates.length>1){
-      const byRecipient=candidates.find(d=>emailList(d.recipientEmail).some(e=>tos.includes(e)));
-      if(byRecipient)return byRecipient;
-      return candidates[0];
+      const active=db?.activeDraftId?candidates.find(d=>d.id===db.activeDraftId):null;
+      if(active&&emailList(active.recipientEmail).some(e=>tos.includes(e)))return active;
+      const byRecipient=candidates.filter(d=>emailList(d.recipientEmail).some(e=>tos.includes(e)));
+      if(byRecipient.length)return byRecipient[byRecipient.length-1];
+      return candidates[candidates.length-1];
     }
     const brandCandidates=(db?.drafts||[]).filter(d=>{
       const b=norm(draftBrand(d));
       return b&&b.length>=4&&subjectKey.includes(b);
     });
     if(brandCandidates.length===1)return brandCandidates[0];
-    return brandCandidates.find(d=>emailList(d.recipientEmail).some(e=>tos.includes(e)))||brandCandidates[0]||null;
+    const activeBrand=db?.activeDraftId?brandCandidates.find(d=>d.id===db.activeDraftId):null;
+    if(activeBrand)return activeBrand;
+    const byRecipient=brandCandidates.filter(d=>emailList(d.recipientEmail).some(e=>tos.includes(e)));
+    return byRecipient[byRecipient.length-1]||brandCandidates[brandCandidates.length-1]||null;
   }
   function existingSubmissionForMessage(messageId,subject,date,to,draft){
     const subs=db?.submissions||[];
     let hit=subs.find(s=>s.gmailMessageId===messageId);
     if(hit)return hit;
+
+    // Reconcile only records that do not already belong to a different Gmail message.
+    // This prevents repeated sends with the same subject/recipient on the same day
+    // from overwriting an earlier submission record.
+    if(draft?.id){
+      hit=subs.find(s=>s.draftId===draft.id&&!s.gmailMessageId&&(!s.date||s.date===date));
+      if(hit)return hit;
+    }
+
     const sk=norm(subject), tos=emailList(to);
     hit=subs.find(s=>{
+      if(s.gmailMessageId)return false;
       const sameSubject=norm(s.subject)===sk;
       const sameDate=!s.date||s.date===date;
       const se=emailList([s.email,s.recipient].filter(Boolean).join(','));
       const emailOverlap=!se.length||!tos.length||se.some(e=>tos.includes(e));
       return sameSubject&&sameDate&&emailOverlap;
     });
-    if(hit)return hit;
-    if(draft?.id)return subs.find(s=>s.draftId===draft.id&&(!s.date||s.date===date))||null;
-    return null;
+    return hit||null;
   }
   function reconcileSentMessage(meta){
     const messageId=meta.id;
@@ -144,7 +159,7 @@
     if(!/model package|s\/s\s*2027|ss\s*2027/i.test(subject))return false;
     const to=header(meta,'To');
     const date=nyDateFromMs(meta.internalDate);
-    const draft=findDraftForMessage(subject,to);
+    const draft=findDraftForMessage(subject,to,messageId);
     const gmailUrl='https://mail.google.com/mail/u/?authuser='+encodeURIComponent(WORK_EMAIL)+'#sent/'+messageId;
     let sub=existingSubmissionForMessage(messageId,subject,date,to,draft);
     let changed=false;
