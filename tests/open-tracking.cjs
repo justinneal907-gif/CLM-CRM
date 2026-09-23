@@ -20,10 +20,12 @@ assert.match(tracker,/gmail\/v1\/users\/me\/drafts\/send/);
 assert.match(tracker,/openTrackingFirstDetectedAt/);
 assert.match(tracker,/sendTrackingId=randomHex/);
 assert.doesNotMatch(tracker,/await resetCounter\(d\.openTrackingId\)/);
-assert.match(tracker,/Tracked send failed\. Nothing was sent/);
+assert.match(tracker,/Gmail did not confirm whether this message sent/);\nassert.match(tracker,/send-uncertain/);
 assert.match(tracker,/if\(r\.status===401\)/);
 assert.match(tracker,/Create or update this package as a Work Gmail draft first/);
 assert.doesNotMatch(tracker,/if\(d\.submittedAt\)throw new Error\('This package is already marked as submitted\.'\)/);
+assert.match(tracker,/sameDraftWithoutMessage/);
+assert.match(tracker,/priorForDraft/);
 
 assert.match(index,/linkedDraftId/);
 assert.match(index,/method==='PUT'/);
