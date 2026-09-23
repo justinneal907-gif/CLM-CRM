@@ -190,10 +190,10 @@
   function mirrorToSubmissions(record){
     if(!record||typeof db==='undefined'||!db)return;
     (db.submissions||[]).forEach(function(sub){
-      const sameDraft=record.id&&sub.draftId===record.id;
       const sameMessage=record.gmailMessageId&&sub.gmailMessageId===record.gmailMessageId;
       const sameTracker=record.openTrackingId&&sub.openTrackingId===record.openTrackingId;
-      if(!sameDraft&&!sameMessage&&!sameTracker)return;
+      const sameDraftWithoutMessage=!record.gmailMessageId&&record.id&&sub.draftId===record.id&&!sub.gmailMessageId;
+      if(!sameMessage&&!sameTracker&&!sameDraftWithoutMessage)return;
       sub.openTrackingId=record.openTrackingId||sub.openTrackingId||'';
       sub.openTrackingState=record.openTrackingState||sub.openTrackingState||'';
       sub.openTrackingCount=Number(record.openTrackingCount||0);
@@ -425,8 +425,10 @@
     if(typeof db==='undefined'||!db)return;
     const date=nyDate();
     const gmailUrl=messageId?'https://mail.google.com/mail/u/?authuser='+encodeURIComponent(typeof WORK_EMAIL==='undefined'?'':WORK_EMAIL)+'#sent/'+messageId:'';
+    const priorForDraft=!!(d&&d.id&&(db.submissions||[]).some(function(x){return x.draftId===d.id&&x.gmailMessageId}));
     let sub=(db.submissions||[]).find(function(x){
-      return (messageId&&x.gmailMessageId===messageId)||(d&&d.id&&x.draftId===d.id&&x.date===date);
+      if(messageId&&x.gmailMessageId===messageId)return true;
+      return !!(d&&d.id&&x.draftId===d.id&&x.date===date&&!x.gmailMessageId);
     });
     if(!sub){
       let modelNames=[];
@@ -449,7 +451,9 @@
         source:'Work Gmail tracked send'
       };
       db.submissions.push(sub);
-      try{if(typeof autoFollowUpForSubmission==='function')autoFollowUpForSubmission(sub)}catch(err){}
+      if(!priorForDraft){
+        try{if(typeof autoFollowUpForSubmission==='function')autoFollowUpForSubmission(sub)}catch(err){}
+      }
     }
     Object.assign(sub,{
       gmailMessageId:messageId||sub.gmailMessageId||'',
