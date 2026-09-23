@@ -4,6 +4,8 @@
    reviewing the sender's draft does not intentionally trigger the counter. */
 (function(){
   'use strict';
+  if(window.__clmOpenTrackingLoaded)return;
+  window.__clmOpenTrackingLoaded=true;
 
   const TRACK_VERSION='2026-09-23-v5';
   const TRACK_BASE='https://countapi.mileshilliard.com/api/v1';
@@ -724,12 +726,14 @@
   function installButtons(){
     const panel=q('#gmailApiPanel .actions');
     if(!panel)return;
-    if(!q('#sendTrackedDraftBtn')){
-      const send=document.createElement('button');
-      send.type='button';
-      send.id='sendTrackedDraftBtn';
-      send.className='btn primary';
-      send.textContent='Send tracked draft';
+    let send=q('#sendTrackedDraftBtn');
+    if(!send){
+      send=document.createElement('button');
+      send.type='button';send.id='sendTrackedDraftBtn';send.className='btn primary';send.textContent='Send tracked draft';
+      panel.appendChild(send);
+    }
+    if(send.dataset.clmBound!=='1'){
+      send.dataset.clmBound='1';
       send.addEventListener('click',function(){
         if(send.disabled)return;
         const oldText=send.textContent;
@@ -751,42 +755,47 @@
           renderTrackerStatus();
         });
       });
-      panel.appendChild(send);
     }
-    if(!q('#enableOpenNotificationsBtn')){
-      const alerts=document.createElement('button');
-      alerts.type='button';
-      alerts.id='enableOpenNotificationsBtn';
-      alerts.className='btn';
-      alerts.textContent='Enable open alerts';
+
+    let alerts=q('#enableOpenNotificationsBtn');
+    if(!alerts){
+      alerts=document.createElement('button');
+      alerts.type='button';alerts.id='enableOpenNotificationsBtn';alerts.className='btn';alerts.textContent='Enable open alerts';
+      panel.appendChild(alerts);
+    }
+    if(alerts.dataset.clmBound!=='1'){
+      alerts.dataset.clmBound='1';
       alerts.addEventListener('click',function(){
         enableOpenNotifications().catch(function(err){
           console.error('Notification setup failed',err);
           try{window.alert(err&&err.message?err.message:String(err));}catch(alertErr){}
         });
       });
-      panel.appendChild(alerts);
     }
-    if(!q('#testOpenNotificationsBtn')){
-      const test=document.createElement('button');
-      test.type='button';
-      test.id='testOpenNotificationsBtn';
-      test.className='btn';
-      test.textContent='Test alert';
+
+    let test=q('#testOpenNotificationsBtn');
+    if(!test){
+      test=document.createElement('button');
+      test.type='button';test.id='testOpenNotificationsBtn';test.className='btn';test.textContent='Test alert';
+      panel.appendChild(test);
+    }
+    if(test.dataset.clmBound!=='1'){
+      test.dataset.clmBound='1';
       test.addEventListener('click',function(){testOpenNotification().catch(function(err){
         console.error('Notification test failed',err);
         if(typeof setStatus==='function')setStatus(err&&err.message?err.message:String(err));
       })});
-      panel.appendChild(test);
     }
-    if(!q('#checkOpenTrackingBtn')){
-      const check=document.createElement('button');
-      check.type='button';
-      check.id='checkOpenTrackingBtn';
-      check.className='btn';
-      check.textContent='Check opens now';
-      check.addEventListener('click',function(){checkOpens(true,true)});
+
+    let check=q('#checkOpenTrackingBtn');
+    if(!check){
+      check=document.createElement('button');
+      check.type='button';check.id='checkOpenTrackingBtn';check.className='btn';check.textContent='Check opens now';
       panel.appendChild(check);
+    }
+    if(check.dataset.clmBound!=='1'){
+      check.dataset.clmBound='1';
+      check.addEventListener('click',function(){checkOpens(true,true)});
     }
   }
   function startTimer(){
@@ -829,7 +838,17 @@
     });
   };
   window.clmCheckEmailOpens=function(){return checkOpens(true,true)};
+  window.clmEnableOpenNotifications=function(){return enableOpenNotifications()};
+  window.clmTestOpenNotification=function(){return testOpenNotification()};
 
-  if(window.__clmWorkspaceReady)init();
-  else window.addEventListener('clm:workspace-ready',init,{once:true});
+  function initWhenReady(attempt){
+    attempt=Number(attempt||0);
+    if(typeof db!=='undefined'&&db&&q('#gmailApiPanel')){
+      init();
+      return;
+    }
+    if(attempt<100)setTimeout(function(){initWhenReady(attempt+1)},100);
+    else console.error('CLM open tracking could not find a ready CRM workspace.');
+  }
+  initWhenReady(0);
 })();
