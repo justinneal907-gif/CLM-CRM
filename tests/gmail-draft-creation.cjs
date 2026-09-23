@@ -20,5 +20,20 @@ const ui=source.slice(source.indexOf('let gmailDraftCreationInProgress='),source
  const pending=ctx.openInWorkGmail();await ctx.openInWorkGmail();assert.equal(count,1);assert.equal(button.disabled,true);
  release({id:'d',message:{id:'m',threadId:'exact-thread'}});await pending;assert.equal(button.disabled,false);assert.match(feedback.at(-1)[1],/#drafts\/exact-thread$/);
  ctx.createFormattedWorkGmailDraft=async()=>{throw new Error('Permission denied')};ctx.console={error(){}};await ctx.openInWorkGmail();assert.match(feedback.at(-1)[0],/Permission denied/);assert.equal(feedback.at(-1)[2],true);assert.equal(button.disabled,false);
+ // Exercise the actual saved-package rendering path that runs before the Gmail API call.
+ const helpers=source.slice(source.indexOf('function castingContactParts('),source.indexOf('function renderDrafts(){'));
+ const saveStart=source.lastIndexOf('function saveDraft(){');
+ const saveSource=source.slice(saveStart,source.indexOf('function loadDraft(',saveStart));
+ Object.assign(ctx,{db:{draft:{recipientEmail:'test@example.com',subject:'Test'},drafts:[],contacts:[],submissions:[]},
+   normalizeName:s=>String(s||'').toLowerCase().trim(),esc:s=>String(s||''),
+   selectedModels:()=>[{name:'Test Model'}],nyDate:()=> '2026-09-23',uid:()=> 'test-draft',persistWorkspaceSafe:()=>true,
+   renderAll:()=>ctx.db.drafts.forEach(d=>ctx.draftCardHtml(d,true))});
+ vm.runInContext(helpers+'\n'+saveSource,ctx);
+ ctx.saveDraft(); // No notes/source: must evaluate the repeat-contact condition without throwing.
+ assert.equal(ctx.db.drafts.length,1);
+ assert.doesNotMatch(ctx.draftCardHtml(ctx.db.drafts[0]),/REPEAT CASTER/);
+ ctx.db.drafts.push({id:'second',recipientEmail:'test@example.com',company:'Second show'});
+ assert.match(ctx.draftCardHtml(ctx.db.drafts[0]),/REPEAT CASTER/);
+ assert.match(ctx.draftCardHtml(ctx.db.drafts[0]),/Second show/);
  console.log('Gmail draft creation passed: create, update, stale link, malformed response, permissions, duplicate clicks, direct link and visible errors.');
 })().catch(e=>{console.error(e);process.exitCode=1});
