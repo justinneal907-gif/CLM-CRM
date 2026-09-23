@@ -52,6 +52,16 @@ assert.match(index,/restoreWorkGmailSession/);
 assert.match(index,/startGmailSessionKeeper/);
 assert.match(index,/clm:workspace-ready/);
 assert.match(index,/gmail\.readonly/);
+assert.match(index,/sendTrackedDraftBtn/);
+assert.match(index,/testOpenNotificationsBtn/);
+assert.match(index,/clmReloadEmailRuntime/);
+assert.match(index,/__clmEmailSyncLoaded/);
+assert.match(index,/__clmOpenTrackingLoaded/);
 assert.doesNotMatch(sync,/initTokenClient/);
+assert.match(sync,/__clmEmailSyncLoaded/);
+assert.match(sync,/initWhenReady/);
+assert.match(tracker,/__clmOpenTrackingLoaded/);
+assert.match(tracker,/clmTestOpenNotification/);
+assert.match(tracker,/initWhenReady/);
 
 console.log('open tracking and Gmail send consistency smoke test passed');
