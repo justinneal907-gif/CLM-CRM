@@ -15,6 +15,9 @@ assert.match(tracker,/data-clm-open-track/);
 assert.match(tracker,/countapi\.mileshilliard\.com\/api\/v1/);
 assert.match(tracker,/gmail\/v1\/users\/me\/drafts\/send/);
 assert.match(tracker,/openTrackingFirstDetectedAt/);
-assert.match(loader,/crm-open-tracking\.js\?v=20260923-1/);
+assert.match(tracker,/sendTrackingId=randomHex/);
+assert.doesNotMatch(tracker,/await resetCounter\(d\.openTrackingId\)/);
+assert.match(tracker,/Tracked send failed\. Nothing was sent/);
+assert.match(loader,/crm-open-tracking\.js\?v=20260923-2/);
 
 console.log('open tracking module smoke test passed');

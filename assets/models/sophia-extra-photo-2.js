@@ -5,7 +5,7 @@ window.addEventListener('load',()=>{
   const loadOpenTracking=()=>{
     if(document.querySelector('script[data-clm-open-tracking]'))return;
     const t=document.createElement('script');
-    t.src='assets/crm-open-tracking.js?v=20260923-1';
+    t.src='assets/crm-open-tracking.js?v=20260923-2';
     t.dataset.clmOpenTracking='1';
     document.body.appendChild(t);
   };
