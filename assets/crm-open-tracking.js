@@ -102,7 +102,10 @@
   async function testOpenNotification(){
     if(notificationPermission()!=='granted'){
       await enableOpenNotifications();
-      if(notificationPermission()!=='granted')return;
+      if(notificationPermission()!=='granted'){
+        if(typeof setStatus==='function')setStatus(notificationPermission()==='denied'?'Browser notifications are blocked for this site. Re-enable them in browser site settings.':'Browser notifications are not available.');
+        return;
+      }
     }
     const ok=await showBrowserNotification('CLM notification test',{
       body:'Browser notifications are working for this CRM.',
@@ -356,6 +359,9 @@
       else if(x.waiting)el.innerHTML='<b>Open tracking:</b> '+x.waiting+' tracked email'+(x.waiting===1?'':'s')+' awaiting a signal.';
       else if(x.ready)el.innerHTML='<b>Open tracking:</b> '+x.ready+' Gmail draft'+(x.ready===1?'':'s')+' ready for tracked send.';
       else el.innerHTML='<b>Open tracking:</b> ready for new CRM Gmail drafts.';
+      const permission=notificationPermission();
+      const alertText=permission==='granted'?'on':permission==='denied'?'blocked':permission==='default'?'not enabled':permission==='insecure'?'requires HTTPS':'unsupported';
+      el.innerHTML+='<br><b>Browser alerts:</b> '+alertText+'.';
     }
 
     const scope=q('#draftScopeBanner');
@@ -797,6 +803,7 @@
       installRenderHook();
       installButtons();
       startTimer();
+      if(notificationPermission()==='granted')notificationRegistration();
       db.settings=Object.assign({},db.settings||{},{openTrackingVersion:TRACK_VERSION});
       if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
       renderTrackerStatus();
