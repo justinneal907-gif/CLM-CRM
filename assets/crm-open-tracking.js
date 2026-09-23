@@ -5,7 +5,7 @@
 (function(){
   'use strict';
 
-  const TRACK_VERSION='2026-09-23-v1';
+  const TRACK_VERSION='2026-09-23-v2';
   const TRACK_BASE='https://countapi.mileshilliard.com/api/v1';
   const TRACK_POLL_MS=5*60*1000;
   let trackTimer=null;
@@ -190,10 +190,10 @@
   function mirrorToSubmissions(record){
     if(!record||typeof db==='undefined'||!db)return;
     (db.submissions||[]).forEach(function(sub){
-      const sameDraft=record.id&&sub.draftId===record.id;
       const sameMessage=record.gmailMessageId&&sub.gmailMessageId===record.gmailMessageId;
       const sameTracker=record.openTrackingId&&sub.openTrackingId===record.openTrackingId;
-      if(!sameDraft&&!sameMessage&&!sameTracker)return;
+      const sameDraftWithoutMessage=!record.gmailMessageId&&record.id&&sub.draftId===record.id&&!sub.gmailMessageId;
+      if(!sameMessage&&!sameTracker&&!sameDraftWithoutMessage)return;
       sub.openTrackingId=record.openTrackingId||sub.openTrackingId||'';
       sub.openTrackingState=record.openTrackingState||sub.openTrackingState||'';
       sub.openTrackingCount=Number(record.openTrackingCount||0);
@@ -242,7 +242,8 @@
     if(!record||!record.openTrackingId)return '';
     if(Number(record.openTrackingCount||0)>0)return '<span class="pill" title="A remote image-load signal was detected. Privacy features can create false positives.">OPEN SIGNAL</span>';
     if(record.openTrackingState==='armed')return '<span class="pill" title="Open tracking was armed when this email was sent.">TRACKING</span>';
-    if(record.openTrackingState==='ready'&&record.submittedAt)return '<span class="pill" title="This draft was sent without using the tracked-send action.">NOT TRACKED</span>';
+    if(record.openTrackingState==='send-uncertain')return '<span class="pill" title="Gmail did not confirm the send result. Check Sent Mail before retrying.">SEND UNCERTAIN</span>';
+    if(record.openTrackingState==='ready'&&record.submittedAt&&!record.gmailDraftId)return '<span class="pill" title="This draft was sent without using the tracked-send action.">NOT TRACKED</span>';
     if(record.openTrackingState==='ready'&&record.gmailDraftId)return '<span class="pill" title="Review in Gmail, then use Send tracked draft in the CRM.">TRACKING READY</span>';
     return '';
   }
@@ -286,7 +287,9 @@
           row.innerHTML='<b>Open signal detected.</b>'+(detected?' First detected '+safe(detected)+'.':'')+' Image-load signals: '+count+'.';
         }else if(d.openTrackingState==='armed'){
           row.innerHTML='<b>Open tracking active.</b> No image-load signal detected yet.';
-        }else if(d.openTrackingState==='ready'&&d.submittedAt){
+        }else if(d.openTrackingState==='send-uncertain'){
+          row.innerHTML='<b>Send result uncertain.</b> Check Work Gmail Sent Mail before retrying. If it is not there, use <b>Create formatted Gmail draft</b> again to relink/retry safely.';
+        }else if(d.openTrackingState==='ready'&&d.submittedAt&&!d.gmailDraftId){
           row.innerHTML='<b>No open tracking for this sent email.</b> It was sent directly from Gmail instead of through <b>Send tracked draft</b>.';
         }else if(d.openTrackingState==='ready'&&d.gmailDraftId){
           row.innerHTML='<b>Tracking ready.</b> Review the Gmail draft, return here, then click <b>Send tracked draft</b>.';
@@ -301,8 +304,8 @@
     const send=q('#sendTrackedDraftBtn');
     const check=q('#checkOpenTrackingBtn');
     if(send){
-      send.disabled=!(d&&d.gmailDraftId&&d.openTrackingId&&!d.submittedAt);
-      send.title=send.disabled?'Create the Gmail draft from this CRM package first.':'Send the reviewed Gmail draft immediately with open tracking armed.';
+      send.disabled=!(d&&d.gmailDraftId&&d.openTrackingId&&d.openTrackingState!=='send-uncertain');
+      send.title=d&&d.openTrackingState==='send-uncertain'?'Check Work Gmail Sent Mail before retrying.':(send.disabled?'Create or update the Gmail draft from this CRM package first.':'Send the currently linked Gmail draft immediately with open tracking armed.');
     }
     if(check)check.disabled=!trackingRecords(true).length;
   }
@@ -356,29 +359,56 @@
     }
   }
 
-  async function loadGmailDraftRaw(token,id){
+  async function gmailTrackedFetch(url,options){
+    if(typeof gmailToken!=='function')throw new Error('Reconnect Work Gmail before sending.');
+    let token=await gmailToken();
+    const request=async function(){
+      const opts=Object.assign({},options||{});
+      opts.headers=Object.assign({},opts.headers||{},{Authorization:'Bearer '+token});
+      try{return await fetch(url,opts)}
+      catch(err){
+        const e=new Error('Network error while contacting Gmail. Check your connection and try again.');
+        e.cause=err;
+        e.clmNetwork=true;
+        throw e;
+      }
+    };
+    let r=await request();
+    if(r.status===401){
+      try{
+        gmailAccessToken='';
+        gmailTokenExpiresAt=0;
+        token=await connectWorkGmailApi(false);
+        r=await request();
+      }catch(err){
+        throw new Error('Work Gmail authorization expired. Reconnect Work Gmail and try again.');
+      }
+    }
+    return r;
+  }
+  async function loadGmailDraftRaw(id){
     const u=new URL('https://gmail.googleapis.com/gmail/v1/users/me/drafts/'+encodeURIComponent(id));
     u.searchParams.set('format','raw');
-    const r=await fetch(u,{headers:{Authorization:'Bearer '+token}});
+    const r=await gmailTrackedFetch(u.toString(),{});
     const data=await r.json().catch(function(){return {}});
-    if(!r.ok)throw new Error((data.error&&data.error.message)||'Could not load the Gmail draft. It may already have been sent or deleted.');
+    if(!r.ok)throw new Error((data.error&&data.error.message)||'Could not load the linked Gmail draft. It may already have been sent or deleted.');
     if(!data.message||!data.message.raw)throw new Error('Gmail returned the draft without a message body.');
     return data.message.raw;
   }
-  async function updateGmailDraft(token,id,raw){
-    const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts/'+encodeURIComponent(id),{
+  async function updateGmailDraft(id,raw){
+    const r=await gmailTrackedFetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts/'+encodeURIComponent(id),{
       method:'PUT',
-      headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({id:id,message:{raw:raw}})
     });
     const data=await r.json().catch(function(){return {}});
-    if(!r.ok)throw new Error((data.error&&data.error.message)||'Could not arm open tracking on the Gmail draft.');
+    if(!r.ok)throw new Error((data.error&&data.error.message)||'Could not prepare the linked Gmail draft for sending.');
     return data;
   }
-  async function sendGmailDraft(token,id){
-    const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts/send',{
+  async function sendGmailDraft(id){
+    const r=await gmailTrackedFetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts/send',{
       method:'POST',
-      headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({id:id})
     });
     const data=await r.json().catch(function(){return {}});
@@ -398,8 +428,10 @@
     if(typeof db==='undefined'||!db)return;
     const date=nyDate();
     const gmailUrl=messageId?'https://mail.google.com/mail/u/?authuser='+encodeURIComponent(typeof WORK_EMAIL==='undefined'?'':WORK_EMAIL)+'#sent/'+messageId:'';
+    const priorForDraft=!!(d&&d.id&&(db.submissions||[]).some(function(x){return x.draftId===d.id&&x.gmailMessageId}));
     let sub=(db.submissions||[]).find(function(x){
-      return (messageId&&x.gmailMessageId===messageId)||(d&&d.id&&x.draftId===d.id&&x.date===date);
+      if(messageId&&x.gmailMessageId===messageId)return true;
+      return !!(d&&d.id&&x.draftId===d.id&&x.date===date&&!x.gmailMessageId);
     });
     if(!sub){
       let modelNames=[];
@@ -422,7 +454,9 @@
         source:'Work Gmail tracked send'
       };
       db.submissions.push(sub);
-      try{if(typeof autoFollowUpForSubmission==='function')autoFollowUpForSubmission(sub)}catch(err){}
+      if(!priorForDraft){
+        try{if(typeof autoFollowUpForSubmission==='function')autoFollowUpForSubmission(sub)}catch(err){}
+      }
     }
     Object.assign(sub,{
       gmailMessageId:messageId||sub.gmailMessageId||'',
@@ -438,17 +472,22 @@
 
   async function sendTrackedCurrentDraft(){
     const d=currentDraft();
-    if(!d||!d.gmailDraftId||!d.openTrackingId)throw new Error('Create this package as a Work Gmail draft first.');
-    if(d.submittedAt)throw new Error('This package is already marked as submitted.');
-    if(typeof gmailToken!=='function')throw new Error('Reconnect Work Gmail before sending.');
-    const token=await gmailToken();
-    let encoded=await loadGmailDraftRaw(token,d.gmailDraftId);
+    if(!d||!d.gmailDraftId||!d.openTrackingId)throw new Error('Create or update this package as a Work Gmail draft first.');
+    const linkedDraftId=d.gmailDraftId;
+    if(typeof setStatus==='function')setStatus('Loading the linked Gmail draft…');
+    let encoded=await loadGmailDraftRaw(linkedDraftId);
     let mime=base64UrlToUtf8(encoded);
     const to=topHeader(mime,'To')||d.recipientEmail||'';
-    const subject=d.subject||topHeader(mime,'Subject')||'Model package';
-    const okay=window.confirm('Send this tracked Gmail draft now?\n\nTo: '+to+'\nSubject: '+subject+'\n\nThis sends immediately. Open tracking is an approximate image-load signal, not a guaranteed human read.');
+    const subject=topHeader(mime,'Subject')||d.subject||'Model package';
+    let repeat='';
+    if(d.submittedAt){
+      let prior='';
+      try{prior=new Date(d.submittedAt).toLocaleString()}catch(err){}
+      repeat='\n\nThis CRM package has a previous submission'+(prior?' from '+prior:'')+'. This will send another email.';
+    }
+    const okay=window.confirm('Send this tracked Gmail draft now?\n\nTo: '+to+'\nSubject: '+subject+repeat+'\n\nThis sends immediately. Open tracking is an approximate image-load signal, not a guaranteed human read.');
     if(!okay)return;
-    if(typeof setStatus==='function')setStatus('Arming open tracking and sending the reviewed Gmail draft…');
+
     const sendTrackingId=randomHex(14);
     applyCurrentPatch({
       openTrackingId:sendTrackingId,
@@ -461,35 +500,52 @@
     mime=setTopHeader(mime,'X-CLM-Tracking-State','armed');
     mime=injectPixel(mime,sendTrackingId);
     encoded=utf8ToBase64Url(mime);
-    await updateGmailDraft(token,d.gmailDraftId,encoded);
-    const sent=await sendGmailDraft(token,d.gmailDraftId);
-    const messageId=(sent&&sent.id)||(sent&&sent.message&&sent.message.id)||'';
-    const sentAt=nowIso();
-    const gmailUrl=messageId?'https://mail.google.com/mail/u/?authuser='+encodeURIComponent(typeof WORK_EMAIL==='undefined'?'':WORK_EMAIL)+'#sent/'+messageId:'';
-    applyCurrentPatch({
-      gmailDraftId:'',
-      gmailMessageId:messageId,
-      gmailUrl:gmailUrl,
-      submittedAt:sentAt,
-      submittedDate:nyDate(),
-      submissionStatus:'Submitted',
-      openTrackingId:sendTrackingId,
-      openTrackingState:'armed',
-      openTrackingArmedAt:sentAt,
-      openTrackingCount:0,
-      openTrackingFirstDetectedAt:'',
-      openTrackingLastCheckedAt:''
-    });
-    const updated=currentDraft();
-    recordTrackedSubmission(updated,messageId,to,subject);
-    db.settings=Object.assign({},db.settings||{},{openTrackingVersion:TRACK_VERSION});
-    if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
-    if(typeof renderAll==='function')renderAll();
-    renderTrackerStatus();
-    if(typeof setStatus==='function')setStatus('Tracked email sent successfully. The CRM will check for open signals while it is open.');
-    try{window.alert('Tracked email sent successfully to '+to+'.')}catch(err){}
-    if(typeof window.clmSyncSentMail==='function')setTimeout(function(){window.clmSyncSentMail()},1500);
-    setTimeout(function(){checkOpens(false,false)},45000);
+
+    let phase='prepare';
+    try{
+      if(typeof setStatus==='function')setStatus('Preparing the linked Gmail draft…');
+      await updateGmailDraft(linkedDraftId,encoded);
+      phase='send';
+      if(typeof setStatus==='function')setStatus('Sending through Work Gmail…');
+      const sent=await sendGmailDraft(linkedDraftId);
+      const messageId=(sent&&sent.id)||(sent&&sent.message&&sent.message.id)||'';
+      const sentAt=nowIso();
+      const gmailUrl=messageId?'https://mail.google.com/mail/u/?authuser='+encodeURIComponent(typeof WORK_EMAIL==='undefined'?'':WORK_EMAIL)+'#sent/'+messageId:'';
+      applyCurrentPatch({
+        gmailDraftId:'',
+        gmailMessageId:messageId,
+        gmailUrl:gmailUrl,
+        submittedAt:sentAt,
+        submittedDate:nyDate(),
+        submissionStatus:'Submitted',
+        openTrackingId:sendTrackingId,
+        openTrackingState:'armed',
+        openTrackingArmedAt:sentAt,
+        openTrackingCount:0,
+        openTrackingFirstDetectedAt:'',
+        openTrackingLastCheckedAt:''
+      });
+      const updated=currentDraft();
+      recordTrackedSubmission(updated,messageId,to,subject);
+      db.settings=Object.assign({},db.settings||{},{openTrackingVersion:TRACK_VERSION});
+      if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+      if(typeof renderAll==='function')renderAll();
+      renderTrackerStatus();
+      if(typeof setStatus==='function')setStatus('Tracked email sent successfully. The CRM will check for open signals while it is open.');
+      try{window.alert('Tracked email sent successfully to '+to+'.')}catch(err){}
+      if(typeof window.clmSyncSentMail==='function')setTimeout(function(){window.clmSyncSentMail()},1500);
+      setTimeout(function(){checkOpens(false,false)},45000);
+    }catch(err){
+      if(phase==='send'){
+        err.clmSendUncertain=true;
+        applyCurrentPatch({openTrackingState:'send-uncertain'});
+      }else{
+        applyCurrentPatch({openTrackingState:'ready'});
+      }
+      if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+      renderTrackerStatus();
+      throw err;
+    }
   }
 
   function installDraftCreationHook(){
@@ -500,6 +556,7 @@
       const id=ensureTrackingId();
       applyCurrentPatch({
         gmailDraftId:(result&&result.id)||'',
+        gmailDraftMessageId:(result&&result.message&&result.message.id)||'',
         openTrackingId:id,
         openTrackingState:'ready',
         openTrackingCreatedAt:nowIso(),
@@ -559,8 +616,13 @@
         sendTrackedCurrentDraft().catch(function(err){
           console.error('Tracked send failed',err);
           const message=err&&err.message?err.message:String(err);
-          if(typeof setStatus==='function')setStatus('Tracked send failed: '+message);
-          try{window.alert('Tracked send failed. Nothing was sent.\n\n'+message);}catch(alertErr){}
+          if(err&&err.clmSendUncertain){
+            if(typeof setStatus==='function')setStatus('Gmail did not confirm the send. Check Sent Mail before retrying.');
+            try{window.alert('Gmail did not confirm whether this message sent. Check Work Gmail Sent Mail before retrying.\n\n'+message);}catch(alertErr){}
+          }else{
+            if(typeof setStatus==='function')setStatus('Tracked send failed before sending: '+message);
+            try{window.alert('Tracked send failed before Gmail sent the message.\n\n'+message);}catch(alertErr){}
+          }
           renderTrackerStatus();
         }).finally(function(){
           send.textContent=oldText;
@@ -603,8 +665,13 @@
     return sendTrackedCurrentDraft().catch(function(err){
       console.error(err);
       const message=err&&err.message?err.message:String(err);
-      if(typeof setStatus==='function')setStatus('Tracked send failed: '+message);
-      try{window.alert('Tracked send failed. Nothing was sent.\n\n'+message);}catch(alertErr){}
+      if(err&&err.clmSendUncertain){
+        if(typeof setStatus==='function')setStatus('Gmail did not confirm the send. Check Sent Mail before retrying.');
+        try{window.alert('Gmail did not confirm whether this message sent. Check Work Gmail Sent Mail before retrying.\n\n'+message);}catch(alertErr){}
+      }else{
+        if(typeof setStatus==='function')setStatus('Tracked send failed before sending: '+message);
+        try{window.alert('Tracked send failed before Gmail sent the message.\n\n'+message);}catch(alertErr){}
+      }
       renderTrackerStatus();
       throw err;
     });

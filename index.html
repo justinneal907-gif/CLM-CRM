@@ -1414,24 +1414,41 @@ async function createFormattedWorkGmailDraft(){
   const subject=$('#emailSubject').value.trim();
   if(!to)throw new Error('Add a recipient email first.');
   const html=emailHtml();
-  let token=await gmailToken();
   const raw=buildGmailDraftRaw(to,subject,html);
-  let response=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts',{
-    method:'POST',
-    headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
-    body:JSON.stringify({message:{raw}})
-  });
-  if(response.status===401){
-    gmailAccessToken='';gmailTokenExpiresAt=0;
-    token=await connectWorkGmailApi(false);
-    response=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts',{
-      method:'POST',
+  const active=db.activeDraftId?(db.drafts||[]).find(x=>x.id===db.activeDraftId):null;
+  const linkedDraftId=String(active?.gmailDraftId||db.draft?.gmailDraftId||'').trim();
+
+  async function writeDraft(method,url){
+    let token=await gmailToken();
+    let response=await fetch(url,{
+      method,
       headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
-      body:JSON.stringify({message:{raw}})
+      body:JSON.stringify(linkedDraftId&&method==='PUT'?{id:linkedDraftId,message:{raw}}:{message:{raw}})
     });
+    if(response.status===401){
+      gmailAccessToken='';gmailTokenExpiresAt=0;
+      token=await connectWorkGmailApi(false);
+      response=await fetch(url,{
+        method,
+        headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+        body:JSON.stringify(linkedDraftId&&method==='PUT'?{id:linkedDraftId,message:{raw}}:{message:{raw}})
+      });
+    }
+    return response;
   }
+
+  let response;
+  if(linkedDraftId){
+    response=await writeDraft('PUT','https://gmail.googleapis.com/gmail/v1/users/me/drafts/'+encodeURIComponent(linkedDraftId));
+    if(response.status===404){
+      response=await writeDraft('POST','https://gmail.googleapis.com/gmail/v1/users/me/drafts');
+    }
+  }else{
+    response=await writeDraft('POST','https://gmail.googleapis.com/gmail/v1/users/me/drafts');
+  }
+
   const result=await response.json().catch(()=>({}));
-  if(!response.ok)throw new Error(result?.error?.message||'Gmail could not create the draft.');
+  if(!response.ok)throw new Error(result?.error?.message||'Gmail could not create or update the draft.');
   return result;
 }
 async function openInWorkGmail(){
