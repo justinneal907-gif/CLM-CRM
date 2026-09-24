@@ -2196,6 +2196,7 @@ $('#suggestLookBtn')?.closest('.field')?.remove();
       setRuntimeStatus('Loading Gmail sync and open-tracking tools…');
       await loadScript('clm-email-sync-runtime','assets/crm-email-sync.js?v=20260924-1','__clmEmailSyncLoaded');
       await loadScript('clm-open-tracking-runtime','assets/crm-open-tracking.js?v=20260924-11','__clmOpenTrackingLoaded');
+      await loadScript('clm-email-intelligence-runtime','assets/crm-email-intelligence.js?v=20260924-1','__clmEmailIntelligenceLoaded');
       await loadScript('clm-model-signals-core','assets/model-signals-core.js?v=20260923-1','CLMModelSignals');
       await loadScript('clm-model-signals-runtime','assets/crm-model-signals.js?v=20260923-1','__clmModelSignalsLoaded');
       setTimeout(()=>{
