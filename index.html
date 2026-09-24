@@ -1870,7 +1870,7 @@ function emailHtml(){
   const extra=!customFollowUp&&d.purpose!=='submission'&&d.brief?`<br><div>${esc(d.brief).replace(/\n/g,'<br>')}</div>`:'';
   const more=(d.purpose==='submission'||!picked.length)?'':tone.tone==='personal'?`More model options <a href="https://canva.link/hkqja7ybl587pm8" style="color:#4285f4" target="_blank">HERE</a> if helpful.`:`Please see additional model suggestions <a href="https://canva.link/hkqja7ybl587pm8" style="color:#4285f4" target="_blank">HERE</a>.`;
   const modelSection=blocks||(d.purpose==='followup'?'':'<div>[Select one or more models]</div>');
-  const close=tone.tone==='personal'?'Best,':'Thank you,';
+  const close=String(activeRecord?.signatureClose||db.draft?.signatureClose||'').trim()||(tone.tone==='personal'?'Best,':'Thank you,');
   return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000"><div>${greeting}</div><br><div>${lead}</div>${extra}<br>${modelSection}${more?`<div style="margin:0 0 24px">${more}</div>`:''}<div>${close}</div><div>Justin</div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
 }
 
@@ -2194,7 +2194,7 @@ $('#suggestLookBtn')?.closest('.field')?.remove();
   async function loadCrmRuntime(){
     try{
       setRuntimeStatus('Loading Gmail sync and open-tracking tools…');
-      await loadScript('clm-email-sync-runtime','assets/crm-email-sync.js?v=20260924-1','__clmEmailSyncLoaded');
+      await loadScript('clm-email-sync-runtime','assets/crm-email-sync.js?v=20260924-2','__clmEmailSyncLoaded');
       await loadScript('clm-open-tracking-runtime','assets/crm-open-tracking.js?v=20260924-12','__clmOpenTrackingLoaded');
       await loadScript('clm-response-time-runtime','assets/crm-response-time.js?v=20260924-1','__clmResponseTimeLoaded');
       await loadScript('clm-model-signals-core','assets/model-signals-core.js?v=20260923-1','CLMModelSignals');
