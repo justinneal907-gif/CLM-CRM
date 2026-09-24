@@ -1,0 +1,28 @@
+name: Sync coworker website roster
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 10 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add new public website models
+        run: python scripts/sync_coworker_roster.py
+      - name: Validate restricted roster JavaScript
+        run: node --check package-app/roster-updates.js
+      - name: Commit roster-only update
+        run: |
+          if git diff --quiet -- package-app/roster-updates.js; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-app/roster-updates.js
+          git commit -m "Sync coworker website roster"
+          git pull --rebase origin main
+          git push
