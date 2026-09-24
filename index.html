@@ -976,17 +976,30 @@ const SOPHIA_PACKAGE_PHOTOS=[
   ...(window.SOPHIA_EXTRA_PHOTO_1?[window.SOPHIA_EXTRA_PHOTO_1]:[]),
   ...(window.SOPHIA_EXTRA_PHOTO_2?[window.SOPHIA_EXTRA_PHOTO_2]:[])
 ];
-function addSophiaToDraftRecord(record){
+function stripLegacySophiaAutoAdd(record){
   if(!record||typeof record!=='object')return record;
   const out={...record};
-  out.modelIds=[...new Set([...(Array.isArray(out.modelIds)?out.modelIds:[]),SOPHIA_ALL_DRAFTS_ID])];
-  if(Array.isArray(out.models)&&!out.models.some(n=>normalizeName(n)==='sophia pippen'))out.models=[...out.models,'Sophia Pippen'];
-  if(Array.isArray(out.modelNames)&&!out.modelNames.some(n=>normalizeName(n)==='sophia pippen'))out.modelNames=[...out.modelNames,'Sophia Pippen'];
-  out.photoSelections={...(out.photoSelections||{})};if(!Object.prototype.hasOwnProperty.call(out.photoSelections,SOPHIA_ALL_DRAFTS_ID))out.photoSelections[SOPHIA_ALL_DRAFTS_ID]=SOPHIA_PACKAGE_PHOTOS[0];
+  const isSophiaName=v=>normalizeName(v)==='sophia pippen';
+  if(Array.isArray(out.modelIds))out.modelIds=out.modelIds.filter(id=>id!==SOPHIA_ALL_DRAFTS_ID);
+  if(Array.isArray(out.models))out.models=out.models.filter(name=>!isSophiaName(name));
+  if(Array.isArray(out.modelNames))out.modelNames=out.modelNames.filter(name=>!isSophiaName(name));
+  if(out.photoSelections&&typeof out.photoSelections==='object'){
+    out.photoSelections={...out.photoSelections};
+    delete out.photoSelections[SOPHIA_ALL_DRAFTS_ID];
+  }
+  if(out.packageDepthReview&&typeof out.packageDepthReview==='object'){
+    const review={...out.packageDepthReview};
+    if(Array.isArray(review.addedModels))review.addedModels=review.addedModels.filter(name=>!isSophiaName(name));
+    if(review.reasons&&typeof review.reasons==='object'){
+      review.reasons={...review.reasons};
+      delete review.reasons['Sophia Pippen'];delete review.reasons.Sophia;
+    }
+    out.packageDepthReview=review;
+  }
   out.html='';
   return out;
 }
-function addSophiaToAllDrafts(data){
+function maintainSophiaProfileWithoutAutoAdd(data){
   const model=(data.models||[]).find(m=>m.id===SOPHIA_ALL_DRAFTS_ID||normalizeName(m.name)==='sophia pippen');
   if(model){
     model.photo=SOPHIA_PACKAGE_PHOTOS[0];
@@ -1000,10 +1013,18 @@ function addSophiaToAllDrafts(data){
   const merged=[...current];
   SOPHIA_PACKAGE_PHOTOS.forEach((url,i)=>{if(!urls.has(url))merged.push({url,label:i<2?`Sophia Pippen main photo ${i+1}`:`Sophia Pippen additional photo ${i-1}`})});
   data.photoLibrary[SOPHIA_ALL_DRAFTS_ID]=merged;
-  data.drafts=(data.drafts||[]).map(addSophiaToDraftRecord);
-  data.draft=addSophiaToDraftRecord(data.draft||{});
-  data.selected=[...new Set([...(Array.isArray(data.selected)?data.selected:[]),SOPHIA_ALL_DRAFTS_ID])];
-  data.recovery={...(data.recovery||{}),sophiaAllDraftsVersion:1,sophiaAllDraftsOn:'2026-09-17'};
+
+  // The Sep 17 build forced Sophia into every package on each load. Clean that
+  // legacy injection once, then leave future/manual Sophia selections untouched.
+  const legacyInjected=Number(data.recovery?.sophiaAllDraftsVersion||0)>0;
+  const alreadyCleaned=Number(data.recovery?.sophiaAutoAddDisabledVersion||0)>0;
+  if(legacyInjected&&!alreadyCleaned){
+    data.drafts=(data.drafts||[]).map(stripLegacySophiaAutoAdd);
+    data.draft=stripLegacySophiaAutoAdd(data.draft||{});
+    data.selected=(data.selected||[]).filter(id=>id!==SOPHIA_ALL_DRAFTS_ID);
+    if(data.draftPhotoSelections&&typeof data.draftPhotoSelections==='object')delete data.draftPhotoSelections[SOPHIA_ALL_DRAFTS_ID];
+  }
+  data.recovery={...(data.recovery||{}),sophiaAutoAddDisabledVersion:1,sophiaAutoAddDisabledOn:'2026-09-24'};
   return data;
 }
 function modelDraftPhotosHtml(m){
@@ -1012,7 +1033,7 @@ function modelDraftPhotosHtml(m){
 }
 
 function mergeContacts(recovered,current){const contacts=(current||[]).map(c=>({...c}));for(const c of (recovered||[])){const email=String(c.email||'').trim().toLowerCase();if(!contacts.some(existing=>(c.id&&existing.id===c.id)||(email&&String(existing.email||'').trim().toLowerCase()===email)))contacts.push({...c})}return contacts}
-function applyRecovered(data){const incoming=data||{};data={...structuredClone(seed),...incoming};data.settings={...structuredClone(seed.settings),...(incoming.settings||{})};data.draft={...structuredClone(seed.draft),...(incoming.draft||{})};data.activeDraftId=incoming.activeDraftId||data.activeDraftId||'';data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>applyModelIdentity({...m,availabilityStatus:m.availabilityStatus||'Unknown',statusFrom:m.statusFrom||'',statusTo:m.statusTo||'',holdProject:m.holdProject||'',availabilityNotes:m.availabilityNotes||'',focusRoster:typeof m.focusRoster==='boolean'?m.focusRoster:FOCUS_ROSTER_NAMES.has(m.name)}));const parisDrafts=parisPostDiorDrafts(data.models);data.contacts=mergeContacts([...ADDITIONAL_CRM_CONTACTS_2026_09_24,...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS],data.contacts||[]).map(c=>({...c,relationship:c.relationship||'Developing',preferredNiches:c.preferredNiches||''}));data.submissions=mergeRecovered([...RECOVERED_SUBMISSIONS,...WORK_GMAIL_SUBMISSIONS],data.submissions||[]).map(normalizeRecordModelNames);data.drafts=mergeRecovered([...ADDITIONAL_CRM_DRAFTS_2026_09_24,...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS,...parisDrafts],data.drafts||[]).map(normalizeRecordModelNames);data=applyMilanPostEtroCastingContacts(data);data.bookings=(data.bookings||[]).map(normalizeRecordModelNames);data.recovery={...(data.recovery||{}),gmailRecoveredOn:'2026-09-14',submissionCount:RECOVERED_SUBMISSIONS.length,draftCount:RECOVERED_DRAFTS.length,tasksRecovered:0,rosterCheckedOn:'2026-09-14',supplementalModels:['Sophia Pippen'],newModels:['Anhelena','Bianca'],nicheSystemVersion:2,nicheTaxonomy:'standard-no-specialty-story',workflowSystemVersion:3,workGmail:WORK_EMAIL,workGmailSyncedOn:'2026-09-14',workGmailSubmissionCount:WORK_GMAIL_SUBMISSIONS.length,milanFirstDayDraftsAddedOn:'2026-09-16',milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,milanRestDraftsAddedOn:'2026-09-16',milanRestDraftCount:MILAN_REST_DRAFTS.length,parisPostDiorDraftsAddedOn:'2026-09-19',parisPostDiorDraftCount:parisDrafts.length,modelIdentityUpdatedOn:'2026-09-16',modelAppearanceReviewedOn:'2026-09-16'};return applyVerifiedCastingEmailDirectory(applyCameliaGlobalDraftRemoval(applyEuropeNoTravelRemovals(applyParisPostCarvenCastingReview(applyPhotoManagement(addSophiaToAllDrafts(removeEm0FromDrafts(repairParisSS27Packages(applySophiaDescription(applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data)))))))))))))}
+function applyRecovered(data){const incoming=data||{};data={...structuredClone(seed),...incoming};data.settings={...structuredClone(seed.settings),...(incoming.settings||{})};data.draft={...structuredClone(seed.draft),...(incoming.draft||{})};data.activeDraftId=incoming.activeDraftId||data.activeDraftId||'';data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>applyModelIdentity({...m,availabilityStatus:m.availabilityStatus||'Unknown',statusFrom:m.statusFrom||'',statusTo:m.statusTo||'',holdProject:m.holdProject||'',availabilityNotes:m.availabilityNotes||'',focusRoster:typeof m.focusRoster==='boolean'?m.focusRoster:FOCUS_ROSTER_NAMES.has(m.name)}));const parisDrafts=parisPostDiorDrafts(data.models);data.contacts=mergeContacts([...ADDITIONAL_CRM_CONTACTS_2026_09_24,...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS],data.contacts||[]).map(c=>({...c,relationship:c.relationship||'Developing',preferredNiches:c.preferredNiches||''}));data.submissions=mergeRecovered([...RECOVERED_SUBMISSIONS,...WORK_GMAIL_SUBMISSIONS],data.submissions||[]).map(normalizeRecordModelNames);data.drafts=mergeRecovered([...ADDITIONAL_CRM_DRAFTS_2026_09_24,...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS,...parisDrafts],data.drafts||[]).map(normalizeRecordModelNames);data=applyMilanPostEtroCastingContacts(data);data.bookings=(data.bookings||[]).map(normalizeRecordModelNames);data.recovery={...(data.recovery||{}),gmailRecoveredOn:'2026-09-14',submissionCount:RECOVERED_SUBMISSIONS.length,draftCount:RECOVERED_DRAFTS.length,tasksRecovered:0,rosterCheckedOn:'2026-09-14',supplementalModels:['Sophia Pippen'],newModels:['Anhelena','Bianca'],nicheSystemVersion:2,nicheTaxonomy:'standard-no-specialty-story',workflowSystemVersion:3,workGmail:WORK_EMAIL,workGmailSyncedOn:'2026-09-14',workGmailSubmissionCount:WORK_GMAIL_SUBMISSIONS.length,milanFirstDayDraftsAddedOn:'2026-09-16',milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,milanRestDraftsAddedOn:'2026-09-16',milanRestDraftCount:MILAN_REST_DRAFTS.length,parisPostDiorDraftsAddedOn:'2026-09-19',parisPostDiorDraftCount:parisDrafts.length,modelIdentityUpdatedOn:'2026-09-16',modelAppearanceReviewedOn:'2026-09-16'};return applyVerifiedCastingEmailDirectory(applyCameliaGlobalDraftRemoval(applyEuropeNoTravelRemovals(applyParisPostCarvenCastingReview(applyPhotoManagement(maintainSophiaProfileWithoutAutoAdd(removeEm0FromDrafts(repairParisSS27Packages(applySophiaDescription(applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data)))))))))))))}
 /* CRM INDEXEDDB STORAGE V1 */
 const IDB_DB_NAME='jn-agency-crm';
 const IDB_DB_VERSION=1;
