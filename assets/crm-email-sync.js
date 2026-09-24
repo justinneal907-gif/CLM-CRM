@@ -346,3 +346,137 @@
   }
   initWhenReady(0);
 })();
+
+/* PFW MALIA + REINE AVAILABILITY FOLLOW-UPS · 2026-09-24
+   One-time workspace migration built from actual Work Gmail Paris S/S 2027 submissions.
+   Each route gets its own saved follow-up so open tracking remains recipient-specific
+   when sent with the CRM's "Send tracked draft" action. */
+(function(){
+  'use strict';
+  const VERSION=1;
+  const RECOVERY_KEY='pfwMaliaReineAvailabilitySeedVersion';
+  const SUBJECT='Paris S/S 2027 — Malia + Reine Availability';
+  const MODEL_IDS=['los-angeles-women-malia','london-main-reine'];
+  const MODEL_NAMES=['Malia','Reine'];
+  const BODY="Quick availability update for Paris — Malia and Reine are both available as well. I wanted to put them on your radar for any remaining S/S 2027 shows you're casting. I've included their materials below. Happy to send anything more specific if useful.";
+
+  // Dedupe is by casting person / working route, not by show. Julia Lange is intentionally
+  // routed to her direct address rather than the older Art Partner inbox used for Hermès/Lacoste.
+  const ROUTES=[
+    {key:'nico-mao',name:'Nico Mao',company:'Midland',email:'nico@midland.agency',shows:['Carven']},
+    {key:'julia-lange',name:'Julia Lange',company:'Julia Lange Casting',email:'julia.lange@me.com',shows:['Balmain','Courrèges','Stella McCartney','Lanvin','Hermès','Lacoste']},
+    {key:'ben-grimes',name:'Ben Grimes',company:'Ben Grimes Casting',email:'studio@bengrimescasting.com',shows:['Victoria Beckham','Ann Demeulemeester']},
+    {key:'birgitta-streeters',name:'Birgitta',company:'Streeters — Jess Hallett casting route',email:'birgitta@streeters.com',shows:['Givenchy','Gabriela Hearst'],routeNote:'Representative/shared route used in prior submissions.'},
+    {key:'nicolas-bianciotto',name:'Nicolas Bianciotto',company:'IKKI Casting',email:'nicolas@ikkicasting.com',shows:['Christopher Esber']},
+    {key:'simone-schofer',name:'Simone Schofer',company:'Simone Schofer Casting',email:'info@simoneschofer.com',shows:['Casablanca','Situationist','Niccolò Pasqualetti']},
+    {key:'andrea-prato',name:'Andrea Prato',company:'AND Casting',email:'andrea@andcasting.co',shows:['Alainpaul']},
+    {key:'daniel-von-der-graf',name:'Daniel von der Graf',company:'AND Casting',email:'daniel@andcasting.co',shows:['Alainpaul']},
+    {key:'piergiorgio-del-moro',name:'Piergiorgio Del Moro',company:'DM Fashion Studio',email:'pg@dmfashionstudio.com',shows:['Balenciaga','Dries Van Noten','Acne Studios']},
+    {key:'alejandra-perez',name:'Alejandra Perez',company:'DMCASTING',email:'alejandra@dmcasting.com',shows:['Balenciaga']},
+    {key:'evagria-sergeeva',name:'Evagria Sergeeva',company:'DMCASTING',email:'evagria@dmcasting.com',shows:['Balenciaga']},
+    {key:'ashley-brokaw',name:'Ashley Brokaw',company:'Ashley Brokaw Casting',email:'ashleybrokaw@me.com',shows:['Miu Miu','Loewe','The Row']},
+    {key:'minaho-smn',name:'Minaho',company:'SMN Casting',email:'minaho@smncasting.com',shows:['Ujoh']},
+    {key:'rachel-chandler',name:'Rachel Chandler',company:'Midland',email:'contact@midland.agency',shows:['Mugler','Valentino','Vaquera'],routeNote:'Shared Midland route used in prior submissions.'},
+    {key:'jane-morineau',name:'Jane Morineau',company:'Jane Morineau Casting',email:'casting@janemorineau.com',shows:['Valentino','Vaquera']},
+    {key:'mathilde-curel',name:'Mathilde Curel',company:'JL Casting',email:'mathilde@jl-casting.com',shows:['Courrèges']},
+    {key:'sivan-currie',name:'Sivan Currie',company:'Independent Casting',email:'sivan.currie@gmail.com',shows:['Stella McCartney']},
+    {key:'regina-limon-vega',name:'Regina Limon Vega',company:'The Casting Agency / DMCASTING',email:'regina@thecastingagency.com',shows:['Jean Paul Gaultier','Sacai']},
+    {key:'rosie-vogel',name:'Rosie Vogel',company:'Rosie Vogel Casting',email:'rosie@rosievogelcasting.com',shows:['Elie Saab']},
+    {key:'vivienne-westwood-streeters',name:'Casey',company:'Streeters — Liz Goldson casting route',email:'casey@streeters.com',shows:['Vivienne Westwood'],routeNote:'Representative route used in the prior submission; Liz Goldson is the casting credit retained in CRM research.'},
+    {key:'william-lhoest',name:'William Lhoest',company:'WL Casting',email:'info@wl-casting.com',shows:['CFCL']},
+    {key:'anita-bitton',name:'Anita Bitton',company:'Establishment Casting',email:'anita@establishmentnewyork.com',shows:['Zimmermann','Chanel']},
+    {key:'samuel-ellis-scheinman',name:'Samuel Ellis Scheinman',company:'DM Fashion Studio',email:'samuele@dmfashionstudio.com',shows:['Saint Laurent','Celine']},
+    {key:'leila-azizi',name:'Leila Azizi',company:'SUUN Consultancy',email:'sayhi@suunconsultancy.com',shows:['Burc Akyol']},
+    {key:'je-suis-casting',name:'Franziska and Liv',company:'Je Suis Casting',email:'info@jesuiscasting.com',shows:['Ottolinger'],routeNote:'Shared casting inbox for Franziska Bachofen-Echt / Liv Tendlarz.'},
+    {key:'caterina-matteucci',name:'Caterina Matteucci',company:'CM Casting',email:'caterina@cmcasting.it',shows:['Schiaparelli']},
+    {key:'sophie-trouble',name:'Sophie',company:'Trouble Management / Rick Owens casting route',email:'sophie@trouble.management',shows:['Rick Owens'],routeNote:'Working route used in the prior Rick Owens submission.'}
+  ];
+
+  function byEmail(email){
+    const key=String(email||'').trim().toLowerCase();
+    return (db.contacts||[]).find(c=>String(c.email||'').trim().toLowerCase()===key)||null;
+  }
+  function ensureContact(route){
+    const existing=byEmail(route.email);
+    if(existing)return existing.id;
+    const id='pfw-contact-'+route.key;
+    db.contacts=db.contacts||[];
+    db.contacts.push({
+      id,
+      name:route.name,
+      company:route.company,
+      email:route.email,
+      relationship:'Developing',
+      preferredNiches:'High Fashion / Editorial, Luxury / Runway',
+      notes:'Paris S/S 2027 sent-submission route · '+route.shows.join(', ')+(route.routeNote?' · '+route.routeNote:'')
+    });
+    return id;
+  }
+  function draftId(route){return 'pfw-malia-reine-'+route.key+'-2026-09-24'}
+  function seed(){
+    try{
+      if(typeof db==='undefined'||!db||!window.__clmWorkspaceReady)return false;
+      db.recovery=db.recovery||{};
+      if(Number(db.recovery[RECOVERY_KEY]||0)>=VERSION)return true;
+      const found=MODEL_IDS.filter(id=>(db.models||[]).some(m=>m.id===id));
+      if(found.length!==MODEL_IDS.length){
+        console.warn('PFW Malia/Reine follow-up seed skipped because both roster IDs are not available.',found);
+        return false;
+      }
+      db.drafts=db.drafts||[];
+      let added=0;
+      for(const route of ROUTES){
+        const id=draftId(route);
+        if(db.drafts.some(d=>d.id===id))continue;
+        const contactId=ensureContact(route);
+        db.drafts.push({
+          id,
+          date:'2026-09-24',
+          purpose:'followup',
+          contactId,
+          contactName:route.name,
+          company:route.company,
+          recipientEmail:route.email,
+          brandProject:'Paris Fashion Week S/S 2027',
+          packageLink:'',
+          brief:'',
+          customBody:BODY,
+          notes:'Tracked Paris availability follow-up · prior Paris submissions: '+route.shows.join(', ')+(route.routeNote?' · '+route.routeNote:'')+' · Use Send tracked draft so opens remain tied to this recipient.',
+          castingBriefRaw:'',
+          parsedBrief:{project:'Paris Fashion Week S/S 2027',location:'Paris',nicheClues:['High Fashion / Editorial','Luxury / Runway']},
+          subject:SUBJECT,
+          includeStats:true,
+          includePhotos:true,
+          includeSources:true,
+          models:[...MODEL_NAMES],
+          modelIds:[...MODEL_IDS],
+          html:'',
+          source:'Work Gmail Paris S/S 2027 sent-submission history through 2026-09-22 · availability follow-up seeded 2026-09-24'
+        });
+        added++;
+      }
+      db.recovery[RECOVERY_KEY]=VERSION;
+      db.recovery.pfwMaliaReineAvailabilitySeededOn='2026-09-24';
+      db.recovery.pfwMaliaReineAvailabilityDraftCount=ROUTES.length;
+      db.recovery.pfwMaliaReineAvailabilityRecipients=ROUTES.map(r=>({name:r.name,email:r.email,shows:[...r.shows]}));
+      if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+      if(typeof renderAll==='function')renderAll();
+      if(added&&typeof setStatus==='function')setStatus('Added '+added+' tracked Paris availability follow-up'+(added===1?'':'s')+' for Malia + Reine.');
+      return true;
+    }catch(err){
+      console.error('PFW Malia/Reine follow-up seed failed',err);
+      return false;
+    }
+  }
+  function start(){
+    if(window.__clmWorkspaceReady){seed();return}
+    window.addEventListener('clm:workspace-ready',()=>setTimeout(seed,0),{once:true});
+    let tries=0;
+    const timer=setInterval(()=>{
+      tries++;
+      if(window.__clmWorkspaceReady&&seed()){clearInterval(timer);return}
+      if(tries>100)clearInterval(timer);
+    },100);
+  }
+  start();
+})();
