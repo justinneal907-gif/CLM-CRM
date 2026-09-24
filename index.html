@@ -1979,7 +1979,7 @@ function resetEmailPreviewEdits(){
   const preview=$('#emailPreview');if(!preview||preview.dataset.directEditBound==='1')return;
   preview.dataset.directEditBound='1';
   preview.addEventListener('input',()=>storeEmailPreviewEdit(false));
-  preview.addEventListener('blur',()=>{storeEmailPreviewEdit(true);persistWorkspaceSafe(false)});
+  preview.addEventListener('blur',()=>persistWorkspaceSafe(false));
   preview.addEventListener('keydown',event=>{
     if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){
       event.preventDefault();
