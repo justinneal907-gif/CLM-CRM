@@ -802,7 +802,7 @@
     <div class="tracking-tools"><input id="trackingSearch" type="search" aria-label="Search tracked emails" placeholder="Search brand, recipient or model"><select id="trackingFilter" aria-label="Filter tracked emails"><option value="all">All tracked emails</option><option value="signals">With signals</option><option value="waiting">Awaiting signal</option><option value="ready">Ready to send</option><option value="attention">Needs attention</option></select></div>
     <div id="trackingHistory" class="tracking-list"></div>`;
     anchor.insertAdjacentElement('afterend',panel);
-    ['sendTrackedDraftBtn','enableOpenNotificationsBtn','testOpenNotificationsBtn','checkOpenTrackingBtn'].forEach(id=>{
+    ['openWorkGmailBtn','sendTrackedDraftBtn','enableOpenNotificationsBtn','testOpenNotificationsBtn','checkOpenTrackingBtn'].forEach(id=>{
       const button=q('#'+id);if(button)q('#trackingActions').appendChild(button);
     });
     q('#trackingSearch').addEventListener('input',renderTrackingHistory);
