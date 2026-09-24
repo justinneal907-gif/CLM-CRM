@@ -2,7 +2,10 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const html=fs.readFileSync(require('node:path').join(__dirname,'../index.html'),'utf8');const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
 const c={structuredClone,console,Intl,setTimeout,clearTimeout,localStorage:{getItem:()=>null,setItem(){},removeItem(){}},document:{querySelector:()=>null},window:{}};vm.createContext(c);vm.runInContext(script.slice(0,script.indexOf('bootstrapWorkspace();')),c);
 const read=x=>JSON.parse(vm.runInContext(`JSON.stringify(${x})`,c));
-vm.runInContext(`db=applyRecovered(structuredClone(seed));selected=[SOPHIA_ALL_DRAFTS_ID,SOPHIA_ALL_DRAFTS_ID];const sid=SOPHIA_ALL_DRAFTS_ID;const sophia=db.models.find(m=>m.id===sid);const first=SOPHIA_PACKAGE_PHOTOS[0],second=SOPHIA_PACKAGE_PHOTOS[1];db.draft.photoSelections[sid]=second;`,c);
+vm.runInContext(`db=applyRecovered(structuredClone(seed));const sid=SOPHIA_ALL_DRAFTS_ID;`,c);
+assert.ok(!read('db.draft.modelIds||[]').includes(read('sid')));
+vm.runInContext(`selected=[SOPHIA_ALL_DRAFTS_ID,SOPHIA_ALL_DRAFTS_ID];
+const sophia=db.models.find(m=>m.id===sid);const first=SOPHIA_PACKAGE_PHOTOS[0],second=SOPHIA_PACKAGE_PHOTOS[1];db.draft.photoSelections[sid]=second;`,c);
 assert.equal(read('selectedModels().length'),1);
 assert.equal(read('modelDraftPhotosHtml(sophia).match(/<img /g).length'),1);
 assert.ok(read('modelDraftPhotosHtml(sophia)').includes('sophia-pippen-2.jpg?v=2'));
