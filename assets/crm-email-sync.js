@@ -353,12 +353,12 @@
    when sent with the CRM's "Send tracked draft" action. */
 (function(){
   'use strict';
-  const VERSION=1;
+  const VERSION=2;
   const RECOVERY_KEY='pfwMaliaReineAvailabilitySeedVersion';
   const SUBJECT='Paris S/S 2027 — Malia + Reine Availability';
   const MODEL_IDS=['los-angeles-women-malia','london-main-reine'];
   const MODEL_NAMES=['Malia','Reine'];
-  const BODY="Quick availability update for Paris — Malia and Reine are both available as well. I wanted to put them on your radar for any remaining S/S 2027 shows you're casting. I've included their materials below. Happy to send anything more specific if useful.";
+  const BODY="A quick availability update for Paris. Malia and Reine are both available as well. I wanted to put them on your radar for any remaining shows you're casting. Their materials are below.";
 
   // Dedupe is by casting person / working route, not by show. Julia Lange is intentionally
   // routed to her direct address rather than the older Art Partner inbox used for Hermès/Lacoste.
@@ -427,10 +427,9 @@
       let added=0;
       for(const route of ROUTES){
         const id=draftId(route);
-        if(db.drafts.some(d=>d.id===id))continue;
         const contactId=ensureContact(route);
-        db.drafts.push({
-          id,
+        const existing=db.drafts.find(d=>d.id===id);
+        const draftPatch={
           date:'2026-09-24',
           purpose:'followup',
           contactId,
@@ -441,6 +440,7 @@
           packageLink:'',
           brief:'',
           customBody:BODY,
+          signatureClose:'Thank you,',
           notes:'Tracked Paris availability follow-up · prior Paris submissions: '+route.shows.join(', ')+(route.routeNote?' · '+route.routeNote:'')+' · Use Send tracked draft so opens remain tied to this recipient.',
           castingBriefRaw:'',
           parsedBrief:{project:'Paris Fashion Week S/S 2027',location:'Paris',nicheClues:['High Fashion / Editorial','Luxury / Runway']},
@@ -451,9 +451,10 @@
           models:[...MODEL_NAMES],
           modelIds:[...MODEL_IDS],
           html:'',
-          source:'Work Gmail Paris S/S 2027 sent-submission history through 2026-09-22 · availability follow-up seeded 2026-09-24'
-        });
-        added++;
+          source:'Work Gmail Paris S/S 2027 sent-submission history through 2026-09-22 · availability follow-up updated 2026-09-24'
+        };
+        if(existing)Object.assign(existing,draftPatch);
+        else{db.drafts.push({id,...draftPatch});added++}
       }
       db.recovery[RECOVERY_KEY]=VERSION;
       db.recovery.pfwMaliaReineAvailabilitySeededOn='2026-09-24';
