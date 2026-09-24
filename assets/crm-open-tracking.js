@@ -7,7 +7,7 @@
   if(window.__clmOpenTrackingLoaded)return;
   window.__clmOpenTrackingLoaded=true;
 
-  const TRACK_VERSION='2026-09-23-v10';
+  const TRACK_VERSION='2026-09-24-v11';
   const TRACK_BASE='https://countapi.mileshilliard.com/api/v1';
   const TRACK_POLL_MS=60*1000;
   let trackTimer=null;
@@ -384,8 +384,9 @@
         row.style.display='block';
         const count=Number(d.openTrackingCount||0);
         if(count>0){
-          const detected=d.openTrackingFirstDetectedAt?new Date(d.openTrackingFirstDetectedAt).toLocaleString():'';
-          row.innerHTML='<b>Open signal detected.</b>'+(detected?' First detected '+safe(detected)+'.':'')+' Image-load signals: '+count+'.';
+          const firstDetected=d.openTrackingFirstDetectedAt?new Date(d.openTrackingFirstDetectedAt).toLocaleString():'';
+          const lastDetected=d.openTrackingLastDetectedAt?new Date(d.openTrackingLastDetectedAt).toLocaleString():'';
+          row.innerHTML='<b>Open signal detected.</b>'+(firstDetected?' First detected '+safe(firstDetected)+'.':'')+(lastDetected?' Latest detected '+safe(lastDetected)+'.':'')+' Image-load signals: '+count+'.';
         }else if(d.openTrackingState==='armed'){
           row.innerHTML='<b>Open tracking active.</b> No image-load signal detected yet.';
         }else if(d.openTrackingState==='send-uncertain'){
@@ -848,7 +849,7 @@
         '<div class="tracking-meta">'+safe(record.recipientEmail||record.email||'Recipient not recorded')+'<br>'+safe(record.subject||'')+'</div>'+
         (record.models?.length?'<div class="tracking-meta">Models: '+safe(record.models.join(', '))+'</div>':'')+
         '<div class="tracking-meta">'+(sent?'Sent: '+safe(formatTrackingTime(sent))+' · ':'')+'Signals: '+Number(record.openTrackingCount||0)+
-        '<br>First detected: '+safe(formatTrackingTime(record.openTrackingFirstDetectedAt))+'<br>Last checked: '+safe(formatTrackingTime(record.openTrackingLastCheckedAt))+'</div>'+
+        '<br>First detected: '+safe(formatTrackingTime(record.openTrackingFirstDetectedAt))+'<br>Latest detected: '+safe(formatTrackingTime(record.openTrackingLastDetectedAt))+'<br>Last checked: '+safe(formatTrackingTime(record.openTrackingLastCheckedAt))+'</div>'+
         (record.openTrackingError?'<div class="tracking-error">'+safe(record.openTrackingError)+'</div>':'')+
         (record.openTrackingState==='send-uncertain'?'<p>Check Sent Mail before retrying to avoid sending twice. If sent, use Sync sent mail now to confirm the result.</p>':'')+
         '<div class="actions"><a class="btn" target="_blank" rel="noopener" href="'+safe(href)+'">'+(messageId?'View sent email':record.openTrackingState==='send-uncertain'?'Check Sent Mail':'Review in Gmail')+'</a>'+
