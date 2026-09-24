@@ -353,9 +353,9 @@
    when sent with the CRM's "Send tracked draft" action. */
 (function(){
   'use strict';
-  const VERSION=2;
+  const VERSION=3;
   const RECOVERY_KEY='pfwMaliaReineAvailabilitySeedVersion';
-  const SUBJECT='Paris S/S 2027 — Malia + Reine Availability';
+  const SUBJECT='Paris S/S 2027 Malia + Reine Availability';
   const MODEL_IDS=['los-angeles-women-malia','london-main-reine'];
   const MODEL_NAMES=['Malia','Reine'];
   const BODY="A quick availability update for Paris. Malia and Reine are both available as well. I wanted to put them on your radar for any remaining shows you're casting. Their materials are below.";
