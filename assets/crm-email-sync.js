@@ -653,13 +653,17 @@
   const SPACED_DASH=/\s+[-\u2010\u2011\u2012\u2013\u2014\u2015\u2212]+\s+/g;
 
   function cleanSubject(value){
-    return String(value||'')
-      .replace(SPACED_DASH,': ')
+    const raw=String(value||'');
+    const prefix=(raw.match(/^\s*((?:(?:Re|Fwd):\s*)+)/i)||[])[1]||'';
+    const body=prefix?raw.slice(raw.indexOf(prefix)+prefix.length):raw;
+    const cleaned=body
+      .replace(SPACED_DASH,' ')
       .replace(DASH,' ')
-      .replace(/\s+([:;,!?])/g,'$1')
-      .replace(/:\s*:/g,':')
+      .replace(/:\s+/g,' ')
+      .replace(/\s+([;,!?])/g,'$1')
       .replace(/\s{2,}/g,' ')
       .trim();
+    return (prefix+cleaned).trim();
   }
 
   function cleanBodyText(value){
@@ -826,4 +830,246 @@
       if(typeof renderAll==='function')renderAll();
     }
   },1200);
+})();
+
+
+/* CLM EXACT EMAIL TEMPLATE · 2026-09-25 */
+(function(){
+  'use strict';
+  if(window.__clmExactEmailTemplateLoaded)return;
+  window.__clmExactEmailTemplateLoaded=true;
+
+  function cleanCopy(value){
+    return String(value||'')
+      .replace(/\s+[\u2010\u2011\u2012\u2013\u2014\u2015-]+\s+/g,' ')
+      .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015-]+/g,' ')
+      .replace(/\s+([,.;:!?])/g,'$1')
+      .replace(/\s{2,}/g,' ')
+      .trim();
+  }
+
+  function subjectCopy(value){
+    const raw=String(value||'');
+    const prefix=(raw.match(/^\s*((?:(?:Re|Fwd):\s*)+)/i)||[])[1]||'';
+    const body=prefix?raw.slice(raw.indexOf(prefix)+prefix.length):raw;
+    return (prefix+cleanCopy(body).replace(/:\s+/g,' ')).trim();
+  }
+
+  function firstName(value){
+    return String(value||'').trim().split(/\s+/)[0]||'';
+  }
+
+  function shortSubjectName(value){
+    const name=String(value||'').trim();
+    if(!name)return '';
+    if(/^elle(?:\s+pickens)?$/i.test(name))return 'Elle';
+    if(/^eva(?:\s+kann)?$/i.test(name))return 'Eva';
+    return firstName(name);
+  }
+
+  function activeRecord(){
+    return typeof db!=='undefined'&&db&&db.activeDraftId
+      ?(db.drafts||[]).find(function(d){return d.id===db.activeDraftId})||null
+      :null;
+  }
+
+  function currentSelectedModels(){
+    if(typeof selectedModels==='function')return selectedModels();
+    if(typeof db==='undefined'||!db)return [];
+    const ids=Array.isArray(window.selected)?window.selected:(Array.isArray(db.selected)?db.selected:[]);
+    return ids.map(function(id){return (db.models||[]).find(function(m){return m.id===id})}).filter(Boolean);
+  }
+
+  function greetingName(record,contactName){
+    if(typeof draftGreetingNames==='function'){
+      const names=draftGreetingNames(record||{contactName:contactName});
+      if(names&&names.length)return names.slice(0,3);
+    }
+    const first=firstName(contactName);
+    return first?[first]:[];
+  }
+
+  function namesText(names){
+    if(typeof naturalNameList==='function')return naturalNameList(names);
+    if(names.length<2)return names[0]||'';
+    if(names.length===2)return names[0]+' and '+names[1];
+    return names.slice(0,-1).join(', ')+' and '+names[names.length-1];
+  }
+
+  function introCopy(d,picked){
+    const custom=cleanCopy(d.customBody||'');
+    if(custom)return custom;
+    if(d.purpose==='submission')return 'I preselected a few models I think would be a good fit. Their materials are below.';
+    if(d.purpose==='availability')return 'Sharing the latest availability and model details. Their materials are below.';
+    if(d.purpose==='introduction')return 'I wanted to introduce a few models from our roster. Their materials are below.';
+    if(d.purpose==='followup')return 'Just following up with a few model options. Their materials are below.';
+    return picked.length?'Their materials are below.':'';
+  }
+
+  function modelBlock(model,d){
+    const name=String(model.name||'').trim();
+    const stats=d.stats&&model.stats?' | '+formatStats(model.stats):'';
+    const portfolio=d.sources&&model.profile
+      ?'<div style="margin:0 0 10px"><a href="'+esc(model.profile)+'" target="_blank" style="color:#1155cc;text-decoration:underline">'+esc(model.profileLabel||'Portfolio')+'</a></div>'
+      :'';
+    const photo=d.photos&&typeof modelDraftPhotosHtml==='function'?modelDraftPhotosHtml(model):'';
+    return '<div style="margin:0 0 28px;color:#000;font-size:13px">'+
+      '<div style="line-height:1.55"><b>'+esc(name)+'</b>'+stats+'</div>'+
+      portfolio+
+      photo+
+      '</div>';
+  }
+
+  function exactEmailHtml(){
+    const d={
+      purpose:document.getElementById('emailPurpose')?.value||'submission',
+      contactName:String(document.getElementById('emailContactName')?.value||'').trim(),
+      recipientEmail:String(document.getElementById('emailRecipient')?.value||'').trim(),
+      brand:String(document.getElementById('emailBrand')?.value||'').trim(),
+      brief:String(document.getElementById('emailContext')?.value||'').trim(),
+      customBody:String(document.getElementById('emailCustomBody')?.value||'').trim(),
+      stats:document.getElementById('includeStats')?.checked!==false,
+      photos:document.getElementById('includePhotos')?.checked!==false,
+      sources:document.getElementById('includeSources')?.checked!==false
+    };
+
+    const record=activeRecord()||db.draft||{};
+    const manual=String(record.manualEmailHtml||db.draft?.manualEmailHtml||'').trim();
+    if(manual)return manual;
+
+    const picked=currentSelectedModels();
+    const greetingNames=greetingName(record,d.contactName);
+    const greeting=greetingNames.length?'Hi '+esc(namesText(greetingNames))+',':'Hi,';
+    const intro=introCopy(d,picked);
+    const brief=cleanCopy(d.brief||'');
+    const blocks=picked.map(function(model){return modelBlock(model,d)}).join('');
+    const more=picked.length
+      ?'<div style="margin:0 0 28px">More model options <a href="https://canva.link/hkqja7ybl587pm8" target="_blank" style="color:#1155cc;text-decoration:underline">HERE</a> if helpful.</div>'
+      :'';
+
+    return '<div style="font-family:Arial,sans-serif;font-size:13px;line-height:1.35;color:#000">'+
+      '<div>'+greeting+'</div>'+
+      '<div style="height:18px"></div>'+
+      (intro?'<div>'+esc(intro).replace(/\n/g,'<br>')+'</div>':'')+
+      (brief&&cleanCopy(brief)!==cleanCopy(intro)?'<div style="height:18px"></div><div>'+esc(brief).replace(/\n/g,'<br>')+'</div>':'')+
+      '<div style="height:18px"></div>'+
+      (blocks||'<div>[Select one or more models]</div>')+
+      more+
+      '<div>Thank you,</div>'+
+      '<div>Justin</div>'+
+      '<div style="height:18px"></div>'+
+      '<div><b>Chez Les Mannequins · Creative Agency</b></div>'+
+      '<div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div>'+
+      '</div>';
+  }
+
+  function parisInTownCopy(record){
+    if(!record||typeof record!=='object')return false;
+    const text=[record.id,record.brandProject,record.project,record.subject,record.parsedBrief&&record.parsedBrief.project].filter(Boolean).join(' ');
+    if(!/Paris/i.test(text)||!/In[\s-]?Town|in town model update/i.test(text))return false;
+    const rawNames=Array.isArray(record.models)?record.models:[];
+    const names=rawNames.map(shortSubjectName).filter(Boolean);
+    if(!names.length&&Array.isArray(record.modelIds)&&typeof db!=='undefined'){
+      record.modelIds.forEach(function(id){
+        const m=(db.models||[]).find(function(x){return x.id===id});
+        if(m)names.push(shortSubjectName(m.name));
+      });
+    }
+    const unique=[...new Set(names)].filter(Boolean);
+    if(!unique.length)return false;
+    const joined=unique.length===1?unique[0]:unique.length===2?unique[0]+' + '+unique[1]:unique.slice(0,-1).join(' + ')+' + '+unique[unique.length-1];
+    const natural=unique.length===1?unique[0]:unique.length===2?unique[0]+' and '+unique[1]:unique.slice(0,-1).join(', ')+' and '+unique[unique.length-1];
+    const subject='Paris S/S 2027 '+joined+' in Paris';
+    const body=unique.length===1
+      ?'Another quick Paris update '+natural+' is in Paris as well. '+(natural==='Eva'?'Her':'Their')+' materials are below.'
+      :'Another quick Paris update '+natural+' are in Paris as well. Their materials are below.';
+    let changed=false;
+    if(record.subject!==subject){record.subject=subject;changed=true}
+    if(record.customBody!==body){record.customBody=body;changed=true}
+    if(changed){
+      record.html='';
+      delete record.manualEmailHtml;
+      delete record.manualEmailEditedAt;
+      record.previewNeedsGmailUpdate=true;
+      if(record.openTrackingState==='ready')record.openTrackingState='editing';
+    }
+    return changed;
+  }
+
+  function migrate(){
+    if(typeof db==='undefined'||!db)return false;
+    let changed=false;
+    (db.drafts||[]).forEach(function(record){
+      if(parisInTownCopy(record))changed=true;
+      if(typeof record.subject==='string'){
+        const next=subjectCopy(record.subject);
+        if(next!==record.subject){record.subject=next;record.previewNeedsGmailUpdate=true;changed=true}
+      }
+    });
+    if(db.draft){
+      if(parisInTownCopy(db.draft))changed=true;
+      if(typeof db.draft.subject==='string'){
+        const next=subjectCopy(db.draft.subject);
+        if(next!==db.draft.subject){db.draft.subject=next;db.draft.previewNeedsGmailUpdate=true;changed=true}
+      }
+    }
+    const subject=document.getElementById('emailSubject');
+    if(subject){
+      const next=subjectCopy(subject.value);
+      if(next!==subject.value){subject.value=next;changed=true}
+    }
+    db.settings=Object.assign({},db.settings||{},{
+      exactEmailTemplateVersion:1,
+      exactEmailTemplateUpdatedOn:'2026-09-25'
+    });
+    if(changed&&typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+    return changed;
+  }
+
+  emailHtml=exactEmailHtml;
+  emailHtml.__clmExactTemplate=true;
+
+  if(typeof hydrateDraft==='function'&&!hydrateDraft.__clmExactTemplate){
+    const originalHydrate=hydrateDraft;
+    hydrateDraft=function(){
+      const out=originalHydrate.apply(this,arguments);
+      const subject=document.getElementById('emailSubject');
+      if(subject)subject.value=subjectCopy(subject.value);
+      return out;
+    };
+    hydrateDraft.__clmExactTemplate=true;
+  }
+
+  if(typeof createFormattedWorkGmailDraft==='function'&&!createFormattedWorkGmailDraft.__clmExactTemplate){
+    const originalCreate=createFormattedWorkGmailDraft;
+    createFormattedWorkGmailDraft=async function(){
+      migrate();
+      const subject=document.getElementById('emailSubject');
+      if(subject)subject.value=subjectCopy(subject.value);
+      if(typeof captureDraft==='function')captureDraft();
+      return originalCreate.apply(this,arguments);
+    };
+    createFormattedWorkGmailDraft.__clmExactTemplate=true;
+  }
+
+  window.clmApplyExactEmailTemplate=function(){
+    migrate();
+    if(typeof renderEmail==='function')renderEmail();
+    if(typeof renderDrafts==='function')renderDrafts();
+    if(typeof setStatus==='function')setStatus('Email formatting updated to the approved CLM template.');
+  };
+
+  window.addEventListener('clm:workspace-ready',function(){
+    setTimeout(function(){
+      migrate();
+      if(typeof renderAll==='function')renderAll();
+    },50);
+  },{once:true});
+
+  setTimeout(function(){
+    if(typeof db!=='undefined'&&db){
+      migrate();
+      if(typeof renderAll==='function')renderAll();
+    }
+  },1500);
 })();
