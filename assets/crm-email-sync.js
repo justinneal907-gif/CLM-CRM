@@ -5,7 +5,7 @@
   'use strict';
   if(window.__clmEmailSyncLoaded)return;
   window.__clmEmailSyncLoaded=true;
-  const SYNC_VERSION='2026-09-23-v4';
+  const SYNC_VERSION='2026-09-25-v5';
   const SYNC_INTERVAL_MS=5*60*1000;
   const KNOWN_IDS_KEY='clm.crm.gmailSentSyncIds.v1';
   let syncTimer=null;
@@ -23,15 +23,47 @@
     return String(d?.company||d?.brandProject||d?.project||d?.subject||'')
       .replace(/\s+[—–-]\s+(?:Paris|Milan|Milano|New York).*$/i,'').trim();
   }
+  function draftRecipientEmails(d){
+    if(!d)return [];
+    const contact=d.contactId?(db?.contacts||[]).find(c=>c.id===d.contactId):null;
+    return emailList([d.recipientEmail,contact?.email].filter(Boolean).join(','));
+  }
+  function submissionRecipientEmails(sub){
+    return emailList([sub?.email,sub?.recipient].filter(Boolean).join(','));
+  }
+  function sameCastingRecipient(d,sub){
+    const draftEmails=draftRecipientEmails(d);
+    const sentEmails=submissionRecipientEmails(sub);
+    if(draftEmails.length&&sentEmails.length)return draftEmails.some(e=>sentEmails.includes(e));
+
+    // Email is the canonical match. Only fall back to a contact name when
+    // neither side has an address, so a shared template cannot create a false repeat.
+    if(draftEmails.length||sentEmails.length)return false;
+    const contact=d?.contactId?(db?.contacts||[]).find(c=>c.id===d.contactId):null;
+    const draftName=norm(d?.contactName||contact?.name||'');
+    const sentName=norm(sub?.contact||'');
+    return !!draftName&&!!sentName&&draftName===sentName;
+  }
+  function draftPackageKey(d){
+    return norm(d?.brandProject||d?.project||d?.subject||'');
+  }
+  function submissionPackageKey(sub){
+    return norm(sub?.project||sub?.subject||'');
+  }
   function draftSubmissionMatches(d,sub){
-    if(!d||!sub)return false;
+    if(!d||!sub||!sameCastingRecipient(d,sub))return false;
+
+    // The notification is about this exact package to this exact casting route.
+    // Never infer a repeat from shared models, body copy, season templates or brand-only overlap.
     if(d.id&&sub.draftId===d.id)return true;
-    const ds=norm(d.subject), ss=norm(sub.subject);
-    if(ds&&ss&&ds===ss)return true;
-    const brand=norm(draftBrand(d));
-    const project=norm([sub.project,sub.company,sub.subject].filter(Boolean).join(' '));
-    if(brand&&brand.length>=4&&project.includes(brand))return true;
-    return false;
+    if(d.gmailMessageId&&sub.gmailMessageId&&d.gmailMessageId===sub.gmailMessageId)return true;
+
+    const ds=norm(d.subject),ss=norm(sub.subject);
+    if(!ds||!ss||ds!==ss)return false;
+
+    const dk=draftPackageKey(d),sk=submissionPackageKey(sub);
+    if(dk&&sk&&dk!==sk)return false;
+    return true;
   }
   function submissionMatchesForDraft(d){
     const matches=(db?.submissions||[]).filter(s=>draftSubmissionMatches(d,s));
@@ -111,24 +143,23 @@
     if(exactByMessage)return exactByMessage;
     const subjectKey=norm(subject);
     const tos=emailList(to);
-    let candidates=(db?.drafts||[]).filter(d=>norm(d.subject)===subjectKey);
-    if(candidates.length===1)return candidates[0];
-    if(candidates.length>1){
+    if(!tos.length)return null;
+
+    const sameRecipient=draft=>draftRecipientEmails(d).some(e=>tos.includes(e));
+    let candidates=(db?.drafts||[]).filter(d=>norm(d.subject)===subjectKey&&sameRecipient(d));
+    if(candidates.length){
       const active=db?.activeDraftId?candidates.find(d=>d.id===db.activeDraftId):null;
-      if(active&&emailList(active.recipientEmail).some(e=>tos.includes(e)))return active;
-      const byRecipient=candidates.filter(d=>emailList(d.recipientEmail).some(e=>tos.includes(e)));
-      if(byRecipient.length)return byRecipient[byRecipient.length-1];
-      return candidates[candidates.length-1];
+      return active||candidates[candidates.length-1];
     }
+
     const brandCandidates=(db?.drafts||[]).filter(d=>{
+      if(!sameRecipient(d))return false;
       const b=norm(draftBrand(d));
       return b&&b.length>=4&&subjectKey.includes(b);
     });
-    if(brandCandidates.length===1)return brandCandidates[0];
+    if(!brandCandidates.length)return null;
     const activeBrand=db?.activeDraftId?brandCandidates.find(d=>d.id===db.activeDraftId):null;
-    if(activeBrand)return activeBrand;
-    const byRecipient=brandCandidates.filter(d=>emailList(d.recipientEmail).some(e=>tos.includes(e)));
-    return byRecipient[byRecipient.length-1]||brandCandidates[brandCandidates.length-1]||null;
+    return activeBrand||brandCandidates[brandCandidates.length-1];
   }
   function existingSubmissionForMessage(messageId,subject,date,to,draft){
     const subs=db?.submissions||[];
