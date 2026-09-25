@@ -481,3 +481,163 @@
   }
   start();
 })();
+
+
+/* PARIS PACKAGES · MOLLY REMOVAL · 2026-09-25 */
+(function(){
+  'use strict';
+  if(window.__clmParisMollyRemovalLoaded)return;
+  window.__clmParisMollyRemovalLoaded=true;
+
+  const BLOCKED_IDS=new Set([
+    'new-york-women-molly-gardiner',
+    'london-women-molly-gardiner',
+    'milan-women-molly-gardiner'
+  ]);
+
+  function norm(value){
+    return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  }
+  function blocked(value){
+    const id=typeof value==='object'?value&&value.id:value;
+    if(BLOCKED_IDS.has(String(id||'')))return true;
+    let name='';
+    if(typeof value==='object')name=value&&value.name||'';
+    else if(typeof db!=='undefined'&&db&&Array.isArray(db.models)){
+      const model=db.models.find(function(m){return m.id===id});
+      name=model&&model.name||String(value||'');
+    }else name=String(value||'');
+    const key=norm(name);
+    return key==='molly'||key==='mollygardiner';
+  }
+  function isParisPackage(record){
+    if(!record||typeof record!=='object')return false;
+    if(/^paris-/i.test(String(record.id||'')))return true;
+    const text=[
+      record.brandProject,record.project,record.subject,record.brief,
+      record.castingBriefRaw,record.source,
+      record.parsedBrief&&record.parsedBrief.location,
+      record.parsedBrief&&record.parsedBrief.project
+    ].filter(Boolean).join(' ');
+    return /\bparis\b/i.test(text)||/\bpfw\b/i.test(text);
+  }
+  function fixText(value){
+    return String(value||'')
+      .replace(/Elle, Eva,? and Molly are all in Paris now\./gi,'Elle and Eva are both in Paris now.')
+      .replace(/Eva and Molly are both in Paris now\./gi,'Eva is in Paris now.')
+      .replace(/Elle\s*\+\s*Eva\s*\+\s*Molly/gi,'Elle + Eva')
+      .replace(/Eva\s*\+\s*Molly/gi,'Eva')
+      .replace(/No prior sent-mail match found for Elle, Eva or Molly to this recipient/gi,'No prior sent-mail match found for Elle or Eva to this recipient');
+  }
+  function clean(record){
+    if(!isParisPackage(record))return record;
+    const out=Object.assign({},record);
+    let changed=false;
+
+    ['modelIds','models','modelNames'].forEach(function(key){
+      if(!Array.isArray(record[key]))return;
+      const next=record[key].filter(function(value){return !blocked(value)});
+      if(next.length!==record[key].length){out[key]=next;changed=true}
+    });
+
+    ['photoSelections','packagePhotos'].forEach(function(key){
+      if(!record[key]||typeof record[key]!=='object')return;
+      const next=Object.fromEntries(Object.entries(record[key]).filter(function(entry){return !blocked(entry[0])}));
+      if(Object.keys(next).length!==Object.keys(record[key]).length){out[key]=next;changed=true}
+    });
+
+    ['subject','customBody','notes'].forEach(function(key){
+      if(typeof out[key]!=='string')return;
+      const next=fixText(out[key]);
+      if(next!==out[key]){out[key]=next;changed=true}
+    });
+
+    if(out.packageDepthReview&&typeof out.packageDepthReview==='object'){
+      const review=Object.assign({},out.packageDepthReview);
+      if(Array.isArray(review.addedModels)){
+        const next=review.addedModels.filter(function(value){return !blocked(value)});
+        if(next.length!==review.addedModels.length){review.addedModels=next;changed=true}
+      }
+      if(review.reasons&&typeof review.reasons==='object'){
+        const reasons=Object.assign({},review.reasons);
+        if(Object.prototype.hasOwnProperty.call(reasons,'Molly')){delete reasons.Molly;changed=true}
+        if(Object.prototype.hasOwnProperty.call(reasons,'Molly Gardiner')){delete reasons['Molly Gardiner'];changed=true}
+        review.reasons=reasons;
+      }
+      out.packageDepthReview=review;
+    }
+
+    if(changed){
+      out.html='';
+      delete out.manualEmailHtml;
+      delete out.manualEmailEditedAt;
+      out.previewNeedsGmailUpdate=true;
+      if(out.gmailDraftId&&out.openTrackingState==='ready')out.openTrackingState='editing';
+    }
+    return out;
+  }
+  function apply(){
+    if(typeof db==='undefined'||!db)return false;
+    let changed=false;
+
+    if(Array.isArray(db.drafts)){
+      db.drafts=db.drafts.map(function(record){
+        const next=clean(record);
+        if(next!==record)changed=true;
+        return next;
+      });
+    }
+
+    const active=(db.drafts||[]).find(function(d){return d.id===db.activeDraftId});
+    if(isParisPackage(db.draft)||isParisPackage(active)){
+      const before=JSON.stringify({
+        modelIds:db.draft&&db.draft.modelIds,
+        models:db.draft&&db.draft.models,
+        subject:db.draft&&db.draft.subject,
+        customBody:db.draft&&db.draft.customBody
+      });
+      db.draft=clean(db.draft||{});
+      const after=JSON.stringify({
+        modelIds:db.draft&&db.draft.modelIds,
+        models:db.draft&&db.draft.models,
+        subject:db.draft&&db.draft.subject,
+        customBody:db.draft&&db.draft.customBody
+      });
+      if(before!==after)changed=true;
+
+      if(Array.isArray(db.selected)){
+        const next=db.selected.filter(function(id){return !blocked(id)});
+        if(next.length!==db.selected.length){db.selected=next;changed=true}
+      }
+      if(typeof selected!=='undefined'&&Array.isArray(selected)){
+        selected=selected.filter(function(id){return !blocked(id)});
+      }
+      if(db.draftPhotoSelections&&typeof db.draftPhotoSelections==='object'){
+        Object.keys(db.draftPhotoSelections).forEach(function(id){
+          if(blocked(id)){delete db.draftPhotoSelections[id];changed=true}
+        });
+      }
+    }
+
+    db.recovery=Object.assign({},db.recovery||{},{
+      mollyRemovedFromParisPackages:true,
+      mollyRemovedFromParisPackagesOn:'2026-09-25'
+    });
+
+    if(changed){
+      if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+      if(typeof renderAll==='function')renderAll();
+      if(typeof setStatus==='function')setStatus('Molly removed from all Paris packages.');
+    }
+    return true;
+  }
+  function wait(attempt){
+    attempt=Number(attempt||0);
+    if(typeof db!=='undefined'&&db&&window.__clmWorkspaceReady){apply();return}
+    if(attempt<120)setTimeout(function(){wait(attempt+1)},100);
+  }
+
+  window.clmRemoveMollyFromParisPackages=apply;
+  window.addEventListener('clm:workspace-ready',function(){setTimeout(apply,0)},{once:true});
+  wait(0);
+})();
