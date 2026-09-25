@@ -1544,8 +1544,16 @@ function buildGmailDraftRaw(to,subject,html,signalId=''){
 }
 async function gmailDraftRequest(url,options){
   const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),30000);
-  try{return await fetch(url,{...options,signal:controller.signal})}
+  const timer=setTimeout(()=>controller.abort(),45000);
+  try{
+    const requestOptions={...options,signal:controller.signal};
+    const method=String(requestOptions.method||'GET').toUpperCase();
+    const governor=window.CLMGmailThrottle;
+    if(governor&&typeof governor.fetch==='function'){
+      return await governor.fetch(url,requestOptions,{retryRateLimit:method!=='DELETE',maxRetries:2});
+    }
+    return await fetch(url,requestOptions);
+  }
   catch(err){if(err.name==='AbortError')throw new Error('Gmail took too long to respond. Check Work Gmail Drafts before retrying to avoid a duplicate.');throw err}
   finally{clearTimeout(timer)}
 }
@@ -2280,9 +2288,10 @@ $('#suggestLookBtn')?.closest('.field')?.remove();
   async function loadCrmRuntime(){
     try{
       setRuntimeStatus('Loading Gmail sync and open-tracking tools…');
-      await loadScript('clm-email-sync-runtime','assets/crm-email-sync.js?v=20260925-7','__clmEmailSyncLoaded');
-      await loadScript('clm-open-tracking-runtime','assets/crm-open-tracking.js?v=20260924-13','__clmOpenTrackingLoaded');
-      await loadScript('clm-response-time-runtime','assets/crm-response-time.js?v=20260924-1','__clmResponseTimeLoaded');
+      await loadScript('clm-gmail-throttle-runtime','assets/crm-gmail-throttle.js?v=20260925-1','__clmGmailThrottleLoaded');
+      await loadScript('clm-email-sync-runtime','assets/crm-email-sync.js?v=20260925-8','__clmEmailSyncLoaded');
+      await loadScript('clm-open-tracking-runtime','assets/crm-open-tracking.js?v=20260925-14','__clmOpenTrackingLoaded');
+      await loadScript('clm-response-time-runtime','assets/crm-response-time.js?v=20260925-2','__clmResponseTimeLoaded');
       await loadScript('clm-model-responses-runtime','assets/crm-model-responses.js?v=20260925-1','__clmModelResponsesLoaded');
       await loadScript('clm-model-signals-core','assets/model-signals-core.js?v=20260923-1','CLMModelSignals');
       await loadScript('clm-model-signals-runtime','assets/crm-model-signals.js?v=20260923-1','__clmModelSignalsLoaded');
