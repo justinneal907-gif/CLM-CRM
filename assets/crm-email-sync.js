@@ -6,7 +6,7 @@
   if(window.__clmEmailSyncLoaded)return;
   window.__clmEmailSyncLoaded=true;
   const SYNC_VERSION='2026-09-25-v5';
-  const SYNC_INTERVAL_MS=5*60*1000;
+  const SYNC_INTERVAL_MS=15*60*1000;
   const KNOWN_IDS_KEY='clm.crm.gmailSentSyncIds.v1';
   let syncTimer=null;
   let syncRunning=false;
@@ -118,7 +118,10 @@
       u.searchParams.set('maxResults','100');
       u.searchParams.set('q',q);
       if(pageToken)u.searchParams.set('pageToken',pageToken);
-      const r=await fetch(u,{headers:{Authorization:'Bearer '+token}});
+      const options={headers:{Authorization:'Bearer '+token}};
+      const r=window.CLMGmailThrottle?.fetch
+        ?await window.CLMGmailThrottle.fetch(u.toString(),options,{retryRateLimit:true,maxRetries:2})
+        :await fetch(u,options);
       if(!r.ok){
         const err=await r.json().catch(()=>({}));
         throw new Error(err?.error?.message||'Could not read sent mail.');
@@ -134,8 +137,14 @@
     const u=new URL('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+encodeURIComponent(id));
     u.searchParams.set('format','metadata');
     ['Subject','To','Date','X-CLM-Tracking-ID','X-CLM-Tracking-State','X-CLM-Signal-ID'].forEach(x=>u.searchParams.append('metadataHeaders',x));
-    const r=await fetch(u,{headers:{Authorization:'Bearer '+token}});
-    if(!r.ok)throw new Error('Could not read sent message '+id+'.');
+    const options={headers:{Authorization:'Bearer '+token}};
+    const r=window.CLMGmailThrottle?.fetch
+      ?await window.CLMGmailThrottle.fetch(u.toString(),options,{retryRateLimit:true,maxRetries:2})
+      :await fetch(u,options);
+    if(!r.ok){
+      const err=await r.json().catch(()=>({}));
+      throw new Error(err?.error?.message||('Could not read sent message '+id+'.'));
+    }
     return await r.json();
   }
   function findDraftForMessage(subject,to,messageId){
@@ -350,10 +359,15 @@
     btn.dataset.clmBound='1';
     btn.addEventListener('click',()=>syncSentMailNow(true));
   }
+  function autoSyncAllowed(){
+    const governor=window.CLMGmailThrottle;
+    if(governor?.remainingCooldownMs?.()>0)return false;
+    return governor?.claimBackground?governor.claimBackground('sent-sync',SYNC_INTERVAL_MS):true;
+  }
   function startTimer(){
     if(syncTimer)clearInterval(syncTimer);
-    syncTimer=setInterval(()=>{if(gmailAccessToken&&Date.now()<gmailTokenExpiresAt)syncSentMailNow(false)},SYNC_INTERVAL_MS);
-    window.addEventListener('clm:gmail-connected',()=>setTimeout(()=>syncSentMailNow(false),250));
+    syncTimer=setInterval(()=>{if(gmailAccessToken&&Date.now()<gmailTokenExpiresAt&&autoSyncAllowed())syncSentMailNow(false)},SYNC_INTERVAL_MS);
+    window.addEventListener('clm:gmail-connected',()=>setTimeout(()=>{if(autoSyncAllowed())syncSentMailNow(false)},4000));
   }
   function init(){
     try{
@@ -363,7 +377,7 @@
       installManualSyncButton();
       startTimer();
       renderSyncStatus();
-      setTimeout(()=>{if(gmailAccessToken&&Date.now()<gmailTokenExpiresAt)syncSentMailNow(false)},1500);
+      setTimeout(()=>{if(gmailAccessToken&&Date.now()<gmailTokenExpiresAt&&autoSyncAllowed())syncSentMailNow(false)},8000);
     }catch(err){console.error('CLM email sync add-on failed to initialize',err)}
   }
   function initWhenReady(attempt){
