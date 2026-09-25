@@ -1165,7 +1165,7 @@ function isUrbanDecayDraft20260925(d){
 }
 
 function applyUrbanDecayDraftFix20260925(data){
-  if((data.recovery?.urbanDecayDraftFixVersion||0)>=2)return data;
+  if((data.recovery?.urbanDecayDraftFixVersion||0)>=3)return data;
   const byId=new Map((data.models||[]).map(m=>[m.id,m]));
   const modelStats={};
   for(const id of URBAN_DECAY_MODEL_IDS_2026_09_25){
@@ -1187,6 +1187,8 @@ function applyUrbanDecayDraftFix20260925(data){
     brief:'',
     customBody:URBAN_DECAY_BODY_2026_09_25,
     bodyEdited:true,
+    manualEmailHtml:'',
+    manualEmailEditedAt:'',
     castingBriefRaw:'Urban Decay via L Oreal Luxe. Women 18 to 30 years old. One light tone, one medium tone or LatinX model, and one deep or dark tone. Shoot October 7 and 8, 2026 in New York City. Local talent or work as local only. Usage is two years, global, all digital. Rate is $6,000 plus 20% for a 10 hour day.',
     parsedBrief:{project:'Urban Decay',shootDate:'2026-10-07',dateText:'October 7 and 8, 2026',location:'New York City',rate:6000,usage:'Two years, global, all digital',requirements:'Women 18 to 30 years old. Local talent or work as local only. One light tone, one medium tone or LatinX model, and one deep or dark tone.'},
     subject:'URBAN DECAY : October 7 + 8, 2026',
@@ -1214,6 +1216,18 @@ function applyUrbanDecayDraftFix20260925(data){
       brief:'',
       customBody:URBAN_DECAY_BODY_2026_09_25,
       bodyEdited:true,
+      manualEmailHtml:'',
+      manualEmailEditedAt:'',
+      manualEmailHtml:'',
+      manualEmailEditedAt:'',
+      manualEmailHtml:'',
+      manualEmailEditedAt:'',
+      manualEmailHtml:'',
+      manualEmailEditedAt:'',
+      manualEmailHtml:'',
+      manualEmailEditedAt:'',
+      manualEmailHtml:'',
+      manualEmailEditedAt:'',
       includeStats:true,
       models:[...canonical.models],
       modelIds:[...URBAN_DECAY_MODEL_IDS_2026_09_25],
@@ -1240,7 +1254,7 @@ function applyUrbanDecayDraftFix20260925(data){
     data.selected=[...URBAN_DECAY_MODEL_IDS_2026_09_25];
   }
 
-  data.recovery={...(data.recovery||{}),urbanDecayDraftFixVersion:2,urbanDecayDraftFixUpdatedOn:'2026-09-25'};
+  data.recovery={...(data.recovery||{}),urbanDecayDraftFixVersion:3,urbanDecayDraftFixUpdatedOn:'2026-09-25'};
   return data;
 }
 
