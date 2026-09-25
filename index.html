@@ -972,11 +972,7 @@ function stripEm0FromDraftRecord(record){
   return out;
 }
 function removeEm0FromDrafts(data){
-  data.drafts=(data.drafts||[]).map(stripEm0FromDraftRecord);
-  data.draft=stripEm0FromDraftRecord(data.draft||{});
-  data.selected=(data.selected||[]).filter(id=>id!==EM0_DRAFT_MODEL_ID);
-  if(data.draftPhotoSelections&&typeof data.draftPhotoSelections==='object')delete data.draftPhotoSelections[EM0_DRAFT_MODEL_ID];
-  data.recovery={...(data.recovery||{}),em0RemovedFromDraftsOn:'2026-09-17'};
+  data.recovery={...(data.recovery||{}),em0DraftRemovalDisabledOn:'2026-09-25'};
   return data;
 }
 const SOPHIA_ALL_DRAFTS_ID='new-york-women-sophia-pippen';
@@ -1056,7 +1052,44 @@ function applyCallieEuropeGoSeeCopyV2(data){
   return data;
 }
 
-function applyRecovered(data){const incoming=data||{};data={...structuredClone(seed),...incoming};data.settings={...structuredClone(seed.settings),...(incoming.settings||{})};data.draft={...structuredClone(seed.draft),...(incoming.draft||{})};data.activeDraftId=incoming.activeDraftId||data.activeDraftId||'';data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>applyModelIdentity({...m,availabilityStatus:m.availabilityStatus||'Unknown',statusFrom:m.statusFrom||'',statusTo:m.statusTo||'',holdProject:m.holdProject||'',availabilityNotes:m.availabilityNotes||'',focusRoster:typeof m.focusRoster==='boolean'?m.focusRoster:FOCUS_ROSTER_NAMES.has(m.name)}));const parisDrafts=parisPostDiorDrafts(data.models);data.contacts=mergeContacts([...ADDITIONAL_CRM_CONTACTS_2026_09_24,...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS],data.contacts||[]).map(c=>({...c,relationship:c.relationship||'Developing',preferredNiches:c.preferredNiches||''}));data.submissions=mergeRecovered([...RECOVERED_SUBMISSIONS,...WORK_GMAIL_SUBMISSIONS],data.submissions||[]).map(normalizeRecordModelNames);data.drafts=mergeRecovered([...CALLIE_EUROPE_GOSEE_DRAFTS_2026_09_25,...ADDITIONAL_CRM_DRAFTS_2026_09_25,...ADDITIONAL_CRM_DRAFTS_2026_09_24,...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS,...parisDrafts],data.drafts||[]).map(normalizeRecordModelNames);data=applyCallieEuropeGoSeeCopyV2(data);data.drafts=data.drafts.filter(d=>!PARIS_INTOWN_FOLLOWUP_REMOVED_IDS_2026_09_25.has(d.id));if(PARIS_INTOWN_FOLLOWUP_REMOVED_IDS_2026_09_25.has(data.activeDraftId||'')){data.activeDraftId='';data.draft=structuredClone(seed.draft);data.selected=[]}data=applyMilanPostEtroCastingContacts(data);data.bookings=(data.bookings||[]).map(normalizeRecordModelNames);data.recovery={...(data.recovery||{}),gmailRecoveredOn:'2026-09-14',submissionCount:RECOVERED_SUBMISSIONS.length,draftCount:RECOVERED_DRAFTS.length,tasksRecovered:0,rosterCheckedOn:'2026-09-14',supplementalModels:['Sophia Pippen'],newModels:['Anhelena','Bianca'],nicheSystemVersion:2,nicheTaxonomy:'standard-no-specialty-story',workflowSystemVersion:3,workGmail:WORK_EMAIL,workGmailSyncedOn:'2026-09-14',workGmailSubmissionCount:WORK_GMAIL_SUBMISSIONS.length,milanFirstDayDraftsAddedOn:'2026-09-16',milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,milanRestDraftsAddedOn:'2026-09-16',milanRestDraftCount:MILAN_REST_DRAFTS.length,parisPostDiorDraftsAddedOn:'2026-09-19',parisPostDiorDraftCount:parisDrafts.length,modelIdentityUpdatedOn:'2026-09-16',modelAppearanceReviewedOn:'2026-09-16'};return applyVerifiedCastingEmailDirectory(applyCameliaGlobalDraftRemoval(applyEuropeNoTravelRemovals(applyParisPostCarvenCastingReview(applyPhotoManagement(maintainSophiaProfileWithoutAutoAdd(removeEm0FromDrafts(repairParisSS27Packages(applySophiaDescription(applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data)))))))))))))}
+const REQUESTED_DRAFT_MEASUREMENT_MODEL_IDS_2026_09_25=new Set([
+  'new-york-women-callie-steg',
+  'new-york-women-rachel-stone',
+  'site-women-anhelina',
+  'new-york-women-maja-stockwell',
+  'new-york-women-seven-wright',
+  'new-york-development-victoria-sepiashvili',
+  'miami-women-darian',
+  'miami-women-alaina',
+  'new-york-women-tinin',
+  'new-york-development-em0-spit',
+  'new-york-women-agang',
+  'new-york-women-mary-timms',
+  'new-york-women-june-ramadhan',
+  'new-york-women-ni-simone',
+  'new-york-women-shanel-cheatham',
+  'new-york-women-janel-cheatham'
+]);
+function applyRequestedDraftMeasurements20260925(data){
+  const byName=new Map((data.models||[]).map(m=>[normalizeName(m.name),m.id]));
+  const countMatches=d=>{
+    const ids=new Set(Array.isArray(d?.modelIds)?d.modelIds:[]);
+    for(const name of (Array.isArray(d?.models)?d.models:[])){
+      const id=byName.get(normalizeName(name));
+      if(id)ids.add(id);
+    }
+    let count=0;
+    for(const id of ids)if(REQUESTED_DRAFT_MEASUREMENT_MODEL_IDS_2026_09_25.has(id))count++;
+    return count;
+  };
+  const patch=d=>d&&countMatches(d)>=4?{...d,includeStats:true,html:''}:d;
+  data.drafts=(data.drafts||[]).map(patch);
+  data.draft=patch(data.draft||{});
+  data.recovery={...(data.recovery||{}),requestedDraftMeasurementsVersion:1,requestedDraftMeasurementsUpdatedOn:'2026-09-25'};
+  return data;
+}
+
+function applyRecovered(data){const incoming=data||{};data={...structuredClone(seed),...incoming};data.settings={...structuredClone(seed.settings),...(incoming.settings||{})};data.draft={...structuredClone(seed.draft),...(incoming.draft||{})};data.activeDraftId=incoming.activeDraftId||data.activeDraftId||'';data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>applyModelIdentity({...m,availabilityStatus:m.availabilityStatus||'Unknown',statusFrom:m.statusFrom||'',statusTo:m.statusTo||'',holdProject:m.holdProject||'',availabilityNotes:m.availabilityNotes||'',focusRoster:typeof m.focusRoster==='boolean'?m.focusRoster:FOCUS_ROSTER_NAMES.has(m.name)}));const parisDrafts=parisPostDiorDrafts(data.models);data.contacts=mergeContacts([...ADDITIONAL_CRM_CONTACTS_2026_09_24,...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS],data.contacts||[]).map(c=>({...c,relationship:c.relationship||'Developing',preferredNiches:c.preferredNiches||''}));data.submissions=mergeRecovered([...RECOVERED_SUBMISSIONS,...WORK_GMAIL_SUBMISSIONS],data.submissions||[]).map(normalizeRecordModelNames);data.drafts=mergeRecovered([...CALLIE_EUROPE_GOSEE_DRAFTS_2026_09_25,...ADDITIONAL_CRM_DRAFTS_2026_09_25,...ADDITIONAL_CRM_DRAFTS_2026_09_24,...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS,...parisDrafts],data.drafts||[]).map(normalizeRecordModelNames);data=applyRequestedDraftMeasurements20260925(data);data=applyCallieEuropeGoSeeCopyV2(data);data.drafts=data.drafts.filter(d=>!PARIS_INTOWN_FOLLOWUP_REMOVED_IDS_2026_09_25.has(d.id));if(PARIS_INTOWN_FOLLOWUP_REMOVED_IDS_2026_09_25.has(data.activeDraftId||'')){data.activeDraftId='';data.draft=structuredClone(seed.draft);data.selected=[]}data=applyMilanPostEtroCastingContacts(data);data.bookings=(data.bookings||[]).map(normalizeRecordModelNames);data.recovery={...(data.recovery||{}),gmailRecoveredOn:'2026-09-14',submissionCount:RECOVERED_SUBMISSIONS.length,draftCount:RECOVERED_DRAFTS.length,tasksRecovered:0,rosterCheckedOn:'2026-09-14',supplementalModels:['Sophia Pippen'],newModels:['Anhelena','Bianca'],nicheSystemVersion:2,nicheTaxonomy:'standard-no-specialty-story',workflowSystemVersion:3,workGmail:WORK_EMAIL,workGmailSyncedOn:'2026-09-14',workGmailSubmissionCount:WORK_GMAIL_SUBMISSIONS.length,milanFirstDayDraftsAddedOn:'2026-09-16',milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,milanRestDraftsAddedOn:'2026-09-16',milanRestDraftCount:MILAN_REST_DRAFTS.length,parisPostDiorDraftsAddedOn:'2026-09-19',parisPostDiorDraftCount:parisDrafts.length,modelIdentityUpdatedOn:'2026-09-16',modelAppearanceReviewedOn:'2026-09-16'};return applyVerifiedCastingEmailDirectory(applyCameliaGlobalDraftRemoval(applyEuropeNoTravelRemovals(applyParisPostCarvenCastingReview(applyPhotoManagement(maintainSophiaProfileWithoutAutoAdd(removeEm0FromDrafts(repairParisSS27Packages(applySophiaDescription(applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data)))))))))))))}
 /* CRM INDEXEDDB STORAGE V1 */
 const IDB_DB_NAME='jn-agency-crm';
 const IDB_DB_VERSION=1;
@@ -2056,7 +2089,7 @@ function emailHtml(){
   }else{
     lead=tone.tone==='personal'?`Wanted to send over a few more models from our roster${d.brand?' for '+esc(d.brand):''}.`:`I wanted to introduce a few models from our roster${d.brand?' for '+esc(d.brand):''}.`;
   }
-  const blocks=picked.map(m=>`<div style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&m.stats?' | '+formatStats(m.stats):''}</div>${d.sources&&m.profile?`<div><a href="${esc(m.profile)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftCredentialHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`).join('');
+  const blocks=picked.map(m=>`<div style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&(m.stats||m.measurements)?' | '+formatStats(m.stats||m.measurements):''}</div>${d.sources&&m.profile?`<div><a href="${esc(m.profile)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftCredentialHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`).join('');
   const extra=!customBodyOverride&&d.purpose!=='submission'&&d.brief?`<br><div>${esc(d.brief).replace(/\n/g,'<br>')}</div>`:'';
   const more=(d.purpose==='submission'||!picked.length)?'':tone.tone==='personal'?`More model options <a href="https://canva.link/hkqja7ybl587pm8" style="color:#4285f4" target="_blank">HERE</a> if helpful.`:`Please see additional model suggestions <a href="https://canva.link/hkqja7ybl587pm8" style="color:#4285f4" target="_blank">HERE</a>.`;
   const modelSection=blocks||(d.purpose==='followup'?'':'<div>[Select one or more models]</div>');
