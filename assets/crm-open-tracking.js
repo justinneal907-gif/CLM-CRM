@@ -7,7 +7,7 @@
   if(window.__clmOpenTrackingLoaded)return;
   window.__clmOpenTrackingLoaded=true;
 
-  const TRACK_VERSION='2026-09-24-v12';
+  const TRACK_VERSION='2026-09-25-v13';
   const TRACK_BASE='https://countapi.mileshilliard.com/api/v1';
   const TRACK_POLL_MS=60*1000;
   let trackTimer=null;
@@ -478,7 +478,13 @@
       const controller=new AbortController();
       opts.signal=controller.signal;
       const timeout=setTimeout(()=>controller.abort(),30000);
-      try{return await fetch(url,opts)}
+      try{
+        const method=String(opts.method||'GET').toUpperCase();
+        if(window.CLMGmailThrottle?.fetch){
+          return await window.CLMGmailThrottle.fetch(url,opts,{retryRateLimit:method!=='POST',maxRetries:2});
+        }
+        return await fetch(url,opts);
+      }
       catch(err){
         const e=new Error('Network error while contacting Gmail. Check your connection and try again.');
         e.cause=err;
