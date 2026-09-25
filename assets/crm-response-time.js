@@ -6,10 +6,10 @@
   if(window.__clmResponseTimeLoaded)return;
   window.__clmResponseTimeLoaded=true;
 
-  const VERSION='2026-09-24-v1';
-  const SYNC_INTERVAL_MS=5*60*1000;
-  const AUTO_LIMIT=40;
-  const MANUAL_LIMIT=160;
+  const VERSION='2026-09-25-v2';
+  const SYNC_INTERVAL_MS=15*60*1000;
+  const AUTO_LIMIT=8;
+  const MANUAL_LIMIT=40;
   let syncRunning=false;
   let syncTimer=null;
 
@@ -81,9 +81,12 @@
   }
   async function gmailJson(token,url){
     const controller=new AbortController();
-    const timeout=setTimeout(function(){controller.abort()},30000);
+    const timeout=setTimeout(function(){controller.abort()},45000);
     try{
-      const response=await fetch(url,{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:controller.signal});
+      const options={headers:{Authorization:'Bearer '+token},cache:'no-store',signal:controller.signal};
+      const response=window.CLMGmailThrottle?.fetch
+        ?await window.CLMGmailThrottle.fetch(url,options,{retryRateLimit:true,maxRetries:2})
+        :await fetch(url,options);
       const data=await response.json().catch(function(){return {}});
       if(!response.ok)throw new Error((data&&data.error&&data.error.message)||('Gmail request failed ('+response.status+').'));
       return data;
@@ -163,12 +166,17 @@
       if(showStatus&&typeof setStatus==='function')setStatus('Response-time sync failed: '+String(err&&err.message||err));
     }finally{syncRunning=false}
   }
+  function autoSyncAllowed(){
+    const governor=window.CLMGmailThrottle;
+    if(governor?.remainingCooldownMs?.()>0)return false;
+    return governor?.claimBackground?governor.claimBackground('response-time-sync',SYNC_INTERVAL_MS):true;
+  }
   function startTimer(){
     if(syncTimer)clearInterval(syncTimer);
     syncTimer=setInterval(function(){
-      if(typeof gmailAccessToken!=='undefined'&&gmailAccessToken&&Date.now()<gmailTokenExpiresAt)syncResponseTimes(false);
+      if(typeof gmailAccessToken!=='undefined'&&gmailAccessToken&&Date.now()<gmailTokenExpiresAt&&autoSyncAllowed())syncResponseTimes(false);
     },SYNC_INTERVAL_MS);
-    window.addEventListener('clm:gmail-connected',function(){setTimeout(function(){syncResponseTimes(false)},1200)});
+    window.addEventListener('clm:gmail-connected',function(){setTimeout(function(){if(autoSyncAllowed())syncResponseTimes(false)},7000)});
   }
   function init(){
     cleanLegacyEmailIntel();
@@ -176,8 +184,8 @@
     if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
     startTimer();
     setTimeout(function(){
-      if(typeof gmailAccessToken!=='undefined'&&gmailAccessToken&&Date.now()<gmailTokenExpiresAt)syncResponseTimes(false);
-    },2500);
+      if(typeof gmailAccessToken!=='undefined'&&gmailAccessToken&&Date.now()<gmailTokenExpiresAt&&autoSyncAllowed())syncResponseTimes(false);
+    },12000);
   }
   function initWhenReady(attempt){
     attempt=Number(attempt||0);
