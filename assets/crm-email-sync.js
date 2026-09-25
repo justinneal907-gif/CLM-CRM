@@ -641,3 +641,189 @@
   window.addEventListener('clm:workspace-ready',function(){setTimeout(apply,0)},{once:true});
   wait(0);
 })();
+
+
+/* CRM EMAIL COPY DASH CLEANUP · 2026-09-25 */
+(function(){
+  'use strict';
+  if(window.__clmEmailDashCleanupLoaded)return;
+  window.__clmEmailDashCleanupLoaded=true;
+
+  const DASH=/[-\u2010\u2011\u2012\u2013\u2014\u2015\u2212]/g;
+  const SPACED_DASH=/\s+[-\u2010\u2011\u2012\u2013\u2014\u2015\u2212]+\s+/g;
+
+  function cleanSubject(value){
+    return String(value||'')
+      .replace(SPACED_DASH,': ')
+      .replace(DASH,' ')
+      .replace(/\s+([:;,!?])/g,'$1')
+      .replace(/:\s*:/g,':')
+      .replace(/\s{2,}/g,' ')
+      .trim();
+  }
+
+  function cleanBodyText(value){
+    return String(value||'')
+      .replace(SPACED_DASH,', ')
+      .replace(DASH,' ')
+      .replace(/\s+([,.;:!?])/g,'$1')
+      .replace(/,\s*,/g,',')
+      .replace(/\s{2,}/g,' ');
+  }
+
+  function cleanHtml(html){
+    const template=document.createElement('template');
+    template.innerHTML=String(html||'');
+    const walker=document.createTreeWalker(template.content,NodeFilter.SHOW_TEXT);
+    const nodes=[];
+    while(walker.nextNode())nodes.push(walker.currentNode);
+    nodes.forEach(function(node){
+      const parent=node.parentElement;
+      if(parent&&/^(STYLE|SCRIPT|CODE|PRE)$/i.test(parent.tagName))return;
+      node.nodeValue=cleanBodyText(node.nodeValue);
+    });
+    return template.innerHTML;
+  }
+
+  function cleanRecord(record){
+    if(!record||typeof record!=='object')return false;
+    let changed=false;
+    if(typeof record.subject==='string'){
+      const next=cleanSubject(record.subject);
+      if(next!==record.subject){record.subject=next;changed=true}
+    }
+    for(const key of ['customBody','brief']){
+      if(typeof record[key]!=='string')continue;
+      const next=cleanBodyText(record[key]);
+      if(next!==record[key]){record[key]=next;changed=true}
+    }
+    if(typeof record.manualEmailHtml==='string'){
+      const next=cleanHtml(record.manualEmailHtml);
+      if(next!==record.manualEmailHtml){record.manualEmailHtml=next;changed=true}
+    }
+    if(typeof record.html==='string'&&record.html){
+      const next=cleanHtml(record.html);
+      if(next!==record.html){record.html=next;changed=true}
+    }
+    if(changed){
+      record.previewNeedsGmailUpdate=true;
+      if(record.openTrackingState==='ready')record.openTrackingState='editing';
+    }
+    return changed;
+  }
+
+  function cleanUi(){
+    let changed=false;
+    const subject=document.getElementById('emailSubject');
+    if(subject){
+      const next=cleanSubject(subject.value);
+      if(next!==subject.value){subject.value=next;changed=true}
+    }
+    for(const id of ['emailCustomBody','emailContext']){
+      const el=document.getElementById(id);
+      if(!el)continue;
+      const next=cleanBodyText(el.value);
+      if(next!==el.value){el.value=next;changed=true}
+    }
+    const preview=document.getElementById('emailPreview');
+    if(preview&&preview.innerHTML){
+      const next=cleanHtml(preview.innerHTML);
+      if(next!==preview.innerHTML){preview.innerHTML=next;changed=true}
+    }
+    return changed;
+  }
+
+  function applyAll(){
+    if(typeof db==='undefined'||!db)return false;
+    let changed=false;
+    if(cleanRecord(db.draft))changed=true;
+    (db.drafts||[]).forEach(function(record){if(cleanRecord(record))changed=true});
+    if(cleanUi())changed=true;
+    db.settings=Object.assign({},db.settings||{},{
+      noDashEmailCopyVersion:1,
+      noDashEmailCopyUpdatedOn:'2026-09-25'
+    });
+    if(changed&&typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+    return changed;
+  }
+
+  if(typeof emailHtml==='function'&&!emailHtml.__clmNoDash){
+    const original=emailHtml;
+    const wrapped=function(){
+      return cleanHtml(original.apply(this,arguments));
+    };
+    wrapped.__clmNoDash=true;
+    emailHtml=wrapped;
+  }
+
+  if(typeof captureDraft==='function'&&!captureDraft.__clmNoDash){
+    const original=captureDraft;
+    const wrapped=function(){
+      cleanUi();
+      const result=original.apply(this,arguments);
+      cleanRecord(db.draft);
+      return result;
+    };
+    wrapped.__clmNoDash=true;
+    captureDraft=wrapped;
+  }
+
+  if(typeof hydrateDraft==='function'&&!hydrateDraft.__clmNoDash){
+    const original=hydrateDraft;
+    const wrapped=function(){
+      const result=original.apply(this,arguments);
+      cleanUi();
+      return result;
+    };
+    wrapped.__clmNoDash=true;
+    hydrateDraft=wrapped;
+  }
+
+  if(typeof createFormattedWorkGmailDraft==='function'&&!createFormattedWorkGmailDraft.__clmNoDash){
+    const original=createFormattedWorkGmailDraft;
+    const wrapped=async function(){
+      cleanUi();
+      cleanRecord(db.draft);
+      const active=db.activeDraftId?(db.drafts||[]).find(function(d){return d.id===db.activeDraftId}):null;
+      if(active)cleanRecord(active);
+      if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+      return original.apply(this,arguments);
+    };
+    wrapped.__clmNoDash=true;
+    createFormattedWorkGmailDraft=wrapped;
+  }
+
+  ['emailSubject','emailCustomBody','emailContext'].forEach(function(id){
+    const el=document.getElementById(id);
+    if(!el||el.dataset.noDashBound==='1')return;
+    el.dataset.noDashBound='1';
+    el.addEventListener('blur',function(){
+      cleanUi();
+      if(typeof captureDraft==='function')captureDraft();
+      if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+      if(typeof renderEmail==='function')renderEmail();
+    });
+  });
+
+  window.clmCleanEmailDashes=function(){
+    const changed=applyAll();
+    if(typeof renderEmail==='function')renderEmail();
+    if(typeof renderDrafts==='function')renderDrafts();
+    if(typeof setStatus==='function')setStatus('Removed dashes from CRM email subjects and body copy.');
+    return changed;
+  };
+
+  window.addEventListener('clm:workspace-ready',function(){
+    setTimeout(function(){
+      applyAll();
+      if(typeof renderAll==='function')renderAll();
+    },0);
+  },{once:true});
+
+  setTimeout(function(){
+    if(typeof db!=='undefined'&&db){
+      applyAll();
+      if(typeof renderAll==='function')renderAll();
+    }
+  },1200);
+})();
