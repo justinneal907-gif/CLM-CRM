@@ -1,0 +1,16 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const html=fs.readFileSync('index.html','utf8');
+for(const x of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g))if(x[1].trim())new Function(x[1]);
+new Function(fs.readFileSync('assets/crm-model-responses.js','utf8'));
+assert.equal((html.match(/function renderTables\(/g)||[]).length,1);
+const elements={};const ctx={db:{models:[{id:'m',name:'Malia'},{id:'a',name:'Agang'}],submissions:[{id:'a',models:['Agang'],status:'Submitted',openTrackingId:'a',openTrackingCount:1},{id:'m',models:['Malia'],project:'OTTOLINGER SS27',status:'Submitted',openTrackingId:'m',openTrackingCount:8}],modelInteractions:[{id:'r',kind:'Request',models:['Malia'],project:'OTTOLINGER SS27'},{id:'r2',kind:'Request',models:['Malia'],project:'OTTOLINGER SS27'},{kind:'Response',models:['Agang'],project:'Other'}],bookings:[],drafts:[],contacts:[],tasks:[],settings:{submissionSort:'opens-desc'}},SUBMISSION_RESPONSE_STATUSES:['Requested','Casting','Callback','First Hold','Second Hold','Booked'],normalizeName:s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(),esc:s=>String(s||''),$:(id)=>elements[id]||(elements[id]={dataset:{},addEventListener(){}}),document:{querySelectorAll:()=>[]}};
+vm.createContext(ctx);
+vm.runInContext(html.slice(html.indexOf('function performanceModelMatches'),html.indexOf('function renderRevenueDashboard')),ctx);
+assert.equal(ctx.performanceByModel()[0].name,'Malia');assert.equal(ctx.performanceByModel()[0].responses,1);
+ctx.db.submissions[1].status='Requested';assert.equal(ctx.performanceByModel()[0].responses,1);
+vm.runInContext(html.slice(html.indexOf('function submissionSortTime'),html.indexOf('function renderToday')),ctx);
+vm.runInContext(html.slice(html.indexOf('function recordActionMenu'),html.indexOf('function compactPackageActions')),ctx);
+ctx.renderTables();const result=elements['#submissionsBody'].innerHTML;
+assert(result.indexOf('Malia')<result.indexOf('Agang'));assert(result.includes('8 opens'));assert.equal((result.match(/<td[ >]/g)||[]).length,14);
+ctx.db.settings.submissionSort='opens-asc';ctx.renderTables();assert(elements['#submissionsBody'].innerHTML.indexOf('Agang')<elements['#submissionsBody'].innerHTML.indexOf('Malia'));
+console.log('PASS: effective table renderer, open cells, both sort directions, synced request ranking, duplicate requests, status/email deduplication and syntax');

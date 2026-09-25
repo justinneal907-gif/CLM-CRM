@@ -353,6 +353,7 @@
     }).sort(function(a,b){return (Date.parse(b.date||0)||0)-(Date.parse(a.date||0)||0)});
   }
   function renderDashboard(){
+    if(typeof renderPerformanceDashboard==='function')renderPerformanceDashboard();
     const el=document.getElementById('modelResponseDashboard');
     if(!el)return;
     const rows=recentRecords();
