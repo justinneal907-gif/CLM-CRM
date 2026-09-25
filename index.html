@@ -1165,6 +1165,7 @@ function isUrbanDecayDraft20260925(d){
 }
 
 function applyUrbanDecayDraftFix20260925(data){
+  if((data.recovery?.urbanDecayDraftFixVersion||0)>=2)return data;
   const byId=new Map((data.models||[]).map(m=>[m.id,m]));
   const modelStats={};
   for(const id of URBAN_DECAY_MODEL_IDS_2026_09_25){
@@ -1214,25 +1215,32 @@ function applyUrbanDecayDraftFix20260925(data){
       customBody:URBAN_DECAY_BODY_2026_09_25,
       bodyEdited:true,
       includeStats:true,
+      models:[...canonical.models],
+      modelIds:[...URBAN_DECAY_MODEL_IDS_2026_09_25],
       modelStats:{...modelStats,...(d.modelStats||{}),'site-women-anhelina':ANHELINA_CANONICAL_STATS_2026_09_25},
       html:''
     };
   });
   if(!found)data.drafts.push(canonical);
 
-  if(isUrbanDecayDraft20260925(data.draft||{})){
-    data.draft={...data.draft,
+  const activeUrban=(data.drafts||[]).find(d=>d.id===data.activeDraftId&&isUrbanDecayDraft20260925(d));
+  if(isUrbanDecayDraft20260925(data.draft||{})||activeUrban){
+    const source=activeUrban||data.draft||canonical;
+    data.draft={...source,
       purpose:'submission',
       brief:'',
       customBody:URBAN_DECAY_BODY_2026_09_25,
       bodyEdited:true,
       includeStats:true,
-      modelStats:{...modelStats,...(data.draft.modelStats||{}),'site-women-anhelina':ANHELINA_CANONICAL_STATS_2026_09_25},
+      models:[...canonical.models],
+      modelIds:[...URBAN_DECAY_MODEL_IDS_2026_09_25],
+      modelStats:{...modelStats,...(source.modelStats||{}),'site-women-anhelina':ANHELINA_CANONICAL_STATS_2026_09_25},
       html:''
     };
+    data.selected=[...URBAN_DECAY_MODEL_IDS_2026_09_25];
   }
 
-  data.recovery={...(data.recovery||{}),urbanDecayDraftFixVersion:1,urbanDecayDraftFixUpdatedOn:'2026-09-25'};
+  data.recovery={...(data.recovery||{}),urbanDecayDraftFixVersion:2,urbanDecayDraftFixUpdatedOn:'2026-09-25'};
   return data;
 }
 
@@ -2269,6 +2277,7 @@ function updateEmailPurposeUi(){const follow=$('#emailPurpose')?.value==='follow
 function queueEmailDraftRender(){updateEmailPurposeUi();captureDraft();clearTimeout(emailDraftRenderTimer);emailDraftRenderTimer=setTimeout(()=>{renderEmailPreviewOnly();persistWorkspaceSafe(false)},90)}
 function saveDraft(){
   captureDraft();const currentId=db.activeDraftId||'';const existingIndex=currentId?db.drafts.findIndex(x=>x.id===currentId):-1;
+  if(existingIndex>=0&&(db.draft?.manualEmailHtml||db.draft?.customBody))db.draft.bodyEdited=true;
   const snapshot={date:nyDate(),...db.draft,models:selectedModels().map(m=>m.name),modelIds:[...selected],html:''};
   if(existingIndex>=0){db.drafts[existingIndex]={...db.drafts[existingIndex],...snapshot,id:currentId};db.activeDraftId=currentId}else{const id=uid();db.drafts.push({id,...snapshot});db.activeDraftId=id}
   db.selected=[...selected];if(!persistWorkspaceSafe())return;renderAll();setStatus(existingIndex>=0?'Draft updated in CRM.':'Draft saved in CRM.')
