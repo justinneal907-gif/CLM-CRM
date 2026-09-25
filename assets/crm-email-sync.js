@@ -896,7 +896,28 @@
     return names.slice(0,-1).join(', ')+' and '+names[names.length-1];
   }
 
-  function introCopy(d,picked){
+  function templateModelNames(picked){
+    const names=(picked||[]).map(function(model){return shortSubjectName(model&&model.name)}).filter(Boolean);
+    const unique=[...new Set(names)];
+    if(unique.length<2)return unique[0]||'';
+    if(unique.length===2)return unique[0]+' and '+unique[1];
+    return unique.slice(0,-1).join(', ')+' and '+unique[unique.length-1];
+  }
+
+  function introCopy(d,picked,record){
+    const recordText=[
+      record&&record.id,record&&record.brandProject,record&&record.project,
+      record&&record.subject,record&&record.parsedBrief&&record.parsedBrief.project,
+      record&&record.parsedBrief&&record.parsedBrief.location
+    ].filter(Boolean).join(' ');
+    if(/Paris/i.test(recordText)&&/In[\\s-]?Town|in town model update/i.test(recordText)){
+      const names=templateModelNames(picked);
+      if(names){
+        const verb=(picked||[]).length===1?'is':'are';
+        const pronoun=(picked||[]).length===1?'Their':'Their';
+        return 'Another quick Paris update '+names+' '+verb+' in Paris as well. '+pronoun+' materials are below.';
+      }
+    }
     const custom=cleanCopy(d.customBody||'');
     if(custom)return custom;
     if(d.purpose==='submission')return 'I preselected a few models I think would be a good fit. Their materials are below.';
@@ -940,7 +961,7 @@
     const picked=currentSelectedModels();
     const greetingNames=greetingName(record,d.contactName);
     const greeting=greetingNames.length?'Hi '+esc(namesText(greetingNames))+',':'Hi,';
-    const intro=introCopy(d,picked);
+    const intro=introCopy(d,picked,record);
     const brief=cleanCopy(d.brief||'');
     const blocks=picked.map(function(model){return modelBlock(model,d)}).join('');
     const more=picked.length
@@ -981,7 +1002,7 @@
     const natural=unique.length===1?unique[0]:unique.length===2?unique[0]+' and '+unique[1]:unique.slice(0,-1).join(', ')+' and '+unique[unique.length-1];
     const subject='Paris S/S 2027 '+joined+' in Paris';
     const body=unique.length===1
-      ?'Another quick Paris update '+natural+' is in Paris as well. '+(natural==='Eva'?'Her':'Their')+' materials are below.'
+      ?'Another quick Paris update '+natural+' is in Paris as well. Their materials are below.'
       :'Another quick Paris update '+natural+' are in Paris as well. Their materials are below.';
     let changed=false;
     if(record.subject!==subject){record.subject=subject;changed=true}
@@ -1019,7 +1040,7 @@
       if(next!==subject.value){subject.value=next;changed=true}
     }
     db.settings=Object.assign({},db.settings||{},{
-      exactEmailTemplateVersion:1,
+      exactEmailTemplateVersion:2,
       exactEmailTemplateUpdatedOn:'2026-09-25'
     });
     if(changed&&typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
