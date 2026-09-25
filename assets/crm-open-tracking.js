@@ -7,7 +7,7 @@
   if(window.__clmOpenTrackingLoaded)return;
   window.__clmOpenTrackingLoaded=true;
 
-  const TRACK_VERSION='2026-09-25-v13';
+  const TRACK_VERSION='2026-09-25-v14';
   const TRACK_BASE='https://countapi.mileshilliard.com/api/v1';
   const TRACK_POLL_MS=60*1000;
   let trackTimer=null;
@@ -465,6 +465,7 @@
           'Checked '+succeeded+' emails. '+newSignals+' with new signals.'});
       if(succeeded)db.settings.openTrackingLastCheckAt=nowIso();
       if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+      if(typeof renderTables==='function')renderTables();
       if(showStatus&&typeof setStatus==='function')setStatus(db.settings.openTrackingCheckSummary);
     }finally{trackChecking=false;renderTrackerStatus()}
   }
