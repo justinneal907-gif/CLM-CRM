@@ -345,10 +345,15 @@ function applyCameliaGlobalDraftRemoval(data){
     if(changed)out.html='';
     return out;
   };
+  data.models=(data.models||[]).filter(m=>!blocked(m));
+  data.submissions=(data.submissions||[]).map(clean);
+  data.bookings=(data.bookings||[]).map(clean).filter(b=>!blocked(b.modelId||b.model||b.modelName||''));
+  data.modelInteractions=(data.modelInteractions||[]).filter(r=>!blocked(r.modelId||r.model||r.modelName||'')).map(clean);
   data.drafts=(data.drafts||[]).map(clean);
   data.draft=clean(data.draft||{});
   data.selected=(data.selected||[]).filter(id=>!blocked(id));
-  data.recovery={...(data.recovery||{}),cameliaRemovedFromAllDrafts:true,cameliaDraftRemovalUpdatedOn:'2026-09-21'};
+  if(data.customPhotos)for(const id of Object.keys(data.customPhotos))if(blocked(id))delete data.customPhotos[id];
+  data.recovery={...(data.recovery||{}),cameliaRemovedFromCRM:true,cameliaRemovedFromAllDrafts:true,cameliaDraftRemovalUpdatedOn:'2026-09-25'};
   return data;
 }
 
@@ -811,7 +816,7 @@ function expandMilanPackages(data){
 }
 
 const FOCUS_ROSTER_NAMES=new Set(['Claudia Lucchini','Agang','Callie Steg','Maja Stockwell','Alex Connor','Ambre Prognitz','Ainoa']);
-const seed={models:BASE_ROSTER.map(m=>applyModelIdentity({...m,niche:NICHE_MAP[m.name]||'Development',secondaryNiche:SECONDARY_NICHE_MAP[m.name]||'',stats:m.measurements,profile:m.profileUrl,photo:m.photoUrl,sourceDate:m.sourceDate||SOURCE_DATE,availabilityStatus:'Unknown',statusFrom:'',statusTo:'',holdProject:'',availabilityNotes:'',focusRoster:FOCUS_ROSTER_NAMES.has(m.name)})),contacts:structuredClone([...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS]),submissions:[],bookings:[],tasks:[],modelInteractions:[],drafts:[],draft:{purpose:'submission',contactId:'',contactName:'',company:'',recipientEmail:'',brandProject:'',packageLink:'https://canva.link/hkqja7ybl587pm8',brief:'',castingBriefRaw:'',parsedBrief:null,subject:'Model Package',includeStats:true,includePhotos:true,includeSources:true},selected:[],customPhotos:{},settings:{personalCommissionRate:10,autoFollowUp:true,closeStaleSubmissions:true,workEmail:WORK_EMAIL}};
+const seed={models:BASE_ROSTER.filter(m=>m.id!=='milan-women-camelia-boca').map(m=>applyModelIdentity({...m,niche:NICHE_MAP[m.name]||'Development',secondaryNiche:SECONDARY_NICHE_MAP[m.name]||'',stats:m.measurements,profile:m.profileUrl,photo:m.photoUrl,sourceDate:m.sourceDate||SOURCE_DATE,availabilityStatus:'Unknown',statusFrom:'',statusTo:'',holdProject:'',availabilityNotes:'',focusRoster:FOCUS_ROSTER_NAMES.has(m.name)})),contacts:structuredClone([...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS]),submissions:[],bookings:[],tasks:[],modelInteractions:[],drafts:[],draft:{purpose:'submission',contactId:'',contactName:'',company:'',recipientEmail:'',brandProject:'',packageLink:'https://canva.link/hkqja7ybl587pm8',brief:'',castingBriefRaw:'',parsedBrief:null,subject:'Model Package',includeStats:true,includePhotos:true,includeSources:true},selected:[],customPhotos:{},settings:{personalCommissionRate:10,autoFollowUp:true,closeStaleSubmissions:true,workEmail:WORK_EMAIL}};
 let db=structuredClone(seed);let selected=[];let active='today';let modalType=null;let modalEditId=null;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
