@@ -2740,7 +2740,9 @@ async function bootstrapWorkspace(){
   }catch(err){console.info('Pre-repair workspace backup skipped',err)}
   db=await loadWorkspaceIndexedDB();
   db.recovery={...(db.recovery||{}),safeGallerySnapshot20260929:true};
-  try{if(window.CLMMediaStore?.migrateWorkspace){const migrated=await window.CLMMediaStore.migrateWorkspace(db);db=migrated.data;if(migrated.changed)await idbWriteWorkspace(structuredClone(db))}}catch(err){console.warn('Legacy photo migration skipped',err)}
+  const repaired=repairPhotoState20260929(db);db=repaired.data;
+  try{if(window.CLMMediaStore?.migrateWorkspace){const migrated=await window.CLMMediaStore.migrateWorkspace(db);db=migrated.data}}catch(err){console.warn('Legacy photo migration skipped',err)}
+  try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Recovered workspace save skipped',err)}
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
@@ -2757,6 +2759,71 @@ async function bootstrapWorkspace(){
   restoreWorkGmailSession().catch(err=>console.info('Gmail session restore skipped',err));
 }
 bootstrapWorkspace();
+
+/* SAFE PHOTO/DRAFT RECOVERY 2026-09-29
+   Restores missing photo selections from seeded package records, rebuilds the
+   gallery as a unique library, and never replaces user-edited draft fields. */
+function repairPhotoState20260929(data){
+  if(data.recovery?.safePhotoRecoveryVersion>=2)return {data,changed:false,recoveredSelections:0,recoveredLibrary:0};
+  let recoveredSelections=0,recoveredLibrary=0,changed=false;
+  data.deletedPhotoKeys={
+    'los-angeles-women-elle-pickens':['120:58305e6f:e9c6bc35','120:f26dfe95:17f75549','120:68a86ebf:94539e39']
+  };
+  const sources=[];
+  const push=x=>Array.isArray(x)&&sources.push(...x);
+  push(typeof BRIDAL_WEEK_DRAFTS_2026_09_28!=='undefined'?BRIDAL_WEEK_DRAFTS_2026_09_28:[]);
+  push(typeof CALLIE_EUROPE_GOSEE_DRAFTS_2026_09_25!=='undefined'?CALLIE_EUROPE_GOSEE_DRAFTS_2026_09_25:[]);
+  push(typeof ADDITIONAL_CRM_DRAFTS_2026_09_25!=='undefined'?ADDITIONAL_CRM_DRAFTS_2026_09_25:[]);
+  push(typeof ADDITIONAL_CRM_DRAFTS_2026_09_24!=='undefined'?ADDITIONAL_CRM_DRAFTS_2026_09_24:[]);
+  push(typeof RECOVERED_DRAFTS!=='undefined'?RECOVERED_DRAFTS:[]);
+  push(typeof MILAN_FIRST_DAY_DRAFTS!=='undefined'?MILAN_FIRST_DAY_DRAFTS:[]);
+  push(typeof MILAN_REST_DRAFTS!=='undefined'?MILAN_REST_DRAFTS:[]);
+  try{push(parisPostDiorDrafts(data.models||[]))}catch{}
+  const templates=new Map(sources.filter(d=>d?.id).map(d=>[d.id,d]));
+  const hasValue=value=>Array.isArray(value)?value.some(Boolean):!!value;
+  const recoverDraft=d=>{
+    if(!d?.id)return;
+    const t=templates.get(d.id);
+    d.photoSelections=d.photoSelections||{};
+    d.packagePhotos=d.packagePhotos||{};
+    if(t?.photoSelections){
+      for(const [id,value] of Object.entries(t.photoSelections)){
+        if(hasValue(d.photoSelections[id]))continue;
+        d.photoSelections[id]=structuredClone(value);
+        const list=Array.isArray(value)?value:[value];
+        d.packagePhotos[id]=uniqueGalleryPhotoUrls(list.filter(Boolean));
+        recoveredSelections++;changed=true;
+      }
+    }
+    for(const [id,list] of Object.entries(d.packagePhotos||{})){
+      if(!hasValue(d.photoSelections[id])&&Array.isArray(list)&&list.some(Boolean)){
+        d.photoSelections[id]=uniqueGalleryPhotoUrls(list.filter(Boolean));
+        recoveredSelections++;changed=true;
+      }
+    }
+  };
+  for(const d of data.drafts||[])recoverDraft(d);
+  recoverDraft(data.draft);
+
+  data.photoLibrary=data.photoLibrary||{};
+  const add=(id,url,label='Recovered draft photo')=>{
+    url=upgradedPhotoURL(String(url||'').trim());if(!id||!url)return;
+    const list=data.photoLibrary[id]||(data.photoLibrary[id]=[]);
+    const key=galleryPhotoKey(url);
+    if(list.some(x=>galleryPhotoKey(photoURL(x))===key))return;
+    list.push({url,label});recoveredLibrary++;changed=true;
+  };
+  for(const d of [data.draft,...(data.drafts||[])].filter(Boolean)){
+    for(const [id,value] of Object.entries(d.photoSelections||{})){
+      for(const url of (Array.isArray(value)?value:[value]))add(id,url,'Recovered package photo');
+    }
+    for(const [id,list] of Object.entries(d.packagePhotos||{})){
+      for(const url of (Array.isArray(list)?list:[]))add(id,url,'Recovered package photo');
+    }
+  }
+  data.recovery={...(data.recovery||{}),safePhotoRecoveryVersion:2,safePhotoRecoveryOn:'2026-09-29',recoveredPhotoSelections20260929:recoveredSelections,recoveredGalleryEntries20260929:recoveredLibrary};
+  return {data,changed:true,recoveredSelections,recoveredLibrary};
+}
 /* END INDEXEDDB RUNTIME OVERRIDES */
 $('#modelSearch').oninput=renderModels;$('#locationFilter').onchange=renderModels;$('#divisionFilter').onchange=renderModels;$('#nicheFilter').onchange=renderModels;
 $('#availabilityFilter').onchange=renderModels;$('#focusRosterFilter').onchange=renderModels;$('#selectNicheBtn').onclick=selectNicheFromModels;$('#clearFilters').onclick=()=>{$('#modelSearch').value='';$('#locationFilter').value='';$('#divisionFilter').value='';$('#nicheFilter').value='';$('#availabilityFilter').value='';$('#focusRosterFilter').value='';renderModels()};
