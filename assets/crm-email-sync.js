@@ -279,11 +279,11 @@
       }
       saveKnownIds(known);
       db.settings={...(db.settings||{}),gmailLastSyncAt:new Date().toISOString(),gmailSentSyncVersion:SYNC_VERSION};
-      if(updates||checked){
-        if(typeof save==='function')save();
-        else if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
-      }else if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
-      if(typeof renderAll==='function')renderAll();
+      if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+      else if((updates||checked)&&typeof save==='function')save();
+      if(typeof renderAll==='function'){
+        try{renderAll()}catch(renderErr){console.error('CLM post-sync render failed; sync data is still saved.',renderErr)}
+      }
       renderSyncStatus();
       if(showStatus&&typeof setStatus==='function')setStatus(updates?('Gmail sync updated '+updates+' submission record'+(updates===1?'':'s')+'.'):'Gmail sync is current; no new sent packages found.');
     }catch(err){
