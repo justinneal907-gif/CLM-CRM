@@ -249,7 +249,7 @@ th,td{padding:8px}
 <script src="assets/models/sophia-extra-photo-1.js"></script>
 <script src="assets/models/sophia-extra-photo-2.js"></script>
 <script src="assets/data/core-roster.js?v=20260929-1"></script>
-<script src="assets/crm-media-store.js?v=20260929-1"></script>
+<script src="assets/crm-media-store.js?v=20260929-safe-1"></script>
 <script>
 const SOURCE_DATE='2026-09-14';
 const BASE_ROSTER=window.CLM_CORE_ROSTER?.BASE_ROSTER||[];
@@ -305,23 +305,6 @@ async function ensureMilanArchiveLoaded(){
   MILAN_REST_BRAND_PROFILES=a.MILAN_REST_BRAND_PROFILES||{};
   MILAN_PACKAGE_CANDIDATES=a.MILAN_PACKAGE_CANDIDATES||{};
   Object.assign(BRAND_PROFILES,MILAN_REST_BRAND_PROFILES);
-  if(typeof db!=='undefined'&&db&&Array.isArray(db.drafts)){
-    const templates=[...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS];
-    const missing=templates.filter(t=>!(db.drafts||[]).some(d=>d.id===t.id));
-    if(missing.length){
-      db.drafts=mergeRecovered(templates,db.drafts||[]).map(normalizeRecordModelNames);
-      db.recovery={...(db.recovery||{})};
-      delete db.recovery.milanPackageDepthVersion;
-      delete db.recovery.milanOpenCloseVersion;
-      db=applyMilanAvailability(db);
-      db=expandMilanPackages(db);
-      db=applyMilanOpenCloseResearch(db);
-      db=applyMilanPostEtroCastingContacts(db);
-      db.recovery.milanFirstDayDraftCount=MILAN_FIRST_DAY_DRAFTS.length;
-      db.recovery.milanRestDraftCount=MILAN_REST_DRAFTS.length;
-      persistWorkspaceSafe(false);
-    }
-  }
   return true;
 }
 async function ensureCastingLeadsLoaded(){
@@ -1348,15 +1331,16 @@ function idbReadWorkspace(){
     tx.onerror=()=>{database.close();reject(tx.error||new Error('IndexedDB read transaction failed.'))};
   }));
 }
-function idbWriteWorkspace(snapshot){
+function idbWriteWorkspaceAtKey(snapshot,key=IDB_STATE_KEY){
   return openCRMDatabase().then(database=>new Promise((resolve,reject)=>{
     const tx=database.transaction(IDB_STORE,'readwrite');
-    tx.objectStore(IDB_STORE).put(snapshot,IDB_STATE_KEY);
+    tx.objectStore(IDB_STORE).put(snapshot,key);
     tx.oncomplete=()=>{database.close();resolve(true)};
     tx.onerror=()=>{database.close();reject(tx.error||new Error('IndexedDB write transaction failed.'))};
     tx.onabort=()=>{database.close();reject(tx.error||new Error('IndexedDB write transaction was aborted.'))};
   }));
 }
+function idbWriteWorkspace(snapshot){return idbWriteWorkspaceAtKey(snapshot,IDB_STATE_KEY)}
 function loadLegacyWorkspace(){
   try{
     const v2=localStorage.getItem(NEW_KEY);
@@ -1384,6 +1368,12 @@ async function loadWorkspaceIndexedDB(){
     const stored=await idbReadWorkspace();
     if(stored){
       idbUnavailable=false;
+      stored.recovery={...(stored.recovery||{})};
+      if(!stored.recovery.photoDeleteQuarantine20260929){
+        stored.recovery.quarantinedDeletedPhotoKeys20260929=structuredClone(stored.deletedPhotoKeys||{});
+        stored.recovery.photoDeleteQuarantine20260929=true;
+      }
+      stored.deletedPhotoKeys={};
       return applyRecovered(stored);
     }
   }catch(err){
@@ -2464,6 +2454,23 @@ function photoKey(value){
   for(let i=0;i<url.length;i++){a=Math.imul(a^url.charCodeAt(i),16777619);b=Math.imul(b,33)^url.charCodeAt(i)}
   return url.length+':'+(a>>>0).toString(16)+':'+(b>>>0).toString(16);
 }
+function galleryPhotoKey(value){
+  const url=upgradedPhotoURL(photoURL(value));
+  const content=window.CLMMediaStore?.contentKey?.(url);
+  return content&&content!==url?content:photoKey(url);
+}
+function uniqueGalleryPhotoUrls(values){
+  const out=[],seen=new Set();
+  for(const url of values||[]){
+    if(!url)continue;
+    const key=galleryPhotoKey(url);
+    if(seen.has(key))continue;
+    seen.add(key);out.push(url);
+  }
+  return out;
+}
+function isGalleryHidden(id,url){return !!url&&(db.hiddenGalleryPhotoKeys?.[id]||[]).includes(galleryPhotoKey(url))}
+
 function isDeletedPhoto(data,id,url){return !!url&&(data.deletedPhotoKeys?.[id]||[]).includes(photoKey(url))}
 function upgradedPhotoURL(url){
   if(typeof url!=='string')return url;
@@ -2492,15 +2499,20 @@ function applyPhotoManagement(data){
   return data;
 }
 function draftPhotoOptions(m){
-  const list=[],add=(x,label)=>{const url=upgradedPhotoURL(photoURL(x));if(url&&!isDeletedPhoto(db,m.id,url)&&!list.some(p=>photoKey(p.url)===photoKey(url)))list.push({url,label:label||x?.label||'Photo'})};
+  const list=[],add=(x,label)=>{
+    const url=upgradedPhotoURL(photoURL(x));
+    if(!url||isDeletedPhoto(db,m.id,url)||isGalleryHidden(m.id,url))return;
+    const key=galleryPhotoKey(url);
+    if(list.some(p=>galleryPhotoKey(p.url)===key))return;
+    list.push({url,label:label||x?.label||'Photo'});
+  };
   (db.photoLibrary?.[m.id]||[]).forEach(x=>add(x,x.label||'Saved photo'));
   [m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(a=>Array.isArray(a)&&a.forEach(x=>add(x,'Portfolio photo')));
   if(typeof MODEL_PHOTO_LIBRARY!=='undefined')(MODEL_PHOTO_LIBRARY[m.id]||[]).forEach(x=>add(x,'Agency photo'));
   add(db.customPhotos?.[m.id],'Custom photo');add(m.photo,'Primary photo');add(m.photoUrl,'Agency photo');
-  for(const d of [db.draft,...(db.drafts||[])].filter(Boolean)){
-    const chosen=d.photoSelections?.[m.id];(Array.isArray(chosen)?chosen:[chosen]).forEach(x=>add(x,'Draft photo'));
-    (d.packagePhotos?.[m.id]||[]).forEach(x=>add(x,'Draft photo'));
-  }
+  const chosen=db.draft?.photoSelections?.[m.id];
+  (Array.isArray(chosen)?chosen:[chosen]).forEach(x=>add(x,'Current draft photo'));
+  (db.draft?.packagePhotos?.[m.id]||[]).forEach(x=>add(x,'Current draft photo'));
   return list;
 }
 function getPhoto(m){return [db.customPhotos?.[m.id],m.photo,m.photoUrl].map(upgradedPhotoURL).find(url=>url&&!isDeletedPhoto(db,m.id,url))||''}
@@ -2523,15 +2535,27 @@ function deletePhotoFromWorkspace(data,id,url){
 }
 function removePackagePhoto(id,i){
   const model=db.models.find(m=>m.id===id),photo=model&&draftPhotoOptions(model)[i];if(!photo)return;
-  if(!confirm('Delete this image from the CRM and all saved draft photo selections?'))return;
-  deletePhotoFromWorkspace(db,id,photo.url);if(window.CLMMediaStore?.isMediaRef?.(photo.url))window.CLMMediaStore.remove(photo.url).catch(console.warn);persistWorkspaceSafe(true);renderAll();
-  setStatus('Image deleted from the CRM and saved drafts.');
+  const library=packagePhotoLibrary(),exact=photoKey(photo.url),before=library[id]||[];
+  const saved=before.some(x=>photoKey(x)===exact);
+  if(saved)library[id]=before.filter(x=>photoKey(x)!==exact);
+  else{
+    db.hiddenGalleryPhotoKeys=db.hiddenGalleryPhotoKeys||{};
+    db.hiddenGalleryPhotoKeys[id]=[...new Set([...(db.hiddenGalleryPhotoKeys[id]||[]),galleryPhotoKey(photo.url)])];
+  }
+  const strip=value=>{
+    if(Array.isArray(value))return value.filter(url=>galleryPhotoKey(url)!==galleryPhotoKey(photo.url));
+    return value&&galleryPhotoKey(value)===galleryPhotoKey(photo.url)?'':value;
+  };
+  if(db.draft?.photoSelections&&Object.prototype.hasOwnProperty.call(db.draft.photoSelections,id))db.draft.photoSelections[id]=strip(db.draft.photoSelections[id]);
+  if(Array.isArray(db.draft?.packagePhotos?.[id]))db.draft.packagePhotos[id]=strip(db.draft.packagePhotos[id]);
+  persistWorkspaceSafe(true);renderEmail();renderPhotoLibrary();
+  setStatus('Photo removed from this gallery. Saved drafts were not changed.');
 }
 function addPackagePhoto(id,url,label='Saved photo'){
   url=upgradedPhotoURL(String(url||'').trim());if(!url)return;
   if(db.deletedPhotoKeys?.[id])db.deletedPhotoKeys[id]=db.deletedPhotoKeys[id].filter(k=>k!==photoKey(url));
   const library=packagePhotoLibrary();library[id]=library[id]||[];
-  if(!library[id].some(x=>photoKey(x)===photoKey(url)))library[id].push({url,label});
+  if(!library[id].some(x=>galleryPhotoKey(x)===galleryPhotoKey(url)))library[id].push({url,label});
 }
 /* End persistent photo management. */
 
@@ -2563,18 +2587,18 @@ function draftPhotosForModel(m){
   const selections=draftPhotoSelections();
   if(Object.prototype.hasOwnProperty.call(selections,m.id)){
     const raw=Array.isArray(selections[m.id])?selections[m.id]:[selections[m.id]];
-    return [...new Set(raw.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)))];
+    return uniqueGalleryPhotoUrls(raw.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)));
   }
   const legacy=db.draft?.packagePhotos?.[m.id];
   if(Array.isArray(legacy)&&legacy.length){
-    return [...new Set(legacy.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)))];
+    return uniqueGalleryPhotoUrls(legacy.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)));
   }
   const fallback=getPhoto(m);
   return fallback?[fallback]:[];
 }
 function draftPhotoForModel(m){return draftPhotosForModel(m)[0]||''}
 function setDraftPhotosForModel(id,urls){
-  const clean=[...new Set((urls||[]).map(upgradedPhotoURL).filter(Boolean))];
+  const clean=uniqueGalleryPhotoUrls((urls||[]).map(upgradedPhotoURL).filter(Boolean));
   draftPhotoSelections()[id]=clean;
   db.draft.packagePhotos=db.draft.packagePhotos||{};
   db.draft.packagePhotos[id]=[...clean];
@@ -2582,9 +2606,9 @@ function setDraftPhotosForModel(id,urls){
 function togglePackagePhoto(id,i){
   const m=db.models.find(x=>x.id===id),p=m&&draftPhotoOptions(m)[i];if(!p)return;
   if(!selected.includes(id))selected.push(id);
-  const current=draftPhotosForModel(m),key=photoKey(p.url);
-  const exists=current.some(url=>photoKey(url)===key);
-  setDraftPhotosForModel(id,exists?current.filter(url=>photoKey(url)!==key):[...current,p.url]);
+  const current=draftPhotosForModel(m),key=galleryPhotoKey(p.url);
+  const exists=current.some(url=>galleryPhotoKey(url)===key);
+  setDraftPhotosForModel(id,exists?current.filter(url=>galleryPhotoKey(url)!==key):[...current,p.url]);
   persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);
   setStatus(exists?'Photo removed from this package.':'Photo added to this package.');
 }
@@ -2627,9 +2651,9 @@ function renderPhotoLibrary(){
   const cur=s.value;s.innerHTML=db.models.map(m=>`<option value="${esc(m.id)}">${esc(m.name)} · ${esc(m.location)}</option>`).join('');
   s.value=db.models.some(m=>m.id===cur)?cur:(selected[0]||db.models[0]?.id||'');
   const m=db.models.find(x=>x.id===s.value);if(!m)return g.innerHTML='<div class="photo-library-empty">Choose a model.</div>';
-  const p=draftPhotoOptions(m),selectedUrls=draftPhotosForModel(m),selectedKeys=new Set(selectedUrls.map(photoKey));
+  const p=draftPhotoOptions(m),selectedUrls=draftPhotosForModel(m),selectedKeys=new Set(selectedUrls.map(galleryPhotoKey));
   g.innerHTML=p.length?p.map((x,i)=>{
-    const active=selectedKeys.has(photoKey(x.url));
+    const active=selectedKeys.has(galleryPhotoKey(x.url));
     return `<div class="photo-library-card ${active?'active':''}"><img loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(x.url))}" alt="${esc(m.name)} photo"><div class="tiny"><b>${esc(x.label)}</b></div><button class="btn ${active?'primary':''}" type="button" onclick="togglePackagePhoto('${m.id}',${i})">${active?'Remove from package':'Add to package'}</button><button class="btn danger" type="button" onclick="removePackagePhoto('${m.id}',${i})">Delete from CRM</button></div>`;
   }).join(''):'<div class="photo-library-empty">No photos yet. Add a URL or upload photos.</div>';
 }
@@ -2638,8 +2662,8 @@ function renderEmailSelection(){
   const date=briefPrimaryDate(),picked=selectedModels();
   const quick=picked.length>1?`<div class="quick-order-panel"><div class="quick-order-title"><b>Quick reorder</b><span class="muted tiny">Send any model straight to a position.</span></div><div class="quick-order-list">${picked.map((m,index)=>`<label class="quick-order-row"><span>${index+1}. ${esc(m.name)}</span><select aria-label="Position for ${esc(m.name)}" onchange="setSelectedModelPosition('${m.id}',this.value)">${modelPositionOptions(index,picked.length)}</select></label>`).join('')}</div></div>`:'';
   $('#selectedModels').innerHTML=(picked.length?'<div class="drag-hint">Email order follows this list. Select as many photos as you want for each model.</div>':'')+quick+picked.map((m,index)=>{
-    const picks=draftPhotosForModel(m),pick=picks[0]||'',selectedKeys=new Set(picks.map(photoKey)),opts=draftPhotoOptions(m);
-    return `<div class="draft-model-card"><div class="draft-model-head">${pick?`<img class="draft-model-thumb" loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(pick))}" alt="${esc(m.name)} draft photo">`:`<div class="draft-model-thumb placeholder" style="display:flex;align-items:center;justify-content:center">${esc(initials(m.name))}</div>`}<div><div><b>${index+1}. ${esc(m.name)}</b> · ${esc(m.location)} / ${esc(m.division)}</div><div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div><div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div>${modelDraftCredentialHtml(m,true)}<div class="draft-model-controls"><label class="draft-position-control"><span>Position</span><select onchange="setSelectedModelPosition('${m.id}',this.value)">${modelPositionOptions(index,picked.length)}</select></label><span class="pill">${picks.length} photo${picks.length===1?'':'s'}</span><button class="btn danger" type="button" onclick="removeFromEmail('${m.id}')">Remove</button></div></div></div>${opts.length?`<div class="draft-photo-strip">${opts.map((p,i)=>{const active=selectedKeys.has(photoKey(p.url));return `<button class="draft-photo-choice ${active?'active':''}" type="button" title="${active?'Remove':'Add'} ${esc(p.label)}" onclick="togglePackagePhoto('${m.id}',${i})"><img src="${esc(packageThumbnailUrl(p.url))}" alt="${esc(m.name)} photo"><span class="multi-photo-badge">${active?'✓':'+'}</span></button>`}).join('')}</div>`:''}<div class="draft-photo-controls"><input type="url" placeholder="Paste photo URL — adds to package" onchange="setDraftPhotoUrl('${m.id}',this.value);this.value=''"><button class="btn" type="button" onclick="resetDraftPhoto('${m.id}')">Reset to default</button></div><div class="draft-photo-upload"><input type="file" accept="image/*" multiple onchange="setDraftPhotoFile('${m.id}',this)"><span class="muted tiny">Select one or multiple images. Uploads save to the photo library and are added to this draft.</span></div></div>`;
+    const picks=draftPhotosForModel(m),pick=picks[0]||'',selectedKeys=new Set(picks.map(galleryPhotoKey)),opts=draftPhotoOptions(m);
+    return `<div class="draft-model-card"><div class="draft-model-head">${pick?`<img class="draft-model-thumb" loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(pick))}" alt="${esc(m.name)} draft photo">`:`<div class="draft-model-thumb placeholder" style="display:flex;align-items:center;justify-content:center">${esc(initials(m.name))}</div>`}<div><div><b>${index+1}. ${esc(m.name)}</b> · ${esc(m.location)} / ${esc(m.division)}</div><div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div><div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div>${modelDraftCredentialHtml(m,true)}<div class="draft-model-controls"><label class="draft-position-control"><span>Position</span><select onchange="setSelectedModelPosition('${m.id}',this.value)">${modelPositionOptions(index,picked.length)}</select></label><span class="pill">${picks.length} photo${picks.length===1?'':'s'}</span><button class="btn danger" type="button" onclick="removeFromEmail('${m.id}')">Remove</button></div></div></div>${opts.length?`<div class="draft-photo-strip">${opts.map((p,i)=>{const active=selectedKeys.has(galleryPhotoKey(p.url));return `<button class="draft-photo-choice ${active?'active':''}" type="button" title="${active?'Remove':'Add'} ${esc(p.label)}" onclick="togglePackagePhoto('${m.id}',${i})"><img src="${esc(packageThumbnailUrl(p.url))}" alt="${esc(m.name)} photo"><span class="multi-photo-badge">${active?'✓':'+'}</span></button>`}).join('')}</div>`:''}<div class="draft-photo-controls"><input type="url" placeholder="Paste photo URL — adds to package" onchange="setDraftPhotoUrl('${m.id}',this.value);this.value=''"><button class="btn" type="button" onclick="resetDraftPhoto('${m.id}')">Reset to default</button></div><div class="draft-photo-upload"><input type="file" accept="image/*" multiple onchange="setDraftPhotoFile('${m.id}',this)"><span class="muted tiny">Select one or multiple images. Uploads save to the photo library and are added to this draft.</span></div></div>`;
   }).join('')||'<div class="empty">No models selected.</div>';
   renderSubmissionWarnings();renderPhotoLibrary();
 }
@@ -2707,7 +2731,15 @@ function persistDraftPresentation(){
 }
 async function bootstrapWorkspace(){
   try{await window.CLMMediaStore?.init?.()}catch(err){console.info('Media store init skipped',err)}
+  await ensureMilanArchiveLoaded();
+  try{
+    const raw=await idbReadWorkspace();
+    if(raw&&!raw.recovery?.safeGallerySnapshot20260929){
+      await idbWriteWorkspaceAtKey(structuredClone(raw),'backup-before-gallery-repair-20260929');
+    }
+  }catch(err){console.info('Pre-repair workspace backup skipped',err)}
   db=await loadWorkspaceIndexedDB();
+  db.recovery={...(db.recovery||{}),safeGallerySnapshot20260929:true};
   try{if(window.CLMMediaStore?.migrateWorkspace){const migrated=await window.CLMMediaStore.migrateWorkspace(db);db=migrated.data;if(migrated.changed)await idbWriteWorkspace(structuredClone(db))}}catch(err){console.warn('Legacy photo migration skipped',err)}
   selected=[...(db.selected||[])];
   initNav();
