@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CLM CRM Claude Transfer Export</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;color:#1d2521;background:#f6f7f6}
+.card{background:#fff;border:1px solid #d8ddd9;border-radius:14px;padding:24px;margin:18px 0}
+button{border:0;border-radius:9px;padding:12px 18px;font-weight:700;cursor:pointer;background:#1f2923;color:white}
+pre{white-space:pre-wrap;background:#f2f4f2;padding:14px;border-radius:8px;max-height:360px;overflow:auto}
+.warn{background:#fff8e8;border-color:#ead49a}
+</style>
+</head>
+<body>
+<h1>CLM CRM Claude Transfer Export</h1>
+<div class="card">
+<p>This page is read only. It exports the CRM data stored in this browser under the same GitHub Pages origin.</p>
+<p>The export includes every IndexedDB record from the <b>jn-agency-crm</b> database, including workspace backups and media blobs converted to data URLs, plus CRM related localStorage values.</p>
+<button id="exportBtn">Export all CRM browser data</button>
+</div>
+<div class="card warn">
+<b>Security note</b>
+<p>Gmail session tokens are intentionally not exported. Reconnect Gmail separately after transfer.</p>
+</div>
+<div class="card">
+<b>Status</b>
+<pre id="status">Ready.</pre>
+</div>
+<script>
+const statusEl=document.getElementById('status');
+const say=s=>statusEl.textContent+=('\n'+s);
+function blobToDataUrl(blob){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(reader.error||new Error('Could not read blob'));
+    reader.readAsDataURL(blob);
+  });
+}
+async function serialize(value,seen=new WeakSet()){
+  if(value===null||value===undefined||typeof value==='string'||typeof value==='number'||typeof value==='boolean')return value;
+  if(value instanceof Blob)return {__clmType:'Blob',type:value.type||'',size:value.size,dataUrl:await blobToDataUrl(value)};
+  if(value instanceof Date)return {__clmType:'Date',value:value.toISOString()};
+  if(value instanceof ArrayBuffer){
+    const bytes=new Uint8Array(value);let bin='';for(let i=0;i<bytes.length;i+=0x8000)bin+=String.fromCharCode(...bytes.subarray(i,i+0x8000));
+    return {__clmType:'ArrayBuffer',base64:btoa(bin)};
+  }
+  if(ArrayBuffer.isView(value))return serialize(value.buffer,seen);
+  if(typeof value==='object'){
+    if(seen.has(value))return {__clmType:'CircularReference'};
+    seen.add(value);
+    if(Array.isArray(value)){const out=[];for(const item of value)out.push(await serialize(item,seen));return out}
+    const out={};for(const [k,v] of Object.entries(value))out[k]=await serialize(v,seen);return out;
+  }
+  return String(value);
+}
+function openDb(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open('jn-agency-crm');
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error('Could not open IndexedDB'));
+    req.onblocked=()=>reject(new Error('IndexedDB open was blocked. Close other CRM tabs and try again.'));
+  });
+}
+async function exportStore(db,name){
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(name,'readonly');
+    const store=tx.objectStore(name);
+    const rows=[];
+    const req=store.openCursor();
+    req.onsuccess=async()=>{
+      const cur=req.result;
+      if(!cur)return;
+      try{rows.push({key:await serialize(cur.key),value:await serialize(cur.value)});cur.continue()}
+      catch(err){reject(err)}
+    };
+    req.onerror=()=>reject(req.error||new Error('Could not read '+name));
+    tx.oncomplete=()=>resolve(rows);
+    tx.onerror=()=>reject(tx.error||new Error('Transaction failed for '+name));
+  });
+}
+function safeLocalStorage(){
+  const out={};
+  const allowed=k=>/^(jn-agency-crm|justinAgencyCRM|clm\.|pfwMaliaReineAvailabilitySeedVersion)/.test(k);
+  const unsafe=k=>/(access.?token|refresh.?token|password|secret|gmailSession|sessionToken)/i.test(k);
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k&&allowed(k)&&!unsafe(k))out[k]=localStorage.getItem(k);
+  }
+  return out;
+}
+document.getElementById('exportBtn').onclick=async()=>{
+  statusEl.textContent='Starting export...';
+  try{
+    const db=await openDb();
+    const storeNames=[...db.objectStoreNames];
+    say('Found stores: '+storeNames.join(', '));
+    const stores={};
+    for(const name of storeNames){
+      say('Reading '+name+'...');
+      stores[name]=await exportStore(db,name);
+      say(name+': '+stores[name].length+' records');
+    }
+    db.close();
+    const payload={
+      format:'CLM-CRM-Claude-Transfer-v1',
+      exportedAt:new Date().toISOString(),
+      sourceOrigin:location.origin,
+      sourcePath:location.pathname,
+      database:{name:'jn-agency-crm',stores},
+      localStorage:safeLocalStorage(),
+      notes:[
+        'Read-only export of CRM browser data.',
+        'Blob records are encoded as data URLs.',
+        'Gmail session/access tokens are intentionally excluded.',
+        'Give this file to Claude together with the GitHub repository.'
+      ]
+    };
+    const json=JSON.stringify(payload,null,2);
+    const blob=new Blob([json],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download='CLM-CRM-browser-export-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),30000);
+    say('Export complete. File size: '+(blob.size/1024/1024).toFixed(2)+' MB');
+  }catch(err){
+    console.error(err);
+    say('ERROR: '+(err&&err.message?err.message:String(err)));
+  }
+};
+</script>
+</body>
+</html>
