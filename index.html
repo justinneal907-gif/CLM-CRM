@@ -2744,6 +2744,7 @@ async function bootstrapWorkspace(){
   db=await loadWorkspaceIndexedDB();
   db.recovery={...(db.recovery||{}),safeGallerySnapshot20260929:true};
   db=await restoreOldPhotoLibrary20260929(db);
+  db=await restoreSavedDraftImages20260929(db);
   try{if(window.CLMMediaStore?.migrateWorkspace){const migrated=await window.CLMMediaStore.migrateWorkspace(db);db=migrated.data;dedupePhotoLibrary20260929(db)}}catch(err){console.warn('Legacy photo migration skipped',err)}
   try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Recovered workspace save skipped',err)}
   selected=[...(db.selected||[])];
@@ -2810,6 +2811,72 @@ async function restoreOldPhotoLibrary20260929(data){
   data.recovery={...(data.recovery||{}),oldPhotoLibraryRestoreVersion:2,oldPhotoLibraryRestoreOn:'2026-09-29',oldPhotoLibraryRestoredCount:restored};
   return data;
 }
+async function restoreSavedDraftImages20260929(data){
+  if(data.recovery?.savedDraftImageRestoreVersion>=1)return data;
+  let restored=0;
+  const sources=[];
+  const push=list=>Array.isArray(list)&&sources.push(...list.filter(Boolean));
+  push(typeof BRIDAL_WEEK_DRAFTS_2026_09_28!=='undefined'?BRIDAL_WEEK_DRAFTS_2026_09_28:[]);
+  push(typeof CALLIE_EUROPE_GOSEE_DRAFTS_2026_09_25!=='undefined'?CALLIE_EUROPE_GOSEE_DRAFTS_2026_09_25:[]);
+  push(typeof ADDITIONAL_CRM_DRAFTS_2026_09_25!=='undefined'?ADDITIONAL_CRM_DRAFTS_2026_09_25:[]);
+  push(typeof ADDITIONAL_CRM_DRAFTS_2026_09_24!=='undefined'?ADDITIONAL_CRM_DRAFTS_2026_09_24:[]);
+  push(typeof RECOVERED_DRAFTS!=='undefined'?RECOVERED_DRAFTS:[]);
+  push(typeof MILAN_FIRST_DAY_DRAFTS!=='undefined'?MILAN_FIRST_DAY_DRAFTS:[]);
+  push(typeof MILAN_REST_DRAFTS!=='undefined'?MILAN_REST_DRAFTS:[]);
+  try{push(parisPostDiorDrafts(data.models||[]))}catch{}
+  let backup=null;
+  try{
+    backup=await idbReadWorkspaceAtKey('backup-before-gallery-repair-20260929');
+    if(backup){
+      push(backup.drafts||[]);
+      if(backup.draft){
+        const backupActiveId=backup.activeDraftId||backup.draft.id||'';
+        if(backupActiveId) sources.push({...backup.draft,id:backupActiveId});
+      }
+    }
+  }catch(err){console.info('Pre-repair draft image backup unavailable',err)}
+  const sourceById=new Map();
+  for(const source of sources){
+    if(!source?.id)continue;
+    const existing=sourceById.get(source.id);
+    if(!existing){sourceById.set(source.id,source);continue}
+    const merged={...existing,...source,photoSelections:{...(existing.photoSelections||{})},packagePhotos:{...(existing.packagePhotos||{})}};
+    for(const key of new Set([...Object.keys(existing.photoSelections||{}),...Object.keys(source.photoSelections||{}),...Object.keys(existing.packagePhotos||{}),...Object.keys(source.packagePhotos||{})])){
+      const a=Array.isArray(existing.photoSelections?.[key])?existing.photoSelections[key]:[existing.photoSelections?.[key]].filter(Boolean);
+      const b=Array.isArray(existing.packagePhotos?.[key])?existing.packagePhotos[key]:[];
+      const d=Array.isArray(source.photoSelections?.[key])?source.photoSelections[key]:[source.photoSelections?.[key]].filter(Boolean);
+      const e=Array.isArray(source.packagePhotos?.[key])?source.packagePhotos[key]:[];
+      const list=uniqueGalleryPhotoUrls([...a,...b,...d,...e].filter(Boolean));
+      if(list.length){merged.photoSelections[key]=list;merged.packagePhotos[key]=[...list]}
+    }
+    sourceById.set(source.id,merged);
+  }
+  const mergeInto=(target,source)=>{
+    if(!target||!source)return;
+    target.photoSelections=target.photoSelections||{};
+    target.packagePhotos=target.packagePhotos||{};
+    const keys=new Set([...Object.keys(source.photoSelections||{}),...Object.keys(source.packagePhotos||{})]);
+    for(const id of keys){
+      const currentA=Array.isArray(target.photoSelections[id])?target.photoSelections[id]:[target.photoSelections[id]].filter(Boolean);
+      const currentB=Array.isArray(target.packagePhotos[id])?target.packagePhotos[id]:[];
+      const sourceA=Array.isArray(source.photoSelections?.[id])?source.photoSelections[id]:[source.photoSelections?.[id]].filter(Boolean);
+      const sourceB=Array.isArray(source.packagePhotos?.[id])?source.packagePhotos[id]:[];
+      const before=uniqueGalleryPhotoUrls([...currentA,...currentB].filter(Boolean));
+      const merged=uniqueGalleryPhotoUrls([...before,...sourceA,...sourceB].filter(Boolean));
+      if(!merged.length)continue;
+      restored+=Math.max(0,merged.length-before.length);
+      target.photoSelections[id]=merged;
+      target.packagePhotos[id]=[...merged];
+    }
+  };
+  for(const draft of data.drafts||[])mergeInto(draft,sourceById.get(draft.id));
+  const activeId=data.activeDraftId||data.draft?.id||'';
+  if(activeId)mergeInto(data.draft,sourceById.get(activeId));
+  if(backup?.draft&&(!backup.activeDraftId||!activeId||backup.activeDraftId===activeId))mergeInto(data.draft,backup.draft);
+  data.recovery={...(data.recovery||{}),savedDraftImageRestoreVersion:1,savedDraftImageRestoreOn:'2026-09-29',savedDraftImagesRestored:restored};
+  return data;
+}
+
 function dedupePhotoLibrary20260929(data){
   for(const [id,list] of Object.entries(data.photoLibrary||{})){
     const seen=new Set(),out=[];
