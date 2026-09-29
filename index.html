@@ -226,6 +226,17 @@ th,td{padding:8px}
 .focus-roster-badge{display:inline-block;flex:0 0 auto;padding:2px 6px;border-radius:999px;background:var(--accent);color:#fff;font-size:9px;font-weight:800;letter-spacing:.08em;vertical-align:middle}
 .focus-roster-inline{display:inline-block;margin-right:5px;padding:1px 5px;border-radius:999px;background:var(--accent);color:#fff;font-size:9px;font-weight:800;letter-spacing:.06em}
 .draft-model-card.focus-roster{border-left:4px solid var(--accent)}
+
+/* USER EMAIL OVERRIDE CONTROLS 2026-09-29 */
+.manual-authority-note{border:1px solid #9eb3a6;background:#f4f8f5;border-radius:9px;padding:9px 10px;margin-top:6px;font-size:12px;line-height:1.45}
+.manual-authority-note b{color:var(--accent)}
+.preview-title-actions{display:flex;gap:7px;flex-wrap:wrap}
+.draft-link-controls{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.draft-link-controls label{display:block;font-size:11px;font-weight:800;color:var(--muted);margin-bottom:5px}
+.draft-link-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}
+.draft-link-row input{width:100%;min-width:0;border:1px solid #bdc6bf;border-radius:7px;padding:8px;background:white}
+@media(max-width:520px){.draft-link-row{grid-template-columns:1fr}.preview-title-actions{width:100%}.preview-title-actions .btn{flex:1 1 auto}}
+
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -241,7 +252,7 @@ th,td{padding:8px}
 <section id="view-submissions" class="view"><div class="panel"><div class="actions" style="margin-bottom:12px;align-items:center"><button class="btn primary" onclick="openRecordModal('submissions')">New submission</button><label class="muted tiny" style="display:flex;align-items:center;gap:7px">Sort by <select id="submissionSort" style="min-width:170px"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="opens-desc">Most opened</option><option value="opens-asc">Least opened</option><option value="recent-open">Most recent open</option></select></label><button class="btn" type="button" id="refreshSubmissionOpensBtn" onclick="refreshSubmissionOpens()">Refresh opens</button><span id="submissionOpenDataStatus" class="muted tiny"></span></div><div class="table-wrap"><table><thead><tr><th><button class="table-sort-button" type="button" data-submission-sort="date">Date <span id="submissionDateSortArrow"></span></button></th><th>Contact</th><th>Project / Dates</th><th>Models</th><th>Status</th><th><button class="table-sort-button" type="button" data-submission-sort="opens">Opens <span id="submissionOpenSortArrow"></span></button></th><th></th></tr></thead><tbody id="submissionsBody"></tbody></table></div><div class="muted tiny" style="margin-top:8px">Open counts are tracking image load signals and may include privacy proxy loads or repeated image requests. Untracked historical submissions are labeled Not tracked.</div></div></section>
 <section id="view-bookings" class="view"><div class="panel"><div class="actions" style="margin-bottom:12px"><button class="btn primary" onclick="openRecordModal('bookings')">Add booking</button></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Project</th><th>Client</th><th>Model</th><th>Total</th><th>Your commission</th><th>Status</th><th></th></tr></thead><tbody id="bookingsBody"></tbody></table></div></div></section>
 <section id="view-tasks" class="view"><div class="panel"><div class="actions" style="margin-bottom:12px"><button class="btn primary" onclick="openRecordModal('tasks')">Add task</button></div><div class="table-wrap"><table><thead><tr><th>Task</th><th>Details / Notes</th><th>Due</th><th>Priority</th><th>Status</th><th></th></tr></thead><tbody id="tasksBody"></tbody></table></div></div></section>
-<section id="view-email" class="view"><div class="split"><div class="panel"><h2>Model package builder</h2><div class="field"><label>Purpose</label><select id="emailPurpose"><option value="submission">Model submission</option><option value="followup">Follow-up</option><option value="availability">Availability / hold</option><option value="introduction">Introduction</option></select></div><div class="field"><label>Contact</label><select id="emailContact"></select></div><div class="field"><label>Contact name</label><input id="emailContactName" placeholder="Casting director / client"/></div><div class="field"><label>Company / brand</label><input id="emailCompany" placeholder="Company, brand or casting office"/></div><div class="field"><label>Recipient email</label><input id="emailRecipient" type="email" placeholder="name@example.com"/></div><div class="field"><label>Sending account</label><input id="emailSender" value="justin.neal.chezlesmannequins@gmail.com" readonly/><div class="muted" style="margin-top:5px">Agency Work Gmail</div></div><div class="field"><label>CC on every email</label><input id="emailCc" value="agent@chezlesmannequins.com" readonly/><div class="muted" style="margin-top:5px">Automatically included on every CRM-created Gmail draft.</div></div><div class="field" id="gmailApiPanel"><label>Gmail API connection</label><div id="gmailApiStatus" class="muted">Checking Gmail connection…</div><div class="actions" style="margin-top:7px"><button class="btn primary" type="button" id="connectGmailApiBtn">Connect Work Gmail</button><button class="btn" type="button" id="disconnectGmailApiBtn">Disconnect</button><button class="btn" type="button" id="syncGmailNowBtn">Sync sent mail now</button><button class="btn primary" type="button" id="sendTrackedDraftBtn" disabled>Send tracked draft</button><button class="btn" type="button" id="enableOpenNotificationsBtn">Enable open alerts</button><button class="btn" type="button" id="testOpenNotificationsBtn">Test alert</button><button class="btn" type="button" id="checkOpenTrackingBtn">Check opens now</button></div><div id="gmailRuntimeStatus" class="tiny muted" style="margin-top:6px">Loading Gmail sync and open-tracking tools…</div><details id="gmailApiSetup" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">One-time Google OAuth setup</summary><div class="muted tiny" style="margin:7px 0">Create a Google OAuth Web client for this CRM, enable the Gmail API, and authorize <b>https://justinneal907-gif.github.io</b> as a JavaScript origin. Paste the public Client ID below. No client secret is stored in the CRM.</div><input id="gmailOAuthClientId" type="text" autocomplete="off" placeholder="1234567890-abc123.apps.googleusercontent.com"/><div class="actions" style="margin-top:7px"><button class="btn" type="button" id="saveGmailClientIdBtn">Save Client ID</button><button class="btn danger" type="button" id="clearGmailClientIdBtn">Clear Client ID</button></div></details></div><div class="field"><label>Project / brand</label><input id="emailBrand" placeholder="Private Policy"/></div><div class="field"><label>Paste casting brief</label><textarea id="castingBriefRaw" rows="6" placeholder="Paste the full casting email or brief here. The CRM can extract dates, rate, usage, location and requirements without replacing your original text."></textarea><div class="actions" style="margin-top:7px"><button class="btn primary" type="button" id="parseBriefBtn">Parse brief</button><button class="btn" type="button" id="clearBriefBtn">Clear parsed brief</button></div><div id="briefParseSummary" class="muted" style="margin-top:7px"></div></div><div class="field"><label>Client look assistant</label><div id="brandLookSuggestion" class="warning" style="margin-bottom:8px">Enter a brand or project name to see the likely casting direction.</div><div class="actions"><button class="btn" type="button" id="suggestLookBtn">Suggest look</button><button class="btn" type="button" id="brandWebSearchBtn">Research current brand on web</button></div></div><div id="submissionWarning" class="warning" style="display:none;margin-bottom:11px"></div><div class="field"><label>Subject</label><input id="emailSubject" value="Model Package"/></div><div class="field"><label>Package / portfolio link</label><input id="emailLink" placeholder="https://..."/></div><div class="field"><label>Email context (optional)</label><textarea id="emailContext" rows="4" placeholder="Optional context for non-submission messages, such as availability or follow-up details."></textarea></div><div class="field" id="followUpBodyField" style="display:none"><label>Follow-up message</label><textarea id="emailCustomBody" rows="7" placeholder="Write the follow-up text you want to send. Greeting and agency signature are added automatically."></textarea><div class="muted tiny" style="margin-top:5px">Used for Follow-up emails. Models are optional, and this text replaces the generated follow-up copy.</div></div><div class="field private-notes-field"><label><span class="private-note-badge">INTERNAL ONLY</span> Private notes</label><textarea id="emailPrivateNotes" rows="5" placeholder="Internal package notes. Saved in the CRM and never included in the email draft."></textarea><div class="private-note-help">Visible in the CRM only · never included in preview, copied email, or Gmail compose.</div></div><div class="checkrow"><label><input type="checkbox" id="includeStats" checked/> Measurements</label><label><input type="checkbox" id="includePhotos" checked/> Photos</label><label><input type="checkbox" id="includeSources" checked/> Portfolio links</label></div><div class="field photo-library-panel"><label>Photo library</label><div class="muted">Choose a model to browse the agency photo and any photos you save here. Library photos stay available for future packages in this browser.</div><div class="photo-library-tools"><select id="photoLibraryModel" onchange="renderPhotoLibrary()"></select><input id="photoLibraryUrl" type="url" placeholder="Add photo URL"><button class="btn" type="button" onclick="addPhotoLibraryUrl()">Add URL</button><label class="btn" style="text-align:center">Upload photos<input id="photoLibraryUpload" type="file" accept="image/*" multiple hidden onchange="addPhotoLibraryFiles(this)"></label></div><div id="photoLibraryGrid" class="photo-library-grid"></div></div><div class="field"><label>Find model</label><input id="emailModelSearch" placeholder="Type a model name, city or division"/></div><div id="emailModelMatches"></div><h3>Selected models</h3><div id="selectedModels"></div><div class="actions"><button class="btn primary" id="copyEmailBtn">Copy formatted email</button><button class="btn" id="openWorkGmailBtn">Create formatted Gmail draft</button><button class="btn" id="copySubjectBtn">Copy subject</button><button class="btn" id="saveDraftBtn">Save draft</button><button class="btn" id="recordSubmissionBtn">Record submission</button><button class="btn" id="jumpToCastingLeadsBtn" type="button">Casting leads</button></div><div id="emailStatus" class="muted" style="margin-top:10px"></div><h3 style="margin-top:24px">Saved packages</h3><div class="saved-package-search"><input id="draftSearch" type="search" placeholder="Search packages by brand, contact, model or date" oninput="renderDrafts()"><div id="draftSearchMeta" class="muted tiny">Only the package you are viewing stays open here. Search to switch packages.</div></div><div id="savedDrafts"></div></div><div class="panel"><div class="preview-title-row"><h2>Email preview</h2><button class="btn" type="button" id="resetEmailPreviewBtn" onclick="resetEmailPreviewEdits()">Reset generated preview</button></div><div class="muted tiny preview-edit-note">Click directly in the preview to edit the email. Direct edits autosave and are used when you copy the email or create/update the Gmail draft.</div><div id="emailPreview" class="preview" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" aria-label="Editable email preview"></div></div></div><div style="height:12px"></div><details class="casting-leads panel" id="castingLeadsPanel"><summary>Previously researched NYFW casting leads</summary><div id="castingLeadsLazy" class="muted">Archived casting research loads only when this panel is opened.</div></details></section>
+<section id="view-email" class="view"><div class="split"><div class="panel"><h2>Model package builder</h2><div class="field"><label>Purpose</label><select id="emailPurpose"><option value="submission">Model submission</option><option value="followup">Follow-up</option><option value="availability">Availability / hold</option><option value="introduction">Introduction</option></select></div><div class="field"><label>Contact</label><select id="emailContact"></select></div><div class="field"><label>Contact name</label><input id="emailContactName" placeholder="Casting director / client"/></div><div class="field"><label>Company / brand</label><input id="emailCompany" placeholder="Company, brand or casting office"/></div><div class="field"><label>Recipient email</label><input id="emailRecipient" type="email" placeholder="name@example.com"/></div><div class="field"><label>Sending account</label><input id="emailSender" value="justin.neal.chezlesmannequins@gmail.com" readonly/><div class="muted" style="margin-top:5px">Agency Work Gmail</div></div><div class="field"><label>CC on every email</label><input id="emailCc" value="agent@chezlesmannequins.com" readonly/><div class="muted" style="margin-top:5px">Automatically included on every CRM-created Gmail draft.</div></div><div class="field" id="gmailApiPanel"><label>Gmail API connection</label><div id="gmailApiStatus" class="muted">Checking Gmail connection…</div><div class="actions" style="margin-top:7px"><button class="btn primary" type="button" id="connectGmailApiBtn">Connect Work Gmail</button><button class="btn" type="button" id="disconnectGmailApiBtn">Disconnect</button><button class="btn" type="button" id="syncGmailNowBtn">Sync sent mail now</button><button class="btn primary" type="button" id="sendTrackedDraftBtn" disabled>Send tracked draft</button><button class="btn" type="button" id="enableOpenNotificationsBtn">Enable open alerts</button><button class="btn" type="button" id="testOpenNotificationsBtn">Test alert</button><button class="btn" type="button" id="checkOpenTrackingBtn">Check opens now</button></div><div id="gmailRuntimeStatus" class="tiny muted" style="margin-top:6px">Loading Gmail sync and open-tracking tools…</div><details id="gmailApiSetup" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">One-time Google OAuth setup</summary><div class="muted tiny" style="margin:7px 0">Create a Google OAuth Web client for this CRM, enable the Gmail API, and authorize <b>https://justinneal907-gif.github.io</b> as a JavaScript origin. Paste the public Client ID below. No client secret is stored in the CRM.</div><input id="gmailOAuthClientId" type="text" autocomplete="off" placeholder="1234567890-abc123.apps.googleusercontent.com"/><div class="actions" style="margin-top:7px"><button class="btn" type="button" id="saveGmailClientIdBtn">Save Client ID</button><button class="btn danger" type="button" id="clearGmailClientIdBtn">Clear Client ID</button></div></details></div><div class="field"><label>Project / brand</label><input id="emailBrand" placeholder="Private Policy"/></div><div class="field"><label>Paste casting brief</label><textarea id="castingBriefRaw" rows="6" placeholder="Paste the full casting email or brief here. The CRM can extract dates, rate, usage, location and requirements without replacing your original text."></textarea><div class="actions" style="margin-top:7px"><button class="btn primary" type="button" id="parseBriefBtn">Parse brief</button><button class="btn" type="button" id="clearBriefBtn">Clear parsed brief</button></div><div id="briefParseSummary" class="muted" style="margin-top:7px"></div></div><div class="field"><label>Client look assistant</label><div id="brandLookSuggestion" class="warning" style="margin-bottom:8px">Enter a brand or project name to see the likely casting direction.</div><div class="actions"><button class="btn" type="button" id="suggestLookBtn">Suggest look</button><button class="btn" type="button" id="brandWebSearchBtn">Research current brand on web</button></div></div><div id="submissionWarning" class="warning" style="display:none;margin-bottom:11px"></div><div class="field"><label>Subject</label><input id="emailSubject" value="Model Package"/></div><div class="field"><label>Package / portfolio link</label><input id="emailLink" placeholder="https://..."/><div class="muted tiny" style="margin-top:5px">Whatever you enter here overrides the generated package link. Clear it to remove the package link from generated email copy.</div></div><div class="field"><label>Email context (optional)</label><textarea id="emailContext" rows="4" placeholder="Optional context for non-submission messages, such as availability or follow-up details."></textarea></div><div class="field" id="followUpBodyField"><label>Body text override (optional)</label><textarea id="emailCustomBody" rows="7" placeholder="Type the body copy you want to use. Leave untouched to use generated copy."></textarea><div class="manual-authority-note"><b>Your text wins.</b> Anything you type here takes priority over generated body copy for this email. Greeting, model blocks and signature remain structured unless you edit the full preview directly.<div style="margin-top:7px"><button class="btn" type="button" onclick="resetBodyTextOverride()">Use generated body</button></div></div></div><div class="field private-notes-field"><label><span class="private-note-badge">INTERNAL ONLY</span> Private notes</label><textarea id="emailPrivateNotes" rows="5" placeholder="Internal package notes. Saved in the CRM and never included in the email draft."></textarea><div class="private-note-help">Visible in the CRM only · never included in preview, copied email, or Gmail compose.</div></div><div class="checkrow"><label><input type="checkbox" id="includeStats" checked/> Measurements</label><label><input type="checkbox" id="includePhotos" checked/> Photos</label><label><input type="checkbox" id="includeSources" checked/> Portfolio links</label></div><div class="field photo-library-panel"><label>Photo library</label><div class="muted">Choose a model to browse the agency photo and any photos you save here. Library photos stay available for future packages in this browser.</div><div class="photo-library-tools"><select id="photoLibraryModel" onchange="renderPhotoLibrary()"></select><input id="photoLibraryUrl" type="url" placeholder="Add photo URL"><button class="btn" type="button" onclick="addPhotoLibraryUrl()">Add URL</button><label class="btn" style="text-align:center">Upload photos<input id="photoLibraryUpload" type="file" accept="image/*" multiple hidden onchange="addPhotoLibraryFiles(this)"></label></div><div id="photoLibraryGrid" class="photo-library-grid"></div></div><div class="field"><label>Find model</label><input id="emailModelSearch" placeholder="Type a model name, city or division"/></div><div id="emailModelMatches"></div><h3>Selected models</h3><div id="selectedModels"></div><div class="actions"><button class="btn primary" id="copyEmailBtn">Copy formatted email</button><button class="btn" id="openWorkGmailBtn">Create formatted Gmail draft</button><button class="btn" id="copySubjectBtn">Copy subject</button><button class="btn" id="saveDraftBtn">Save draft</button><button class="btn" id="recordSubmissionBtn">Record submission</button><button class="btn" id="jumpToCastingLeadsBtn" type="button">Casting leads</button></div><div id="emailStatus" class="muted" style="margin-top:10px"></div><h3 style="margin-top:24px">Saved packages</h3><div class="saved-package-search"><input id="draftSearch" type="search" placeholder="Search packages by brand, contact, model or date" oninput="renderDrafts()"><div id="draftSearchMeta" class="muted tiny">Only the package you are viewing stays open here. Search to switch packages.</div></div><div id="savedDrafts"></div></div><div class="panel"><div class="preview-title-row"><h2>Email preview</h2><div class="preview-title-actions"><button class="btn" type="button" onclick="startBlankManualEmail()">Start blank manual email</button><button class="btn" type="button" id="resetEmailPreviewBtn" onclick="resetEmailPreviewEdits()">Reset to generated</button></div></div><div class="manual-authority-note preview-edit-note"><b>Final authority:</b> edit anything directly in this preview. Once you do, the full preview becomes the saved email and generated changes cannot replace it unless you choose Reset to generated.</div><div id="emailPreview" class="preview" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" aria-label="Editable email preview"></div></div></div><div style="height:12px"></div><details class="casting-leads panel" id="castingLeadsPanel"><summary>Previously researched NYFW casting leads</summary><div id="castingLeadsLazy" class="muted">Archived casting research loads only when this panel is opened.</div></details></section>
 <section id="view-data" class="view"><div class="panel"><h2>Backup / transfer</h2><p class="muted">Everything remains stored locally in this browser unless you export it.</p><div class="actions"><button class="btn primary" id="exportDataBtn">Export CRM JSON</button><label class="btn">Import CRM JSON<input id="importDataInput" type="file" accept="application/json" hidden/></label><button class="btn" id="exportRosterBtn">Export roster CSV</button><button class="btn danger" id="resetWorkspaceBtn">Reset workspace data</button></div><p class="warning" style="margin-top:16px">This upgraded copy can import the previous CRM JSON format and automatically migrates prior browser data when opened in the same browser.</p><p class="muted" style="margin-top:12px"><b>Recovered history:</b> 11 model-package submissions and 2 Gmail drafts from September 11, 2026 are restored across the agency email history, including 3 submissions synced from the Work Gmail account (justin.neal.chezlesmannequins@gmail.com). The package workspace also includes the September 13–15 NYFW casting-lead research and the established agency package template. The archived first-CRM source/snapshot contains no populated task records, so no tasks were invented.</p></div></section>
 </main></div>
 <dialog id="modelDialog"><div class="modal" id="modelModal"></div></dialog>
@@ -2190,7 +2201,27 @@ async function importAll(file){try{let data=JSON.parse(await file.text());if(dat
 function resetWorkspace(){if(!confirm('Reset contacts, submissions, bookings, tasks, drafts, selected models, and custom photos in this copy? The seeded roster remains.'))return;db=structuredClone(seed);selected=[];save()}
 function renderAll(){if(maintenanceSweep())persistWorkspaceSafe(false);renderStats();if(active==='today'){renderToday();return}if(active==='models'){setupFilters();renderModels();return}if(['contacts','submissions','bookings','tasks'].includes(active)){renderTables();return}if(active==='email'){setupFilters();renderContactOptions();renderDrafts();renderEmail();return}}
 function captureDraft(){db.draft={...(db.draft||{}),purpose:$('#emailPurpose').value,contactId:$('#emailContact').value,contactName:$('#emailContactName').value,company:$('#emailCompany').value,recipientEmail:$('#emailRecipient').value,brandProject:$('#emailBrand').value,packageLink:$('#emailLink').value,brief:$('#emailContext').value,customBody:$('#emailCustomBody')?.value||'',notes:$('#emailPrivateNotes')?.value||'',castingBriefRaw:$('#castingBriefRaw')?.value||db.draft?.castingBriefRaw||'',parsedBrief:db.draft?.parsedBrief||null,subject:$('#emailSubject').value,includeStats:$('#includeStats').checked,includePhotos:$('#includePhotos').checked,includeSources:$('#includeSources').checked,modelIds:[...selected]}}
-function hydrateDraft(){const d=db.draft||seed.draft;$('#emailPurpose').value=d.purpose||'submission';$('#emailContact').value=d.contactId||'';$('#emailContactName').value=d.contactName||'';$('#emailCompany').value=d.company||'';$('#emailRecipient').value=d.recipientEmail||'';$('#emailBrand').value=d.brandProject||'';$('#emailLink').value=d.packageLink||'https://canva.link/hkqja7ybl587pm8';$('#emailContext').value=d.brief||'';if($('#emailCustomBody'))$('#emailCustomBody').value=d.customBody||'';if($('#emailPrivateNotes'))$('#emailPrivateNotes').value=d.notes||'';if($('#castingBriefRaw'))$('#castingBriefRaw').value=d.castingBriefRaw||'';$('#emailSubject').value=d.subject||'Model Package';$('#includeStats').checked=d.includeStats!==false;$('#includePhotos').checked=d.includePhotos!==false;$('#includeSources').checked=d.includeSources!==false;updateEmailPurposeUi();renderBriefSummary()}
+function hydrateDraft(){
+  const d=db.draft||seed.draft;
+  const v=(key,fallback)=>userOverrideFieldValue(d,key,fallback);
+  $('#emailPurpose').value=v('purpose',d.purpose||'submission');
+  $('#emailContact').value=v('contactId',d.contactId||'');
+  $('#emailContactName').value=v('contactName',d.contactName||'');
+  $('#emailCompany').value=v('company',d.company||'');
+  $('#emailRecipient').value=v('recipientEmail',d.recipientEmail||'');
+  $('#emailBrand').value=v('brandProject',d.brandProject||'');
+  $('#emailLink').value=v('packageLink',d.packageLink||'https://canva.link/hkqja7ybl587pm8');
+  $('#emailContext').value=v('brief',d.brief||'');
+  if($('#emailCustomBody'))$('#emailCustomBody').value=v('customBody',d.customBody||'');
+  if($('#emailPrivateNotes'))$('#emailPrivateNotes').value=d.notes||'';
+  if($('#castingBriefRaw'))$('#castingBriefRaw').value=d.castingBriefRaw||'';
+  $('#emailSubject').value=v('subject',d.subject||'Model Package');
+  $('#includeStats').checked=!!v('includeStats',d.includeStats!==false);
+  $('#includePhotos').checked=!!v('includePhotos',d.includePhotos!==false);
+  $('#includeSources').checked=!!v('includeSources',d.includeSources!==false);
+  updateEmailPurposeUi();
+  renderBriefSummary();
+}
 function packagePhotoLibrary(){return db.photoLibrary||(db.photoLibrary={})}
 function addPackagePhoto(id,url,label='Saved photo'){url=String(url||'').trim();if(!url)return;const l=packagePhotoLibrary();l[id]=l[id]||[];if(!l[id].some(x=>(typeof x==='string'?x:x.url)===url)){if(l[id].length>=8)l[id].shift();l[id].push({url,label})}}
 function draftPhotoOptions(m){const a=[],add=(x,label)=>{const u=typeof x==='string'?x:(x?.url||x?.src||'');if(u&&!a.some(y=>y.url===u))a.push({url:u,label:label||x?.label||'Photo'})};(packagePhotoLibrary()[m.id]||[]).forEach(x=>add(x,x.label||'Saved photo'));[m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(v=>Array.isArray(v)&&v.forEach(x=>add(x,'Portfolio photo')));add((db.customPhotos||{})[m.id],'Custom photo');add(m.photo||m.photoUrl,'Agency photo');return a.slice(0,16)}
@@ -2279,37 +2310,167 @@ function naturalNameList(names){
   if(names.length===2)return names[0]+' and '+names[1];
   return names.slice(0,-1).join(', ')+' and '+names[names.length-1];
 }
+/* USER EMAIL OVERRIDE AUTHORITY · 2026-09-29
+   Manual user-entered email content always wins over generated defaults. */
+function draftUserOverrides(d){
+  if(!d)return null;
+  if(!d.userOverrides||typeof d.userOverrides!=='object')d.userOverrides={};
+  if(!d.userOverrides.fields||typeof d.userOverrides.fields!=='object')d.userOverrides.fields={};
+  if(!d.userOverrides.modelLinks||typeof d.userOverrides.modelLinks!=='object')d.userOverrides.modelLinks={};
+  if(!d.userOverrides.photoSelections||typeof d.userOverrides.photoSelections!=='object')d.userOverrides.photoSelections={};
+  return d.userOverrides;
+}
+function userOverrideHasField(d,key){
+  return !!(d?.userOverrides?.fields&&Object.prototype.hasOwnProperty.call(d.userOverrides.fields,key));
+}
+function userOverrideFieldValue(d,key,fallback){
+  return userOverrideHasField(d,key)?d.userOverrides.fields[key]:fallback;
+}
+function activeDraftOverrideTargets(){
+  const out=[];
+  if(db.draft)out.push(db.draft);
+  const saved=typeof activeSavedDraftRecord==='function'?activeSavedDraftRecord():null;
+  if(saved&&saved!==db.draft)out.push(saved);
+  return out;
+}
+function markDraftUserField(key,value){
+  db.draft=db.draft||structuredClone(seed.draft);
+  for(const target of activeDraftOverrideTargets()){
+    const o=draftUserOverrides(target);
+    o.fields[key]=value;
+  }
+}
+const EMAIL_OVERRIDE_FIELD_MAP={
+  emailPurpose:'purpose',
+  emailContact:'contactId',
+  emailContactName:'contactName',
+  emailCompany:'company',
+  emailRecipient:'recipientEmail',
+  emailBrand:'brandProject',
+  emailSubject:'subject',
+  emailLink:'packageLink',
+  emailContext:'brief',
+  emailCustomBody:'customBody',
+  includeStats:'includeStats',
+  includePhotos:'includePhotos',
+  includeSources:'includeSources'
+};
+function markUserFieldOverrideFromElement(id,el){
+  const key=EMAIL_OVERRIDE_FIELD_MAP[id];
+  if(!key||!el)return;
+  markDraftUserField(key,el.type==='checkbox'?!!el.checked:el.value);
+}
+function resetBodyTextOverride(){
+  for(const target of activeDraftOverrideTargets()){
+    if(target.userOverrides?.fields)delete target.userOverrides.fields.customBody;
+    target.customBody='';
+    target.bodyEdited=false;
+  }
+  const input=$('#emailCustomBody');if(input)input.value='';
+  if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
+  persistWorkspaceSafe(false);
+  renderEmailPreviewOnly();
+  setStatus('Body override cleared. Generated body copy is active again.');
+}
+function draftModelLinkMap(){
+  db.draft=db.draft||structuredClone(seed.draft);
+  db.draft.modelLinks=db.draft.modelLinks||{};
+  return db.draft.modelLinks;
+}
+function draftModelLinkForModel(m){
+  const overrides=db.draft?.userOverrides?.modelLinks;
+  if(overrides&&Object.prototype.hasOwnProperty.call(overrides,m.id))return String(overrides[m.id]??'');
+  const links=db.draft?.modelLinks;
+  if(links&&Object.prototype.hasOwnProperty.call(links,m.id))return String(links[m.id]??'');
+  return String(m.profile||m.profileUrl||'');
+}
+function setDraftModelLink(id,value){
+  const v=String(value??'').trim();
+  const links=draftModelLinkMap();
+  links[id]=v;
+  for(const target of activeDraftOverrideTargets()){
+    target.modelLinks=target.modelLinks||{};
+    target.modelLinks[id]=v;
+    const o=draftUserOverrides(target);
+    o.modelLinks[id]=v;
+  }
+  if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
+  persistWorkspaceSafe(false);
+  renderEmailPreviewOnly();
+  renderEmailSelection();
+  setStatus(v?'Portfolio link override saved.':'Portfolio link hidden for this model in this email.');
+}
+function resetDraftModelLink(id){
+  if(db.draft?.modelLinks)delete db.draft.modelLinks[id];
+  if(db.draft?.userOverrides?.modelLinks)delete db.draft.userOverrides.modelLinks[id];
+  const saved=typeof activeSavedDraftRecord==='function'?activeSavedDraftRecord():null;
+  if(saved?.modelLinks)delete saved.modelLinks[id];
+  if(saved?.userOverrides?.modelLinks)delete saved.userOverrides.modelLinks[id];
+  if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
+  persistWorkspaceSafe(false);
+  renderEmailPreviewOnly();
+  renderEmailSelection();
+  setStatus('Portfolio link reset to the model default.');
+}
+function startBlankManualEmail(){
+  const html='<div><br></div>';
+  db.draft=db.draft||structuredClone(seed.draft);
+  for(const target of activeDraftOverrideTargets()){
+    target.manualEmailHtml=html;
+    target.manualEmailEditedAt=new Date().toISOString();
+    target.bodyEdited=true;
+    const o=draftUserOverrides(target);
+    o.fullHtmlLocked=true;
+    o.fullHtml=html;
+  }
+  if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
+  persistWorkspaceSafe(false);
+  const preview=$('#emailPreview');
+  if(preview){preview.innerHTML=html;preview.focus();}
+  setStatus('Blank manual email started. Direct preview edits are now the final email until you reset the generated preview.');
+}
+/* END USER EMAIL OVERRIDE AUTHORITY */
+
 function emailHtml(){
+  const activeRecord=activeDraftRecord();
+  const working=db.draft||{};
+  const lockedWorking=working?.userOverrides?.fullHtmlLocked===true;
+  const lockedSaved=activeRecord?.userOverrides?.fullHtmlLocked===true;
+  const manualEmailHtml=String(
+    lockedWorking?(working.manualEmailHtml??working.userOverrides?.fullHtml??''):
+    lockedSaved?(activeRecord.manualEmailHtml??activeRecord.userOverrides?.fullHtml??''):
+    (working.manualEmailHtml||activeRecord?.manualEmailHtml||'')
+  );
+  if(lockedWorking||lockedSaved||manualEmailHtml.trim())return manualEmailHtml;
+
   const d={
     purpose:$('#emailPurpose').value,
     contactName:$('#emailContactName').value.trim(),
     recipientEmail:$('#emailRecipient').value.trim(),
     brand:$('#emailBrand').value.trim(),
     link:$('#emailLink').value.trim(),
-    brief:$('#emailContext').value.trim(),
-    customBody:$('#emailCustomBody')?.value.trim()||'',
+    brief:$('#emailContext').value,
+    customBody:$('#emailCustomBody')?.value??'',
     stats:$('#includeStats').checked,
     photos:$('#includePhotos').checked,
     sources:$('#includeSources').checked
   };
-  const activeRecord=activeDraftRecord();
-  const manualEmailHtml=String(activeRecord?.manualEmailHtml||db.draft?.manualEmailHtml||'').trim();
-  if(manualEmailHtml)return manualEmailHtml;
-  const toneDraft={...(activeRecord||db.draft||{}),id:activeRecord?.id||db.activeDraftId||db.draft?.id||'',contactName:d.contactName,recipientEmail:d.recipientEmail,brandProject:d.brand||activeRecord?.brandProject||db.draft?.brandProject||''};
+  const toneDraft={...(activeRecord||working),id:activeRecord?.id||db.activeDraftId||working?.id||'',contactName:d.contactName,recipientEmail:d.recipientEmail,brandProject:d.brand||activeRecord?.brandProject||working?.brandProject||''};
   const tone=parisDraftRelationshipTone(toneDraft);
   const names=draftGreetingNames(toneDraft);
   const greeting=names.length?`Hi ${esc(naturalNameList(names))},`:'Hi,';
   const picked=selectedModels();
-  const customBodyOverride=!!d.customBody;
-  const bodyWasEdited=activeRecord?.bodyEdited===true||db.draft?.bodyEdited===true;
+  const customBodyOverride=userOverrideHasField(working,'customBody')||userOverrideHasField(activeRecord,'customBody')||!!d.customBody;
+  const bodyWasEdited=activeRecord?.bodyEdited===true||working?.bodyEdited===true;
   const customBodyHasGreeting=customBodyOverride&&/^\s*(hi|hello|hey)\b/i.test(d.customBody);
+  const packageAnchor=d.link?`<a href="${esc(d.link)}" style="color:#4285f4" target="_blank">here</a>`:'';
   let lead='';
   if(customBodyOverride){
     lead=esc(d.customBody).replace(/\n/g,'<br>');
   }else if(bodyWasEdited){
     lead='';
   }else if(d.purpose==='submission'){
-    lead=`I preselected a few models I think would be a good fit below. You can find the rest of our models <a href="https://canva.link/hkqja7ybl587pm8" style="color:#4285f4" target="_blank">here</a>. If you're looking for a specific look, let me know and I can curate another selection.`;
+    lead=`I preselected a few models I think would be a good fit below.${packageAnchor?` You can find the rest of our models ${packageAnchor}.`:''} If you're looking for a specific look, let me know and I can curate another selection.`;
   }else if(d.purpose==='followup'){
     lead=tone.tone==='personal'?`Just following up${d.brand?' on '+esc(d.brand):''}. Let me know if you're looking for anything specific and I'd be happy to send options.`:`Following up${d.brand?' on '+esc(d.brand):''}. Please let me know if any additional options would be helpful.`;
   }else if(d.purpose==='availability'){
@@ -2317,11 +2478,15 @@ function emailHtml(){
   }else{
     lead=tone.tone==='personal'?`Wanted to send over a few more models from our roster${d.brand?' for '+esc(d.brand):''}.`:`I wanted to introduce a few models from our roster${d.brand?' for '+esc(d.brand):''}.`;
   }
-  const blocks=picked.map(m=>{const forcedStats=m.id==='site-women-anhelina'?ANHELINA_CANONICAL_STATS_2026_09_25:((activeRecord?.modelStats||db.draft?.modelStats||{})[m.id]||m.stats||m.measurements||'');return `<div style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&forcedStats?' | '+formatStats(forcedStats):''}</div>${d.sources&&m.profile?`<div><a href="${esc(m.profile)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftCredentialHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`}).join('');
+  const blocks=picked.map(m=>{
+    const forcedStats=m.id==='site-women-anhelina'?ANHELINA_CANONICAL_STATS_2026_09_25:((activeRecord?.modelStats||working?.modelStats||{})[m.id]||m.stats||m.measurements||'');
+    const modelLink=draftModelLinkForModel(m);
+    return `<div style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&forcedStats?' | '+formatStats(forcedStats):''}</div>${d.sources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftCredentialHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`;
+  }).join('');
   const extra=!customBodyOverride&&d.purpose!=='submission'&&d.brief?`<br><div>${esc(d.brief).replace(/\n/g,'<br>')}</div>`:'';
-  const more=(d.purpose==='submission'||!picked.length)?'':tone.tone==='personal'?`More model options <a href="https://canva.link/hkqja7ybl587pm8" style="color:#4285f4" target="_blank">HERE</a> if helpful.`:`Please see additional model suggestions <a href="https://canva.link/hkqja7ybl587pm8" style="color:#4285f4" target="_blank">HERE</a>.`;
+  const more=(d.purpose==='submission'||!picked.length||!d.link)?'':tone.tone==='personal'?`More model options <a href="${esc(d.link)}" style="color:#4285f4" target="_blank">HERE</a> if helpful.`:`Please see additional model suggestions <a href="${esc(d.link)}" style="color:#4285f4" target="_blank">HERE</a>.`;
   const modelSection=blocks||(d.purpose==='followup'?'':'<div>[Select one or more models]</div>');
-  const close=String(activeRecord?.signatureClose||db.draft?.signatureClose||'').trim()||(tone.tone==='personal'?'Best,':'Thank you,');
+  const close=String(activeRecord?.signatureClose||working?.signatureClose||'').trim()||(tone.tone==='personal'?'Best,':'Thank you,');
   const greetingHtml=customBodyHasGreeting?'':`<div>${greeting}</div><br>`;
   const leadHtml=lead?`<div>${lead}</div><br>`:'';
   return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${more?`<div style="margin:0 0 24px">${more}</div>`:''}<div>${close}</div><div>Justin</div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
@@ -2346,7 +2511,7 @@ function draftPreviewHtml(html){const t=document.createElement('template');t.inn
 function bindDraftPreviewGifs(){const preview=$('#emailPreview');if(!preview)return;preview.querySelectorAll('img[data-gif-src]').forEach(img=>{if(img.dataset.gifBound==='1')return;img.dataset.gifBound='1';img.style.cursor='pointer';const toggle=()=>{const playing=img.dataset.gifPlaying==='1',logical=img.dataset.gifSrc||'';img.src=playing?DRAFT_GIF_PAUSED_PREVIEW:photoDisplayUrl(logical);img.dataset.gifPlaying=playing?'0':'1';img.title=playing?'GIF paused in draft preview. Click to play.':'GIF playing in preview. Click to pause.'};img.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggle()});img.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();toggle()}})})}
 function renderEmail(){if(!$('#emailPreview'))return;captureDraft();$('#emailPreview').innerHTML=draftPreviewHtml(emailHtml());bindDraftPreviewGifs();renderEmailSelection();renderBrandAdvisor();renderBriefSummary();renderDraftScope()}
 function renderEmailPreviewOnly(){if(!$('#emailPreview'))return;captureDraft();$('#emailPreview').innerHTML=draftPreviewHtml(emailHtml());bindDraftPreviewGifs();renderBriefSummary();renderSubmissionWarnings();renderDraftScope()}
-function updateEmailPurposeUi(){const follow=$('#emailPurpose')?.value==='followup';const field=$('#followUpBodyField');if(field)field.style.display=follow?'block':'none';const record=$('#recordSubmissionBtn');if(record)record.disabled=follow&&!selected.length}
+function updateEmailPurposeUi(){const follow=$('#emailPurpose')?.value==='followup';const field=$('#followUpBodyField');if(field)field.style.display='block';const record=$('#recordSubmissionBtn');if(record)record.disabled=follow&&!selected.length}
 function queueEmailDraftRender(){updateEmailPurposeUi();captureDraft();clearTimeout(emailDraftRenderTimer);emailDraftRenderTimer=setTimeout(()=>renderEmailPreviewOnly(),120);clearTimeout(emailDraftPersistTimer);emailDraftPersistTimer=setTimeout(()=>persistWorkspaceSafe(false),500)}
 function saveDraft(render=true){
   captureDraft();const currentId=db.activeDraftId||'';const existingIndex=currentId?db.drafts.findIndex(x=>x.id===currentId):-1;
@@ -2405,30 +2570,44 @@ function storeEmailPreviewEdit(showStatus=false){
   db.draft.manualEmailHtml=html;
   db.draft.manualEmailEditedAt=new Date().toISOString();
   db.draft.bodyEdited=true;
+  let o=draftUserOverrides(db.draft);
+  o.fullHtmlLocked=true;
+  o.fullHtml=html;
   const active=activeSavedDraftRecord();
   if(active){
     active.manualEmailHtml=html;
     active.manualEmailEditedAt=db.draft.manualEmailEditedAt;
     active.bodyEdited=true;
+    o=draftUserOverrides(active);
+    o.fullHtmlLocked=true;
+    o.fullHtml=html;
   }
   markPreviewNeedsGmailUpdate();
   clearTimeout(emailPreviewEditTimer);
   emailPreviewEditTimer=setTimeout(()=>persistWorkspaceSafe(false),250);
-  if(showStatus)setStatus('Preview edits saved. Create or update the Gmail draft before tracked sending.');
+  if(showStatus)setStatus('Preview edits saved as the final email. Create or update the Gmail draft before tracked sending.');
 }
 function resetEmailPreviewEdits(){
   db.draft=db.draft||structuredClone(seed.draft);
   delete db.draft.manualEmailHtml;
   delete db.draft.manualEmailEditedAt;
+  if(db.draft.userOverrides){
+    delete db.draft.userOverrides.fullHtmlLocked;
+    delete db.draft.userOverrides.fullHtml;
+  }
   const active=activeSavedDraftRecord();
   if(active){
     delete active.manualEmailHtml;
     delete active.manualEmailEditedAt;
+    if(active.userOverrides){
+      delete active.userOverrides.fullHtmlLocked;
+      delete active.userOverrides.fullHtml;
+    }
   }
   markPreviewNeedsGmailUpdate();
   persistWorkspaceSafe(false);
   renderEmail();
-  setStatus('Direct preview edits cleared. Generated email restored. Create or update the Gmail draft before tracked sending.');
+  setStatus('Full preview override cleared. Structured body, photo and link controls are active again.');
 }
 (function bindEditableEmailPreview(){
   const preview=$('#emailPreview');if(!preview||preview.dataset.directEditBound==='1')return;
@@ -2587,6 +2766,11 @@ function applyPhotoManagement(data){
   return data;
 }
 function draftPhotosForModel(m){
+  const manual=db.draft?.userOverrides?.photoSelections;
+  if(manual&&Object.prototype.hasOwnProperty.call(manual,m.id)){
+    const raw=Array.isArray(manual[m.id])?manual[m.id]:[manual[m.id]];
+    return uniqueGalleryPhotoUrls(raw.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)));
+  }
   const selections=draftPhotoSelections();
   if(Object.prototype.hasOwnProperty.call(selections,m.id)){
     const raw=Array.isArray(selections[m.id])?selections[m.id]:[selections[m.id]];
@@ -2602,9 +2786,15 @@ function draftPhotosForModel(m){
 function draftPhotoForModel(m){return draftPhotosForModel(m)[0]||''}
 function setDraftPhotosForModel(id,urls){
   const clean=uniqueGalleryPhotoUrls((urls||[]).map(upgradedPhotoURL).filter(Boolean));
-  draftPhotoSelections()[id]=clean;
-  db.draft.packagePhotos=db.draft.packagePhotos||{};
-  db.draft.packagePhotos[id]=[...clean];
+  db.draft=db.draft||structuredClone(seed.draft);
+  for(const target of activeDraftOverrideTargets()){
+    target.photoSelections=target.photoSelections||{};
+    target.packagePhotos=target.packagePhotos||{};
+    target.photoSelections[id]=[...clean];
+    target.packagePhotos[id]=[...clean];
+    const o=draftUserOverrides(target);
+    o.photoSelections[id]=[...clean];
+  }
 }
 function togglePackagePhoto(id,i){
   const m=db.models.find(x=>x.id===id),p=m&&draftPhotoOptions(m)[i];if(!p)return;
@@ -2617,8 +2807,11 @@ function togglePackagePhoto(id,i){
 }
 function choosePackagePhoto(id,i){togglePackagePhoto(id,i)}
 function resetDraftPhoto(id){
-  const photos=draftPhotoSelections();delete photos[id];
-  if(db.draft?.packagePhotos)delete db.draft.packagePhotos[id];
+  for(const target of activeDraftOverrideTargets()){
+    if(target.photoSelections)delete target.photoSelections[id];
+    if(target.packagePhotos)delete target.packagePhotos[id];
+    if(target.userOverrides?.photoSelections)delete target.userOverrides.photoSelections[id];
+  }
   persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);
   setStatus('Draft photos reset to the model default.');
 }
@@ -2666,7 +2859,7 @@ function renderEmailSelection(){
   const quick=picked.length>1?`<div class="quick-order-panel"><div class="quick-order-title"><b>Quick reorder</b><span class="muted tiny">Send any model straight to a position.</span></div><div class="quick-order-list">${picked.map((m,index)=>`<label class="quick-order-row"><span>${index+1}. ${esc(m.name)}</span><select aria-label="Position for ${esc(m.name)}" onchange="setSelectedModelPosition('${m.id}',this.value)">${modelPositionOptions(index,picked.length)}</select></label>`).join('')}</div></div>`:'';
   $('#selectedModels').innerHTML=(picked.length?'<div class="drag-hint">Email order follows this list. Select as many photos as you want for each model.</div>':'')+quick+picked.map((m,index)=>{
     const picks=draftPhotosForModel(m),pick=picks[0]||'',selectedKeys=new Set(picks.map(galleryPhotoKey)),opts=draftPhotoOptions(m);
-    return `<div class="draft-model-card"><div class="draft-model-head">${pick?`<img class="draft-model-thumb" loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(pick))}" alt="${esc(m.name)} draft photo">`:`<div class="draft-model-thumb placeholder" style="display:flex;align-items:center;justify-content:center">${esc(initials(m.name))}</div>`}<div><div><b>${index+1}. ${esc(m.name)}</b> · ${esc(m.location)} / ${esc(m.division)}</div><div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div><div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div>${modelDraftCredentialHtml(m,true)}<div class="draft-model-controls"><label class="draft-position-control"><span>Position</span><select onchange="setSelectedModelPosition('${m.id}',this.value)">${modelPositionOptions(index,picked.length)}</select></label><span class="pill">${picks.length} photo${picks.length===1?'':'s'}</span><button class="btn danger" type="button" onclick="removeFromEmail('${m.id}')">Remove</button></div></div></div>${opts.length?`<div class="draft-photo-strip">${opts.map((p,i)=>{const active=selectedKeys.has(galleryPhotoKey(p.url));return `<button class="draft-photo-choice ${active?'active':''}" type="button" title="${active?'Remove':'Add'} ${esc(p.label)}" onclick="togglePackagePhoto('${m.id}',${i})"><img src="${esc(packageThumbnailUrl(p.url))}" alt="${esc(m.name)} photo"><span class="multi-photo-badge">${active?'✓':'+'}</span></button>`}).join('')}</div>`:''}<div class="draft-photo-controls"><input type="url" placeholder="Paste photo URL — adds to package" onchange="setDraftPhotoUrl('${m.id}',this.value);this.value=''"><button class="btn" type="button" onclick="resetDraftPhoto('${m.id}')">Reset to default</button></div><div class="draft-photo-upload"><input type="file" accept="image/*" multiple onchange="setDraftPhotoFile('${m.id}',this)"><span class="muted tiny">Select one or multiple images. Uploads save to the photo library and are added to this draft.</span></div></div>`;
+    return `<div class="draft-model-card"><div class="draft-model-head">${pick?`<img class="draft-model-thumb" loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(pick))}" alt="${esc(m.name)} draft photo">`:`<div class="draft-model-thumb placeholder" style="display:flex;align-items:center;justify-content:center">${esc(initials(m.name))}</div>`}<div><div><b>${index+1}. ${esc(m.name)}</b> · ${esc(m.location)} / ${esc(m.division)}</div><div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div><div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div>${modelDraftCredentialHtml(m,true)}<div class="draft-model-controls"><label class="draft-position-control"><span>Position</span><select onchange="setSelectedModelPosition('${m.id}',this.value)">${modelPositionOptions(index,picked.length)}</select></label><span class="pill">${picks.length} photo${picks.length===1?'':'s'}</span><button class="btn danger" type="button" onclick="removeFromEmail('${m.id}')">Remove</button></div></div></div>${opts.length?`<div class="draft-photo-strip">${opts.map((p,i)=>{const active=selectedKeys.has(galleryPhotoKey(p.url));return `<button class="draft-photo-choice ${active?'active':''}" type="button" title="${active?'Remove':'Add'} ${esc(p.label)}" onclick="togglePackagePhoto('${m.id}',${i})"><img src="${esc(packageThumbnailUrl(p.url))}" alt="${esc(m.name)} photo"><span class="multi-photo-badge">${active?'✓':'+'}</span></button>`}).join('')}</div>`:''}<div class="draft-photo-controls"><input type="url" placeholder="Paste photo URL — adds to package" onchange="setDraftPhotoUrl('${m.id}',this.value);this.value=''"><button class="btn" type="button" onclick="resetDraftPhoto('${m.id}')">Reset to default</button></div><div class="draft-link-controls"><label>Portfolio link override</label><div class="draft-link-row"><input type="url" value="${esc(draftModelLinkForModel(m))}" placeholder="Paste a link, or clear to hide it" onchange="setDraftModelLink('${m.id}',this.value)"><button class="btn" type="button" onclick="resetDraftModelLink('${m.id}')">Use default</button></div></div><div class="draft-photo-upload"><input type="file" accept="image/*" multiple onchange="setDraftPhotoFile('${m.id}',this)"><span class="muted tiny">Select one or multiple images. Uploads save to the photo library and are added to this draft.</span></div></div>`;
   }).join('')||'<div class="empty">No models selected.</div>';
   renderSubmissionWarnings();renderPhotoLibrary();
 }
@@ -2965,7 +3158,7 @@ $('#clearGmailClientIdBtn').onclick=clearGmailOAuthClientId;
 renderGmailApiStatus();$('#emailModelSearch').oninput=renderEmailMatches;$('#emailContact').onchange=applyContact;$('#suggestLookBtn').onclick=renderBrandAdvisor;$('#brandWebSearchBtn').onclick=searchBrandWeb;
 $('#parseBriefBtn').onclick=parseBriefAction;
 $('#clearBriefBtn').onclick=clearParsedBrief;
-['emailPurpose','emailContactName','emailCompany','emailRecipient','emailBrand','emailSubject','emailLink','emailContext','emailCustomBody','emailPrivateNotes','castingBriefRaw','includeStats','includePhotos','includeSources'].forEach(id=>{const el=$('#'+id);if(el)el.addEventListener('input',queueEmailDraftRender)});$('#emailPurpose')?.addEventListener('change',()=>{updateEmailPurposeUi();queueEmailDraftRender()});$('#emailBrand')?.addEventListener('change',()=>{renderBrandAdvisor();renderSubmissionWarnings();persistWorkspaceSafe(false)});
+['emailPurpose','emailContactName','emailCompany','emailRecipient','emailBrand','emailSubject','emailLink','emailContext','emailCustomBody','emailPrivateNotes','castingBriefRaw','includeStats','includePhotos','includeSources'].forEach(id=>{const el=$('#'+id);if(el)el.addEventListener('input',event=>{if(event.isTrusted)markUserFieldOverrideFromElement(id,el);queueEmailDraftRender()})});$('#emailContact')?.addEventListener('change',event=>{if(event.isTrusted)markUserFieldOverrideFromElement('emailContact',$('#emailContact'))});$('#emailPurpose')?.addEventListener('change',()=>{updateEmailPurposeUi();queueEmailDraftRender()});$('#emailBrand')?.addEventListener('change',()=>{renderBrandAdvisor();renderSubmissionWarnings();persistWorkspaceSafe(false)});
 $('#copyEmailBtn').onclick=copyEmail;$('#copySubjectBtn').onclick=async()=>{await navigator.clipboard.writeText($('#emailSubject').value);setStatus('Subject copied.')};$('#saveDraftBtn').onclick=saveDraft;$('#recordSubmissionBtn').onclick=recordSubmission;
 $('#exportBtn').onclick=exportAll;$('#exportDataBtn').onclick=exportAll;$('#exportRosterBtn').onclick=exportRoster;$('#importDataInput').onchange=e=>e.target.files[0]&&importAll(e.target.files[0]);$('#resetWorkspaceBtn').onclick=resetWorkspace;$('#refreshBtn').onclick=async()=>{db=await loadWorkspaceIndexedDB();selected=[...(db.selected||[])];hydrateDraft();renderAll()};$('#addBtn').onclick=()=>openRecordModal('tasks');$('#recordSave').onclick=saveRecord;$('#recordCancel').onclick=()=>{modalEditId=null;$('#recordDialog').close()};
 $('#suggestLookBtn')?.closest('.field')?.remove();
