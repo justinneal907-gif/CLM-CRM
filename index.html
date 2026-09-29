@@ -1805,7 +1805,7 @@ function gmailInlineDataImages(html){
   });
   return {html:holder.innerHTML,parts};
 }
-function buildGmailDraftRaw(to,subject,html,signalId=''){
+function buildGmailDraftRaw(to,subject,html,signalId='',asBlob=false){
   const transformed=gmailInlineDataImages(html);
   const cleanHtml=transformed.html;
   const plain=gmailPlainText(cleanHtml);
@@ -1844,12 +1844,12 @@ function buildGmailDraftRaw(to,subject,html,signalId=''){
     }
     mime+='--'+rel+'--\r\n';
   }
-  return gmailBase64UrlUtf8(mime);
+  return asBlob?new Blob([mime],{type:'message/rfc822'}):gmailBase64UrlUtf8(mime);
 }
 async function gmailDraftRequest(url,options){
   const controller=new AbortController();
   let timer;
-  const startRequest=()=>{clearTimeout(timer);timer=setTimeout(()=>controller.abort(),45000)};
+  const startRequest=()=>{clearTimeout(timer);timer=setTimeout(()=>controller.abort(),options.body instanceof Blob?180000:45000)};
   try{
     const requestOptions={...options,signal:controller.signal};
     const method=String(requestOptions.method||'GET').toUpperCase();
@@ -1874,19 +1874,22 @@ async function createFormattedWorkGmailDraft(){
   const signalContext={id:db.activeDraftId,record:db.draft,models:typeof selectedModels==='function'?selectedModels():[]};
   let html=typeof window.clmPrepareModelSignals==='function'?window.clmPrepareModelSignals(plainHtml,false,signalContext):plainHtml;
   if(window.CLMMediaStore?.resolveHtml)html=await window.CLMMediaStore.resolveHtml(html);
-  let raw=buildGmailDraftRaw(to,subject,html,db.settings?.modelSignalsEnabled?signalContext.record.modelSignalSubmissionId:'');
+  let raw=buildGmailDraftRaw(to,subject,html,db.settings?.modelSignalsEnabled?signalContext.record.modelSignalSubmissionId:'',true);
   const active=db.activeDraftId?(db.drafts||[]).find(x=>x.id===db.activeDraftId):null;
   const linkedDraftId=String(active?.gmailDraftId||db.draft?.gmailDraftId||'').trim();
 
   async function writeDraft(method,url){
+    if(raw.size>35*1024*1024)throw new Error('This package is '+(raw.size/1024/1024).toFixed(1)+' MB after email encoding. Reduce the GIF size or number of photos before creating the Gmail draft.');
+    url=url.replace('https://gmail.googleapis.com/gmail/','https://gmail.googleapis.com/upload/gmail/')+'?uploadType=media';
+    if(typeof showGmailDraftFeedback==='function')showGmailDraftFeedback('Uploading your package to Gmail ('+(raw.size/1024/1024).toFixed(1)+' MB). Large GIFs may take up to three minutes.');
     let authTimeout;
     let token;
     try{token=await Promise.race([gmailToken(),new Promise((_,reject)=>{authTimeout=setTimeout(()=>reject(new Error('Google sign-in did not finish. Click Connect Work Gmail, complete sign-in, then create the draft again.')),45000)})])}
     finally{clearTimeout(authTimeout)}
     let response=await gmailDraftRequest(url,{
       method,
-      headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
-      body:JSON.stringify(linkedDraftId&&method==='PUT'?{id:linkedDraftId,message:{raw}}:{message:{raw}})
+      headers:{Authorization:'Bearer '+token,'Content-Type':'message/rfc822'},
+      body:raw
     });
     if(response.status===401){
       clearGmailSession();
@@ -1894,8 +1897,8 @@ async function createFormattedWorkGmailDraft(){
       token=await connectWorkGmailApi(false);
       response=await gmailDraftRequest(url,{
         method,
-        headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
-        body:JSON.stringify(linkedDraftId&&method==='PUT'?{id:linkedDraftId,message:{raw}}:{message:{raw}})
+        headers:{Authorization:'Bearer '+token,'Content-Type':'message/rfc822'},
+        body:raw
       });
     }
     return response;
@@ -1908,7 +1911,7 @@ async function createFormattedWorkGmailDraft(){
       if(typeof window.clmPrepareModelSignals==='function'){
         html=window.clmPrepareModelSignals(plainHtml,true,signalContext);
         if(window.CLMMediaStore?.resolveHtml)html=await window.CLMMediaStore.resolveHtml(html);
-        raw=buildGmailDraftRaw(to,subject,html,db.settings?.modelSignalsEnabled?signalContext.record.modelSignalSubmissionId:'');
+        raw=buildGmailDraftRaw(to,subject,html,db.settings?.modelSignalsEnabled?signalContext.record.modelSignalSubmissionId:'',true);
       }
       response=await writeDraft('POST','https://gmail.googleapis.com/gmail/v1/users/me/drafts');
     }

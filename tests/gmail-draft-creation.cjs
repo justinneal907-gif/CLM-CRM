@@ -3,11 +3,11 @@ const source=fs.readFileSync('index.html','utf8');
 const api=source.slice(source.indexOf('async function gmailDraftRequest('),source.indexOf('let gmailDraftCreationInProgress='));
 const ui=source.slice(source.indexOf('let gmailDraftCreationInProgress='),source.indexOf('\nfunction renderEmail()',source.indexOf('let gmailDraftCreationInProgress=')));
 (async()=>{
- const ctx={window:{},selected:['model'],db:{draft:{},drafts:[],activeDraftId:''},captureDraft(){},$:s=>({value:s==='#emailRecipient'?'test@example.com':'Test package'}),emailHtml:()=>'<b>Package</b>',buildGmailDraftRaw:()=> 'mock-raw',gmailToken:async()=> 'mock-token',AbortController,setTimeout,clearTimeout,console};
+ const ctx={window:{},selected:['model'],db:{draft:{},drafts:[],activeDraftId:''},captureDraft(){},$:s=>({value:s==='#emailRecipient'?'test@example.com':'Test package'}),emailHtml:()=>'<b>Package</b>',buildGmailDraftRaw:()=>new Blob(['mock MIME'],{type:'message/rfc822'}),gmailToken:async()=> 'mock-token',Blob,AbortController,setTimeout,clearTimeout,console};
  vm.createContext(ctx);vm.runInContext(api,ctx);
  let calls=[];ctx.fetch=async(url,options)=>{calls.push({url,options});return {ok:true,status:200,json:async()=>({id:'draft1',message:{id:'msg1',threadId:'thread1'}})}};
- await ctx.createFormattedWorkGmailDraft();assert.equal(calls[0].options.method,'POST');
- ctx.db.draft.gmailDraftId='existing';calls=[];await ctx.createFormattedWorkGmailDraft();assert.equal(calls[0].options.method,'PUT');assert.match(calls[0].url,/existing$/);
+ await ctx.createFormattedWorkGmailDraft();assert.equal(calls[0].options.method,'POST');assert.match(calls[0].url,/\/upload\/gmail\//);assert.equal(calls[0].options.headers['Content-Type'],'message/rfc822');assert.equal(await calls[0].options.body.text(),'mock MIME');
+ ctx.db.draft.gmailDraftId='existing';calls=[];await ctx.createFormattedWorkGmailDraft();assert.equal(calls[0].options.method,'PUT');assert.match(calls[0].url,/existing\?uploadType=media$/);
  calls=[];ctx.fetch=async(url,options)=>{calls.push(options.method);return calls.length===1?{ok:false,status:404}:{ok:true,status:200,json:async()=>({id:'replacement',message:{id:'new'}})}};
  await ctx.createFormattedWorkGmailDraft();assert.deepEqual(calls,['PUT','POST']);
  ctx.fetch=async()=>({ok:true,status:200,json:async()=>({})});await assert.rejects(ctx.createFormattedWorkGmailDraft(),/no draft confirmation/);
