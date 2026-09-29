@@ -2,7 +2,7 @@
 (function(){
   'use strict';
   const DB_NAME='jn-agency-crm', DB_VERSION=2, STORE='media', PREFIX='clm-media:';
-  const objectUrls=new Map(), metadata=new Map();
+  const objectUrls=new Map(), metadata=new Map(), contentKeys=new Map();
   const remoteCache=new Map();
   const inflightRemote=new Set();
   const REMOTE_KEY='clm.crm.optimizedRemoteMedia.v1';
@@ -35,8 +35,11 @@
   function idFromRef(value){const s=String(value||'');return s.startsWith(PREFIX)?s.slice(PREFIX.length):''}
   function makeRef(id){return PREFIX+id}
   function makeId(){return (crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2))}
+  async function contentHash(blob){const bytes=new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer()));return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('')}
+  function contentKey(value){const raw=String(value||''),id=idFromRef(raw),hash=id?contentKeys.get(id):'';return hash?'sha256:'+hash:raw}
   function remember(id,record){
-    metadata.set(id,{type:record.type||record.blob?.type||'',name:record.name||'',size:record.size||record.blob?.size||0,sourceUrl:record.sourceUrl||''});
+    if(record.contentHash)contentKeys.set(id,record.contentHash);
+    metadata.set(id,{type:record.type||record.blob?.type||'',name:record.name||'',size:record.size||record.blob?.size||0,sourceUrl:record.sourceUrl||'',contentHash:record.contentHash||''});
     if(record.blob instanceof Blob){
       const old=objectUrls.get(id);if(old)try{URL.revokeObjectURL(old)}catch{}
       objectUrls.set(id,URL.createObjectURL(record.blob));
@@ -68,7 +71,8 @@
   async function putBlob(blob,meta={}){
     const optimized=meta.optimize===false?blob:await optimizeBlob(blob,meta.name);
     const id=meta.id||makeId();
-    const record={blob:optimized,name:meta.name||'Uploaded image',type:optimized.type||blob.type||'',size:optimized.size,createdAt:Date.now(),sourceUrl:meta.sourceUrl||''};
+    const hash=await contentHash(optimized);
+    const record={contentHash:hash,blob:optimized,name:meta.name||'Uploaded image',type:optimized.type||blob.type||'',size:optimized.size,createdAt:Date.now(),sourceUrl:meta.sourceUrl||''};
     await tx('readwrite',store=>store.put(record,id));
     remember(id,record);
     return makeRef(id);
@@ -85,12 +89,17 @@
     try{
       let saved={};try{saved=JSON.parse(localStorage.getItem(REMOTE_KEY)||'{}')}catch{}
       for(const [url,ref] of Object.entries(saved||{}))remoteCache.set(url,ref);
+      const rows=[];
       const db=await openDb();
       await new Promise((resolve,reject)=>{
         const tr=db.transaction(STORE,'readonly'), store=tr.objectStore(STORE), req=store.openCursor();
-        req.onsuccess=()=>{const cur=req.result;if(!cur)return;remember(String(cur.key),cur.value||{});cur.continue()};
+        req.onsuccess=()=>{const cur=req.result;if(!cur)return;rows.push([String(cur.key),cur.value||{}]);cur.continue()};
         req.onerror=()=>reject(req.error);tr.oncomplete=()=>{db.close();resolve()};tr.onerror=()=>{db.close();reject(tr.error)};
       });
+      for(const [id,record] of rows){
+        if(record.blob instanceof Blob&&!record.contentHash){record.contentHash=await contentHash(record.blob);await tx('readwrite',store=>store.put(record,id))}
+        remember(id,record);
+      }
     }catch(err){console.info('CLM media store unavailable',err)}
   }
   function displayUrl(value){
@@ -175,8 +184,8 @@
   async function remove(value){
     const id=idFromRef(value);if(!id)return;
     const old=objectUrls.get(id);if(old)try{URL.revokeObjectURL(old)}catch{}
-    objectUrls.delete(id);metadata.delete(id);
+    objectUrls.delete(id);metadata.delete(id);contentKeys.delete(id);
     await tx('readwrite',store=>store.delete(id));
   }
-  window.CLMMediaStore={init,storeFile,putBlob,displayUrl,toDataUrl,resolveHtml,migrateWorkspace,isGif,isMediaRef:v=>!!idFromRef(v),remove};
+  window.CLMMediaStore={init,storeFile,putBlob,displayUrl,toDataUrl,resolveHtml,migrateWorkspace,isGif,contentKey,isMediaRef:v=>!!idFromRef(v),remove};
 })();
