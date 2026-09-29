@@ -729,7 +729,7 @@
     const wrapped=async function(){
       if(currentDraft()?.openTrackingState==='send-uncertain')throw new Error('Check Sent Mail and resolve the uncertain send before creating another draft.');
       if(sendBusy)throw new Error('Wait for the current send to finish.');
-      if(typeof saveDraft==='function')saveDraft();
+      if(typeof saveDraft==='function')saveDraft(false);
       const target=draftTarget();
       const result=await original.apply(this,arguments);
       const id=randomHex(14);

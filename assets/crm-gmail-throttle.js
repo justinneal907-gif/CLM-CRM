@@ -80,7 +80,10 @@
     const cfg=Object.assign({retryRateLimit:true,maxRetries:2},config||{});
     let attempt=0;
     while(true){
+      if(cfg.failFastCooldown&&remainingCooldownMs()>0)throw new Error('Google is rate limiting CRM requests. Wait '+cooldownText()+' before creating the draft again. No draft request was sent.');
       await waitForTurn();
+      if(options?.signal?.aborted)throw new DOMException('Request aborted','AbortError');
+      if(typeof cfg.onRequest==='function')cfg.onRequest();
       const response=await fetch(url,options||{});
       const limited=await responseLooksRateLimited(response);
       if(!limited)return response;

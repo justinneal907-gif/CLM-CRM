@@ -22,7 +22,7 @@ const ui=source.slice(source.indexOf('let gmailDraftCreationInProgress='),source
  ctx.createFormattedWorkGmailDraft=async()=>{throw new Error('Permission denied')};ctx.console={error(){}};await ctx.openInWorkGmail();assert.match(feedback.at(-1)[0],/Permission denied/);assert.equal(feedback.at(-1)[2],true);assert.equal(button.disabled,false);
  // Exercise the actual saved-package rendering path that runs before the Gmail API call.
  const helpers=source.slice(source.indexOf('function castingContactParts('),source.indexOf('function renderDrafts(){'));
- const saveStart=source.lastIndexOf('function saveDraft(){');
+ const saveStart=source.lastIndexOf('function saveDraft(');
  const saveSource=source.slice(saveStart,source.indexOf('function loadDraft(',saveStart));
  Object.assign(ctx,{db:{draft:{recipientEmail:'test@example.com',subject:'Test'},drafts:[],contacts:[],submissions:[]},
    normalizeName:s=>String(s||'').toLowerCase().trim(),esc:s=>String(s||''),
