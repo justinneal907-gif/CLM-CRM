@@ -4,6 +4,9 @@
   const DB_NAME='jn-agency-crm', DB_VERSION=2, STORE='media', PREFIX='clm-media:';
   const objectUrls=new Map(), metadata=new Map();
   const remoteCache=new Map();
+  const contentRefs=new Map(),aliases=new Map();
+  function canonicalRef(value){return aliases.get(String(value))||String(value||'')}
+  async function contentHash(blob){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer())),b=>b.toString(16).padStart(2,'0')).join('')}
   const inflightRemote=new Set();
   const REMOTE_KEY='clm.crm.optimizedRemoteMedia.v1';
   const heavyRemote=/\/assets\/models\/(?:clara\.png|amelie\.png|sophia-pippen-[12]\.jpg)(?:[?#]|$)/i;
@@ -67,10 +70,13 @@
   }
   async function putBlob(blob,meta={}){
     const optimized=meta.optimize===false?blob:await optimizeBlob(blob,meta.name);
+    const hash=await contentHash(optimized);
+    if(!meta.id&&contentRefs.has(hash))return contentRefs.get(hash);
     const id=meta.id||makeId();
-    const record={blob:optimized,name:meta.name||'Uploaded image',type:optimized.type||blob.type||'',size:optimized.size,createdAt:Date.now(),sourceUrl:meta.sourceUrl||''};
+    const record={contentHash:hash,blob:optimized,name:meta.name||'Uploaded image',type:optimized.type||blob.type||'',size:optimized.size,createdAt:Date.now(),sourceUrl:meta.sourceUrl||''};
     await tx('readwrite',store=>store.put(record,id));
     remember(id,record);
+    contentRefs.set(hash,makeRef(id));
     return makeRef(id);
   }
   async function getRecord(ref){
@@ -85,12 +91,21 @@
     try{
       let saved={};try{saved=JSON.parse(localStorage.getItem(REMOTE_KEY)||'{}')}catch{}
       for(const [url,ref] of Object.entries(saved||{}))remoteCache.set(url,ref);
+      const records=[];
       const db=await openDb();
       await new Promise((resolve,reject)=>{
         const tr=db.transaction(STORE,'readonly'), store=tr.objectStore(STORE), req=store.openCursor();
-        req.onsuccess=()=>{const cur=req.result;if(!cur)return;remember(String(cur.key),cur.value||{});cur.continue()};
+        req.onsuccess=()=>{const cur=req.result;if(!cur)return;records.push([String(cur.key),cur.value||{}]);cur.continue()};
         req.onerror=()=>reject(req.error);tr.oncomplete=()=>{db.close();resolve()};tr.onerror=()=>{db.close();reject(tr.error)};
       });
+      for(const [id,record] of records){
+        if(!(record.blob instanceof Blob))continue;
+        const hash=record.contentHash||await contentHash(record.blob);
+        const ref=makeRef(id),existing=contentRefs.get(hash);
+        if(existing){aliases.set(ref,existing);remember(id,record);}
+        else{contentRefs.set(hash,ref);remember(id,record)}
+        if(!record.contentHash){record.contentHash=hash;await tx('readwrite',store=>store.put(record,id))}
+      }
     }catch(err){console.info('CLM media store unavailable',err)}
   }
   function displayUrl(value){
@@ -178,5 +193,5 @@
     objectUrls.delete(id);metadata.delete(id);
     await tx('readwrite',store=>store.delete(id));
   }
-  window.CLMMediaStore={init,storeFile,putBlob,displayUrl,toDataUrl,resolveHtml,migrateWorkspace,isGif,isMediaRef:v=>!!idFromRef(v),remove};
+  window.CLMMediaStore={canonicalRef,init,storeFile,putBlob,displayUrl,toDataUrl,resolveHtml,migrateWorkspace,isGif,isMediaRef:v=>!!idFromRef(v),remove};
 })();
