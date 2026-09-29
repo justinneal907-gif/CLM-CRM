@@ -249,7 +249,7 @@ th,td{padding:8px}
 <script src="assets/models/sophia-extra-photo-1.js"></script>
 <script src="assets/models/sophia-extra-photo-2.js"></script>
 <script src="assets/data/core-roster.js?v=20260929-1"></script>
-<script src="assets/crm-media-store.js?v=20260929-dedupe-1"></script>
+<script src="assets/crm-media-store.js?v=20260929-1"></script>
 <script>
 const SOURCE_DATE='2026-09-14';
 const BASE_ROSTER=window.CLM_CORE_ROSTER?.BASE_ROSTER||[];
@@ -2460,8 +2460,7 @@ window.resetEmailPreviewEdits=resetEmailPreviewEdits;
 /* Persistent photo management. Tombstones prevent seed/roster merges restoring deleted images. */
 function photoURL(value){return typeof value==='string'?value:(value?.url||value?.src||'')}
 function photoKey(value){
-  const original=photoURL(value);
-  const url=(window.CLMMediaStore?.canonicalRef?.(original)||original).replace(/[?#].*$/,'');let a=2166136261,b=5381;
+  const url=photoURL(value).replace(/[?#].*$/,'');let a=2166136261,b=5381;
   for(let i=0;i<url.length;i++){a=Math.imul(a^url.charCodeAt(i),16777619);b=Math.imul(b,33)^url.charCodeAt(i)}
   return url.length+':'+(a>>>0).toString(16)+':'+(b>>>0).toString(16);
 }
