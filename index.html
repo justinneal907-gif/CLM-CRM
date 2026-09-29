@@ -2286,8 +2286,12 @@ function persistWorkspaceSafe(showError=true){
 }
 function save(){db.selected=[...selected];if(!persistWorkspaceSafe())return false;renderAll();return true}
 function persistDraftPresentation(){db.selected=[...selected];db.draft=db.draft||structuredClone(seed.draft);db.draft.modelIds=[...selected];persistWorkspaceSafe()}
-function renderEmail(){if(!$('#emailPreview'))return;captureDraft();$('#emailPreview').innerHTML=emailHtml();renderEmailSelection();renderBrandAdvisor();renderBriefSummary();renderDraftScope()}
-function renderEmailPreviewOnly(){if(!$('#emailPreview'))return;captureDraft();$('#emailPreview').innerHTML=emailHtml();renderBriefSummary();renderSubmissionWarnings();renderDraftScope()}
+const DRAFT_GIF_PAUSED_PREVIEW='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="880" height="560" viewBox="0 0 880 560"><rect width="880" height="560" fill="#f3f4f3"/><rect x="24" y="24" width="832" height="512" rx="18" fill="#ffffff" stroke="#d7dbd8" stroke-width="2"/><text x="440" y="250" text-anchor="middle" font-family="Arial,sans-serif" font-size="30" font-weight="700" fill="#1f2923">GIF paused in draft preview</text><text x="440" y="305" text-anchor="middle" font-family="Arial,sans-serif" font-size="22" fill="#66736b">Click to play</text></svg>');
+function isAnimatedGifSource(src){const value=String(src||'').trim().toLowerCase();return value.startsWith('data:image/gif')||/\.gif(?:[?#]|$)/i.test(value)}
+function draftPreviewHtml(html){const t=document.createElement('template');t.innerHTML=String(html||'');t.content.querySelectorAll('img').forEach(img=>{const src=img.getAttribute('src')||'';if(!isAnimatedGifSource(src))return;img.setAttribute('data-gif-src',src);img.setAttribute('data-gif-playing','0');img.setAttribute('src',DRAFT_GIF_PAUSED_PREVIEW);img.setAttribute('title','GIF paused in draft preview. Click to play.');img.setAttribute('role','button');img.setAttribute('tabindex','0')});return t.innerHTML}
+function bindDraftPreviewGifs(){const preview=$('#emailPreview');if(!preview)return;preview.querySelectorAll('img[data-gif-src]').forEach(img=>{if(img.dataset.gifBound==='1')return;img.dataset.gifBound='1';img.style.cursor='pointer';const toggle=()=>{const playing=img.dataset.gifPlaying==='1';img.src=playing?DRAFT_GIF_PAUSED_PREVIEW:img.dataset.gifSrc;img.dataset.gifPlaying=playing?'0':'1';img.title=playing?'GIF paused in draft preview. Click to play.':'GIF playing in preview. Click to pause.'};img.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggle()});img.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();toggle()}})})}
+function renderEmail(){if(!$('#emailPreview'))return;captureDraft();$('#emailPreview').innerHTML=draftPreviewHtml(emailHtml());bindDraftPreviewGifs();renderEmailSelection();renderBrandAdvisor();renderBriefSummary();renderDraftScope()}
+function renderEmailPreviewOnly(){if(!$('#emailPreview'))return;captureDraft();$('#emailPreview').innerHTML=draftPreviewHtml(emailHtml());bindDraftPreviewGifs();renderBriefSummary();renderSubmissionWarnings();renderDraftScope()}
 function updateEmailPurposeUi(){const follow=$('#emailPurpose')?.value==='followup';const field=$('#followUpBodyField');if(field)field.style.display=follow?'block':'none';const record=$('#recordSubmissionBtn');if(record)record.disabled=follow&&!selected.length}
 function queueEmailDraftRender(){updateEmailPurposeUi();captureDraft();clearTimeout(emailDraftRenderTimer);emailDraftRenderTimer=setTimeout(()=>renderEmailPreviewOnly(),120);clearTimeout(emailDraftPersistTimer);emailDraftPersistTimer=setTimeout(()=>persistWorkspaceSafe(false),500)}
 function saveDraft(){
@@ -2314,6 +2318,7 @@ let emailPreviewEditTimer=0;
 function sanitizeEditableEmailHtml(html){
   const template=document.createElement('template');
   template.innerHTML=String(html||'');
+  template.content.querySelectorAll('img[data-gif-src]').forEach(img=>{const src=img.getAttribute('data-gif-src');if(src)img.setAttribute('src',src);['data-gif-src','data-gif-playing','data-gif-bound','title','role','tabindex'].forEach(name=>img.removeAttribute(name));img.style.removeProperty('cursor')});
   template.content.querySelectorAll('script,style,iframe,object,embed,form,input,textarea,button,meta,link').forEach(el=>el.remove());
   template.content.querySelectorAll('*').forEach(el=>{
     [...el.attributes].forEach(attr=>{
