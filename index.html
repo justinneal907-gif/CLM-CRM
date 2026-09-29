@@ -1321,16 +1321,17 @@ function openCRMDatabase(){
     req.onblocked=()=>reject(new Error('IndexedDB upgrade was blocked by another open CRM tab.'));
   });
 }
-function idbReadWorkspace(){
+function idbReadWorkspaceAtKey(key=IDB_STATE_KEY){
   return openCRMDatabase().then(database=>new Promise((resolve,reject)=>{
     const tx=database.transaction(IDB_STORE,'readonly');
-    const req=tx.objectStore(IDB_STORE).get(IDB_STATE_KEY);
+    const req=tx.objectStore(IDB_STORE).get(key);
     req.onsuccess=()=>resolve(req.result||null);
     req.onerror=()=>reject(req.error||new Error('Could not read CRM data from IndexedDB.'));
     tx.oncomplete=()=>database.close();
     tx.onerror=()=>{database.close();reject(tx.error||new Error('IndexedDB read transaction failed.'))};
   }));
 }
+function idbReadWorkspace(){return idbReadWorkspaceAtKey(IDB_STATE_KEY)}
 function idbWriteWorkspaceAtKey(snapshot,key=IDB_STATE_KEY){
   return openCRMDatabase().then(database=>new Promise((resolve,reject)=>{
     const tx=database.transaction(IDB_STORE,'readwrite');
@@ -2740,8 +2741,9 @@ async function bootstrapWorkspace(){
   }catch(err){console.info('Pre-repair workspace backup skipped',err)}
   db=await loadWorkspaceIndexedDB();
   db.recovery={...(db.recovery||{}),safeGallerySnapshot20260929:true};
+  db=await restoreOldPhotoLibrary20260929(db);
   const repaired=repairPhotoState20260929(db);db=repaired.data;
-  try{if(window.CLMMediaStore?.migrateWorkspace){const migrated=await window.CLMMediaStore.migrateWorkspace(db);db=migrated.data}}catch(err){console.warn('Legacy photo migration skipped',err)}
+  try{if(window.CLMMediaStore?.migrateWorkspace){const migrated=await window.CLMMediaStore.migrateWorkspace(db);db=migrated.data;dedupePhotoLibrary20260929(db)}}catch(err){console.warn('Legacy photo migration skipped',err)}
   try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Recovered workspace save skipped',err)}
   selected=[...(db.selected||[])];
   initNav();
@@ -2759,6 +2761,58 @@ async function bootstrapWorkspace(){
   restoreWorkGmailSession().catch(err=>console.info('Gmail session restore skipped',err));
 }
 bootstrapWorkspace();
+
+async function restoreOldPhotoLibrary20260929(data){
+  if(data.recovery?.oldPhotoLibraryRestoreVersion>=1)return data;
+  data.photoLibrary=data.photoLibrary||{};
+  data.hiddenGalleryPhotoKeys={};
+  let restored=0;
+  const add=(id,item,label='Restored photo')=>{
+    const raw=typeof item==='string'?item:(item?.url||item?.src||'');
+    const url=upgradedPhotoURL(String(raw||'').trim());
+    if(!id||!url)return;
+    const list=data.photoLibrary[id]||(data.photoLibrary[id]=[]);
+    const key=galleryPhotoKey(url);
+    if(list.some(x=>galleryPhotoKey(photoURL(x))===key))return;
+    list.push(typeof item==='object'&&item?{...item,url,label:item.label||label}:{url,label});
+    restored++;
+  };
+  try{
+    const backup=await idbReadWorkspaceAtKey('backup-before-gallery-repair-20260929');
+    if(backup){
+      for(const [id,list] of Object.entries(backup.photoLibrary||{}))for(const item of list||[])add(id,item,'Restored from pre-repair backup');
+      for(const m of backup.models||[]){
+        for(const key of ['photos','photoLibrary','portfolioPhotos','images'])for(const item of (Array.isArray(m[key])?m[key]:[]))add(m.id,item,'Restored model photo');
+        if(m.photo)add(m.id,m.photo,'Restored primary photo');
+        if(m.photoUrl)add(m.id,m.photoUrl,'Restored agency photo');
+      }
+      for(const [id,url] of Object.entries(backup.customPhotos||{}))add(id,url,'Restored custom photo');
+    }
+  }catch(err){console.info('Pre-repair photo backup unavailable',err)}
+  for(let i=1;i<=7;i++){
+    const part=String(i).padStart(2,'0');
+    try{
+      const response=await fetch('assets/data/photo-library-restore-20260918-part-'+part+'.json?v=1',{cache:'force-cache'});
+      if(!response.ok)continue;
+      const payload=await response.json();
+      for(const [id,list] of Object.entries(payload.photoLibrary||{}))for(const item of list||[])add(id,item,'Restored September photo');
+    }catch(err){console.info('Archived photo part '+part+' unavailable',err)}
+  }
+  data.recovery={...(data.recovery||{}),oldPhotoLibraryRestoreVersion:1,oldPhotoLibraryRestoreOn:'2026-09-29',oldPhotoLibraryRestoredCount:restored};
+  return data;
+}
+function dedupePhotoLibrary20260929(data){
+  for(const [id,list] of Object.entries(data.photoLibrary||{})){
+    const seen=new Set(),out=[];
+    for(const item of list||[]){
+      const url=photoURL(item);if(!url)continue;
+      const key=galleryPhotoKey(url);if(seen.has(key))continue;
+      seen.add(key);out.push(item);
+    }
+    data.photoLibrary[id]=out;
+  }
+  return data;
+}
 
 /* SAFE PHOTO/DRAFT RECOVERY 2026-09-29
    Restores missing photo selections from seeded package records, rebuilds the
