@@ -249,7 +249,7 @@ th,td{padding:8px}
 <script src="assets/models/sophia-extra-photo-1.js"></script>
 <script src="assets/models/sophia-extra-photo-2.js"></script>
 <script src="assets/data/core-roster.js?v=20260929-1"></script>
-<script src="assets/crm-media-store.js?v=20260929-safe-1"></script>
+<script src="assets/crm-media-store.js?v=20260929-restore-2"></script>
 <script>
 const SOURCE_DATE='2026-09-14';
 const BASE_ROSTER=window.CLM_CORE_ROSTER?.BASE_ROSTER||[];
@@ -2511,9 +2511,11 @@ function draftPhotoOptions(m){
   [m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(a=>Array.isArray(a)&&a.forEach(x=>add(x,'Portfolio photo')));
   if(typeof MODEL_PHOTO_LIBRARY!=='undefined')(MODEL_PHOTO_LIBRARY[m.id]||[]).forEach(x=>add(x,'Agency photo'));
   add(db.customPhotos?.[m.id],'Custom photo');add(m.photo,'Primary photo');add(m.photoUrl,'Agency photo');
-  const chosen=db.draft?.photoSelections?.[m.id];
-  (Array.isArray(chosen)?chosen:[chosen]).forEach(x=>add(x,'Current draft photo'));
-  (db.draft?.packagePhotos?.[m.id]||[]).forEach(x=>add(x,'Current draft photo'));
+  for(const d of [db.draft,...(db.drafts||[])].filter(Boolean)){
+    const chosen=d.photoSelections?.[m.id];
+    (Array.isArray(chosen)?chosen:[chosen]).forEach(x=>add(x,d===db.draft?'Current draft photo':'Saved draft photo'));
+    (d.packagePhotos?.[m.id]||[]).forEach(x=>add(x,d===db.draft?'Current draft photo':'Saved draft photo'));
+  }
   return list;
 }
 function getPhoto(m){return [db.customPhotos?.[m.id],m.photo,m.photoUrl].map(upgradedPhotoURL).find(url=>url&&!isDeletedPhoto(db,m.id,url))||''}
@@ -2742,7 +2744,6 @@ async function bootstrapWorkspace(){
   db=await loadWorkspaceIndexedDB();
   db.recovery={...(db.recovery||{}),safeGallerySnapshot20260929:true};
   db=await restoreOldPhotoLibrary20260929(db);
-  const repaired=repairPhotoState20260929(db);db=repaired.data;
   try{if(window.CLMMediaStore?.migrateWorkspace){const migrated=await window.CLMMediaStore.migrateWorkspace(db);db=migrated.data;dedupePhotoLibrary20260929(db)}}catch(err){console.warn('Legacy photo migration skipped',err)}
   try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Recovered workspace save skipped',err)}
   selected=[...(db.selected||[])];
@@ -2763,7 +2764,7 @@ async function bootstrapWorkspace(){
 bootstrapWorkspace();
 
 async function restoreOldPhotoLibrary20260929(data){
-  if(data.recovery?.oldPhotoLibraryRestoreVersion>=1)return data;
+  if(data.recovery?.oldPhotoLibraryRestoreVersion>=2)return data;
   data.photoLibrary=data.photoLibrary||{};
   data.hiddenGalleryPhotoKeys={};
   let restored=0;
@@ -2787,18 +2788,26 @@ async function restoreOldPhotoLibrary20260929(data){
         if(m.photoUrl)add(m.id,m.photoUrl,'Restored agency photo');
       }
       for(const [id,url] of Object.entries(backup.customPhotos||{}))add(id,url,'Restored custom photo');
+      for(const d of [backup.draft,...(backup.drafts||[])].filter(Boolean)){
+        for(const [id,value] of Object.entries(d.photoSelections||{}))for(const url of (Array.isArray(value)?value:[value]))add(id,url,'Restored saved draft photo');
+        for(const [id,list] of Object.entries(d.packagePhotos||{}))for(const url of (Array.isArray(list)?list:[]))add(id,url,'Restored saved draft photo');
+      }
     }
   }catch(err){console.info('Pre-repair photo backup unavailable',err)}
   for(let i=1;i<=7;i++){
     const part=String(i).padStart(2,'0');
     try{
-      const response=await fetch('assets/data/photo-library-restore-20260918-part-'+part+'.json?v=1',{cache:'force-cache'});
+      const response=await fetch('assets/data/photo-library-restore-20260918-part-'+part+'.json?v=2',{cache:'reload'});
       if(!response.ok)continue;
       const payload=await response.json();
       for(const [id,list] of Object.entries(payload.photoLibrary||{}))for(const item of list||[])add(id,item,'Restored September photo');
     }catch(err){console.info('Archived photo part '+part+' unavailable',err)}
   }
-  data.recovery={...(data.recovery||{}),oldPhotoLibraryRestoreVersion:1,oldPhotoLibraryRestoreOn:'2026-09-29',oldPhotoLibraryRestoredCount:restored};
+  for(const d of [data.draft,...(data.drafts||[])].filter(Boolean)){
+    for(const [id,value] of Object.entries(d.photoSelections||{}))for(const url of (Array.isArray(value)?value:[value]))add(id,url,'Saved draft photo');
+    for(const [id,list] of Object.entries(d.packagePhotos||{}))for(const url of (Array.isArray(list)?list:[]))add(id,url,'Saved draft photo');
+  }
+  data.recovery={...(data.recovery||{}),oldPhotoLibraryRestoreVersion:2,oldPhotoLibraryRestoreOn:'2026-09-29',oldPhotoLibraryRestoredCount:restored};
   return data;
 }
 function dedupePhotoLibrary20260929(data){
