@@ -1967,7 +1967,15 @@ async function gmailDraftRequest(url,options){
 async function createFormattedWorkGmailDraft(){
   captureDraft();
   const purpose=$('#emailPurpose')?.value||db.draft?.purpose||'submission';
-  if(!selected.length&&purpose!=='followup')throw new Error('Select at least one model first.');
+  const activeRecord=db.activeDraftId?(db.drafts||[]).find(d=>d.id===db.activeDraftId):null;
+  const hasLockedPreview=!!String(
+    db.draft?.manualEmailHtml||
+    db.draft?.userOverrides?.fullHtml||
+    activeRecord?.manualEmailHtml||
+    activeRecord?.userOverrides?.fullHtml||
+    ''
+  ).trim();
+  if(!selected.length&&purpose!=='followup'&&!hasLockedPreview)throw new Error('Select at least one model first.');
   const to=$('#emailRecipient').value.trim();
   const subject=$('#emailSubject').value.trim();
   if(!to)throw new Error('Add a recipient email first.');
@@ -2752,7 +2760,11 @@ function loadDraft(id){
   db.selected=[...selected];const draftSearch=$('#draftSearch');if(draftSearch)draftSearch.value='';resetDraftUtilityControls();persistWorkspaceSafe(false);const preview=$('#emailPreview');if(preview)preview.dataset.manualRefreshInitialized='';go('email');setStatus(`Loaded ${d.brandProject||d.company||d.subject||'saved package'}.`)
 }
 async function copyEmail(){
-  const purpose=$('#emailPurpose')?.value||'submission';if(!selected.length&&purpose!=='followup')return setStatus('Select at least one model first.');let html=emailHtml();if(window.CLMMediaStore?.resolveHtml)html=await window.CLMMediaStore.resolveHtml(html);const tmp=document.createElement('div');tmp.innerHTML=html;const plain=(tmp.innerText||tmp.textContent||'').trim();
+  const purpose=$('#emailPurpose')?.value||'submission';
+  const activeRecord=db.activeDraftId?(db.drafts||[]).find(d=>d.id===db.activeDraftId):null;
+  const hasLockedPreview=!!String(db.draft?.manualEmailHtml||db.draft?.userOverrides?.fullHtml||activeRecord?.manualEmailHtml||activeRecord?.userOverrides?.fullHtml||'').trim();
+  if(!selected.length&&purpose!=='followup'&&!hasLockedPreview)return setStatus('Select at least one model first.');
+  let html=emailHtml();if(window.CLMMediaStore?.resolveHtml)html=await window.CLMMediaStore.resolveHtml(html);const tmp=document.createElement('div');tmp.innerHTML=html;const plain=(tmp.innerText||tmp.textContent||'').trim();
   try{if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([plain],{type:'text/plain'})})]);setStatus('Formatted email copied.');return}}catch(err){console.warn('Rich clipboard unavailable',err)}
   try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(plain);setStatus('Email copied as plain text.');return}}catch(err){console.warn('Clipboard API unavailable',err)}
   const area=document.createElement('textarea');area.value=plain;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();try{if(document.execCommand('copy'))setStatus('Email copied as plain text.');else setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}catch(err){console.error(err);setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}finally{area.remove()}
