@@ -1329,18 +1329,18 @@ function duplicateCarolineCommercialBridalPackages20260930(data){
   const clean=value=>String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   const source=data.drafts.find(d=>{
     const hay=clean([d?.subject,d?.brandProject,d?.company].filter(Boolean).join(' '));
-    return hay.includes('caroline castigliano')&&hay.includes('new york bridal');
+    return hay.includes('caroline castigliano')&&hay.includes('new york');
   });
   if(!source)return data;
 
   const targets=[
-    {id:'nybfw_fall27_rebecca_schoneveld_commercial_copy',brand:'Rebecca Schoneveld',schedule:'Tuesday 9:00 AM to 6:00 PM and Wednesday 9:00 AM to 4:00 PM'},
-    {id:'nybfw_fall27_amsale_commercial_copy',brand:'Amsale',schedule:'Tuesday through Thursday 9:00 AM to 5:00 PM'},
-    {id:'nybfw_fall27_yellow_by_sahar_commercial_copy',brand:'Yellow by Sahar',schedule:'Tuesday 9:00 AM to 8:00 PM'},
-    {id:'nybfw_fall27_arava_polak_commercial_copy',brand:'Arava Polak',schedule:'Tuesday and Wednesday 9:00 AM to 5:00 PM'},
-    {id:'nybfw_fall27_eve_of_milady_commercial_copy',brand:'Eve of Milady',schedule:'Tuesday and Wednesday 9:00 AM to 6:00 PM'},
-    {id:'nybfw_fall27_marrow_bridal_commercial_copy',brand:'Marrow Bridal',schedule:'Thursday 10:00 AM to 5:00 PM'},
-    {id:'nybfw_fall27_renhue_commercial_copy',brand:'Renhue Bridal',schedule:'Thursday 10:00 AM to 4:00 PM'}
+    {id:'nybfw_fall27_rebecca_schoneveld_commercial_copy',brand:'Rebecca Schoneveld'},
+    {id:'nybfw_fall27_amsale_commercial_copy',brand:'Amsale'},
+    {id:'nybfw_fall27_yellow_by_sahar_commercial_copy',brand:'Yellow by Sahar'},
+    {id:'nybfw_fall27_arava_polak_commercial_copy',brand:'Arava Polak'},
+    {id:'nybfw_fall27_eve_of_milady_commercial_copy',brand:'Eve of Milady'},
+    {id:'nybfw_fall27_marrow_bridal_commercial_copy',brand:'Marrow Bridal'},
+    {id:'nybfw_fall27_renhue_commercial_copy',brand:'Renhue Bridal'}
   ];
 
   const resetSendState=copy=>{
@@ -1352,50 +1352,31 @@ function duplicateCarolineCommercialBridalPackages20260930(data){
     ].forEach(key=>delete copy[key]);
   };
 
-  let created=0;
   for(const target of targets){
-    if(data.drafts.some(d=>d?.id===target.id))continue;
-    const copy=structuredClone(source);
-    resetSendState(copy);
-    copy.id=target.id;
-    copy.date='2026-09-30';
-    copy.company=target.brand;
-    copy.brandProject=target.brand+' | New York Bridal Week Fall 2027';
-    copy.subject='New York Bridal Week | '+target.brand+' Model Package';
-    copy.contactId='';
-    copy.contactName='';
-    copy.recipientEmail='';
-    copy.packageLink='';
-    copy.brief='';
-    copy.customBody='';
-    copy.manualEmailHtml='';
-    copy.castingBriefRaw='';
-    copy.html='';
-    copy.bodyEdited=false;
-    copy.userOverrides={...(copy.userOverrides||{}),fields:{}};
-    copy.parsedBrief={
-      ...(copy.parsedBrief||{}),
-      project:target.brand,
-      location:'New York',
-      dateText:target.schedule,
-      requirements:'NYFW Bridal Fall 2027 commercial package duplicated from the Caroline Castigliano model selection.'
-    };
-    copy.researchUrl='';
-    copy.selectionRationale='';
-    copy.source='Fashion Calendar screenshot supplied by user. Commercial package duplicated from Caroline Castigliano on September 30, 2026.';
-    copy.notes='Commercial NY Bridal Week package. Model selection and package photos copied from Caroline Castigliano. Contact is intentionally blank until verified.';
-    data.drafts.push(copy);
-    created++;
+    const exact=structuredClone(source);
+    resetSendState(exact);
+
+    // Keep every draft field exactly as Caroline Castigliano, including the
+    // full body text, model order, images, measurements, links and user edits.
+    // Only package identity and subject change.
+    exact.id=target.id;
+    exact.date='2026-09-30';
+    exact.company=target.brand;
+    exact.brandProject=target.brand;
+    exact.subject='New York Fashion Week | '+target.brand;
+    exact.html='';
+
+    const existingIndex=data.drafts.findIndex(d=>d?.id===target.id);
+    if(existingIndex>=0)data.drafts[existingIndex]=exact;
+    else data.drafts.push(exact);
   }
 
-  if(created){
-    data.recovery={
-      ...(data.recovery||{}),
-      carolineCommercialBridalCopiesVersion:1,
-      carolineCommercialBridalCopiesCreatedOn:'2026-09-30',
-      carolineCommercialBridalCopiesCreated:created
-    };
-  }
+  data.recovery={
+    ...(data.recovery||{}),
+    carolineCommercialBridalCopiesVersion:2,
+    carolineCommercialBridalCopiesCreatedOn:'2026-09-30',
+    carolineCommercialBridalCopiesCreated:targets.length
+  };
   return data;
 }
 
@@ -2214,7 +2195,7 @@ function renderDrafts(){
 }
 function activeDraftRecord(){return db.activeDraftId?db.drafts.find(x=>x.id===db.activeDraftId)||null:null}
 let historicalCastingLeadsHtml='';
-function renderDraftScope(){const view=$('#view-email');if(!view)return;const panel=$('#castingLeadsPanel');if(panel&&!historicalCastingLeadsHtml)historicalCastingLeadsHtml=panel.innerHTML;const saved=activeDraftRecord();const d=db.draft||saved||seed.draft;const label=packageDisplayName(d)||'Unsaved package';let banner=$('#draftScopeBanner');if(!banner){banner=document.createElement('div');banner.id='draftScopeBanner';banner.className='panel';banner.style.marginBottom='14px';const split=view.querySelector('.split');view.insertBefore(banner,split||view.firstChild)}const state=saved?'Saved package open':'Unsaved package';banner.innerHTML=`<div class="eyebrow">${esc(state)}</div><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><h2 style="margin:4px 0">${esc(label)}${saved?repeatCastingHtml(saved,true):''}</h2><div class="muted">Every package-builder section below is scoped to this ${saved?'saved draft':'working draft'}.</div>${saved?repeatCastingHtml(saved,false):''}</div><button class="btn" type="button" onclick="startBlankPackage()">New blank package</button></div>`;const headings=view.querySelectorAll('.split>.panel>h2');if(headings[0])headings[0].textContent='Model package builder · '+label;if(headings[1])headings[1].textContent='Email preview · '+label;const jump=$('#jumpToCastingLeadsBtn');if(jump)jump.textContent=saved?(d.company||label)+' lead context':'Casting leads';const saveBtn=$('#saveDraftBtn');if(saveBtn)saveBtn.textContent=saved?'Update draft':'Save draft';if(panel){if(saved){const c=db.contacts.find(x=>x.id===d.contactId)||null;const email=d.recipientEmail||c?.email||'';const projectKey=normalizeName(d.brandProject||d.company||'');const related=db.submissions.filter(x=>{if(x.draftId&&x.draftId===db.activeDraftId)return true;const hay=normalizeName([x.project,x.company,x.email,x.contact].filter(Boolean).join(' '));return projectKey&&hay.includes(projectKey)});const pb=d.parsedBrief||{};const modelNames=selectedModels().map(m=>m.name);panel.innerHTML=`<summary>${esc(label)} · lead context</summary><h2>${esc(label)}</h2><p><b>Contact:</b> ${esc(d.contactName||c?.name||'Not assigned')}${d.company||c?.company?` · ${esc(d.company||c?.company||'')}`:''}<br><b>Email:</b> ${esc(email||'Not verified / not entered')}</p>${d.brief?`<p><b>Package notes:</b> ${esc(d.brief)}</p>`:''}<p><b>Selected models:</b> ${esc(modelNames.join(', ')||'None selected')}</p>${pb.dateText||pb.shootDate||pb.location?`<p><b>Brief context:</b> ${esc([pb.dateText||pb.shootDate,pb.location].filter(Boolean).join(' · '))}</p>`:''}${d.source?`<p class="muted"><b>Source:</b> ${esc(d.source)}</p>`:''}<h3>Related submission history</h3>${related.length?`<div class="table-wrap"><table><thead><tr><th>Date</th><th>Project</th><th>Models</th><th>Status</th></tr></thead><tbody>${related.map(x=>`<tr><td>${esc(x.date||'')}</td><td>${esc(x.project||x.company||'')}</td><td>${esc((x.models||[]).join(', '))}</td><td>${esc(x.status||'')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No recorded submissions are linked to this draft yet.</div>'}`;panel.open=false}else if(historicalCastingLeadsHtml&&panel.innerHTML!==historicalCastingLeadsHtml){panel.innerHTML=historicalCastingLeadsHtml;panel.open=false}}}
+function renderDraftScope(){const view=$('#view-email');if(!view)return;const panel=$('#castingLeadsPanel');if(panel&&!historicalCastingLeadsHtml)historicalCastingLeadsHtml=panel.innerHTML;const saved=activeDraftRecord();const d=db.draft||saved||seed.draft;const label=packageDisplayName(d)||'Unsaved package';let banner=$('#draftScopeBanner');if(!banner){banner=document.createElement('div');banner.id='draftScopeBanner';banner.className='panel';banner.style.marginBottom='14px';const split=view.querySelector('.split');view.insertBefore(banner,split||view.firstChild)}const state=saved?'Saved package open':'Unsaved package';banner.innerHTML=`<div class="eyebrow">${esc(state)}</div><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><h2 style="margin:4px 0">${esc(label)}${saved?repeatCastingHtml(saved,true):''}</h2><div class="muted">Every package-builder section below is scoped to this ${saved?'saved draft':'working draft'}.</div>${saved?repeatCastingHtml(saved,false):''}</div><button class="btn" type="button" onclick="startBlankPackage()">New blank package</button></div>`;const headings=view.querySelectorAll('.split>.panel>h2');const exactCarolineCopy=/^nybfw_fall27_.*_commercial_copy$/.test(saved?.id||d?.id||'');if(headings[0])headings[0].textContent=exactCarolineCopy?label:'Model package builder · '+label;if(headings[1])headings[1].textContent='Email preview · '+label;const jump=$('#jumpToCastingLeadsBtn');if(jump)jump.textContent=saved?(d.company||label)+' lead context':'Casting leads';const saveBtn=$('#saveDraftBtn');if(saveBtn)saveBtn.textContent=saved?'Update draft':'Save draft';if(panel){if(saved){const c=db.contacts.find(x=>x.id===d.contactId)||null;const email=d.recipientEmail||c?.email||'';const projectKey=normalizeName(d.brandProject||d.company||'');const related=db.submissions.filter(x=>{if(x.draftId&&x.draftId===db.activeDraftId)return true;const hay=normalizeName([x.project,x.company,x.email,x.contact].filter(Boolean).join(' '));return projectKey&&hay.includes(projectKey)});const pb=d.parsedBrief||{};const modelNames=selectedModels().map(m=>m.name);panel.innerHTML=`<summary>${esc(label)} · lead context</summary><h2>${esc(label)}</h2><p><b>Contact:</b> ${esc(d.contactName||c?.name||'Not assigned')}${d.company||c?.company?` · ${esc(d.company||c?.company||'')}`:''}<br><b>Email:</b> ${esc(email||'Not verified / not entered')}</p>${d.brief?`<p><b>Package notes:</b> ${esc(d.brief)}</p>`:''}<p><b>Selected models:</b> ${esc(modelNames.join(', ')||'None selected')}</p>${pb.dateText||pb.shootDate||pb.location?`<p><b>Brief context:</b> ${esc([pb.dateText||pb.shootDate,pb.location].filter(Boolean).join(' · '))}</p>`:''}${d.source?`<p class="muted"><b>Source:</b> ${esc(d.source)}</p>`:''}<h3>Related submission history</h3>${related.length?`<div class="table-wrap"><table><thead><tr><th>Date</th><th>Project</th><th>Models</th><th>Status</th></tr></thead><tbody>${related.map(x=>`<tr><td>${esc(x.date||'')}</td><td>${esc(x.project||x.company||'')}</td><td>${esc((x.models||[]).join(', '))}</td><td>${esc(x.status||'')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">No recorded submissions are linked to this draft yet.</div>'}`;panel.open=false}else if(historicalCastingLeadsHtml&&panel.innerHTML!==historicalCastingLeadsHtml){panel.innerHTML=historicalCastingLeadsHtml;panel.open=false}}}
 function recordSubmission(){if(!selected.length)return setStatus('Select at least one model first.');captureDraft();const pb=db.draft.parsedBrief||{};const s={id:uid(),date:nyDate(),draftId:db.activeDraftId||'',contact:db.draft.contactName||contactObj()?.name||'',company:db.draft.company||contactObj()?.company||'',email:db.draft.recipientEmail||contactObj()?.email||'',project:db.draft.brandProject||db.draft.subject,models:selectedModels().map(m=>m.name),modelIds:[...selected],status:'Submitted',subject:db.draft.subject,shootDate:pb.shootDate||'',shootText:pb.shootText||pb.dateText||'',castingDate:'',castingText:pb.castingText||'',rate:pb.rate||'',usage:pb.usage||'',location:pb.location||'',briefRaw:db.draft.castingBriefRaw||''};db.submissions.push(s);autoFollowUpForSubmission(s);save();setStatus('Submission recorded and follow-up task created.')}
 const schemas={contacts:[['name','Name','text'],['company','Company','text'],['email','Email','email'],['relationship','Relationship','select',['New','Developing','Warm','Strong','Priority']],['preferredNiches','Preferred niches / looks','text'],['notes','Notes','textarea']],submissions:[['date','Date','date'],['contact','Contact name','text'],['company','Company / brand','text'],['email','Contact email','email'],['project','Project','text'],['shootDate','Shoot date','date'],['castingDate','Casting / fitting date','date'],['rate','Rate','text'],['usage','Usage','text'],['models','Models (comma separated)','text'],['status','Status','select',['Draft','Submitted','Requested','Casting','Callback','First Hold','Second Hold','Booked','Passed','Closed / No Booking']]],bookings:[['date','Date','date'],['project','Project','text'],['model','Model','text'],['client','Client / company','text'],['contact','Contact name','text'],['email','Contact email','email'],['baseFee','Base model fee','text'],['usageFee','Usage fee','text'],['fittingFee','Fitting fee','text'],['overtimeFee','Overtime','text'],['travelFee','Travel / per diem','text'],['renewalFee','Renewal fee','text'],['totalFee','Total fee (leave blank to calculate)','text'],['personalRate','Your commission %','text'],['status','Status','select',['Inquiry','Hold','First Hold','Second Hold','Booked','Completed','Paid']]],tasks:[['task','Task','text'],['contact','Contact name','text'],['company','Company / brand','text'],['email','Contact email','email'],['details','Details / Notes','textarea'],['due','Due','date'],['priority','Priority','select',['Low','Normal','High']],['status','Status','select',['Open','Waiting','Done']]]};
 function openRecordModal(type,id=null){modalType=type;modalEditId=id;const existing=id?(db[type]||[]).find(x=>x.id===id):null;$('#recordModalTitle').textContent=existing?'Edit '+type.slice(0,-1):type==='contacts'?'Add contact':type==='submissions'?'New submission':type==='bookings'?'Add booking':'Add task';const contactPicker=type!=='contacts'?`<div class="field"><label>Autofill from saved contact</label><select id="recordContactSelect"><option value="">— Select contact —</option>${db.contacts.map(c=>`<option value="${esc(c.id||'')}">${esc(c.name||'Unnamed')}${c.company?' · '+esc(c.company):''}</option>`).join('')}</select></div>`:'';$('#recordForm').innerHTML=contactPicker+schemas[type].map(([key,label,kind,opts])=>{let raw=existing?.[key]??((key==='date'||key==='due')?nyDate():'');if(type==='bookings'&&key==='personalRate'&&!raw)raw=db.settings?.personalCommissionRate||10;const value=Array.isArray(raw)?raw.join(', '):String(raw??'');return `<div class="field"><label>${label}</label>${kind==='textarea'?`<textarea name="${key}" rows="5">${esc(value)}</textarea>`:kind==='select'?`<select name="${key}">${opts.map(o=>`<option ${value===o?'selected':''}>${o}</option>`).join('')}</select>`:`<input name="${key}" type="${kind}" value="${esc(value)}">`}</div>`}).join('');if(type!=='contacts'){const sel=$('#recordContactSelect');if(sel){const match=db.contacts.find(c=>(existing?.contactId&&c.id===existing.contactId)||(!existing?.contactId&&existing?.email&&c.email===existing.email));if(match)sel.value=match.id;sel.onchange=()=>autofillRecordContact(type)}}$('#recordDialog').showModal()}
