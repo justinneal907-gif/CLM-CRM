@@ -5,7 +5,7 @@
   'use strict';
   if(window.__clmEmailSyncLoaded)return;
   window.__clmEmailSyncLoaded=true;
-  const SYNC_VERSION='2026-09-25-v5';
+  const SYNC_VERSION='2026-09-30-package-subject-v1';
   const SYNC_INTERVAL_MS=15*60*1000;
   const KNOWN_IDS_KEY='clm.crm.gmailSentSyncIds.v1';
   let syncTimer=null;
@@ -247,6 +247,25 @@
       draft.gmailMessageId=messageId;
       draft.gmailUrl=gmailUrl;
       draft.submissionStatus='Submitted';
+      // The sent Gmail message is authoritative for the package name. This
+      // captures subject edits made in Gmail after the CRM draft was created.
+      if(subject){
+        draft.finalSentSubject=subject;
+        draft.subject=subject;
+      }
+      if(db.activeDraftId===draft.id&&db.draft){
+        db.draft.submittedAt=draft.submittedAt;
+        db.draft.submittedDate=draft.submittedDate;
+        db.draft.gmailMessageId=messageId;
+        db.draft.gmailUrl=gmailUrl;
+        db.draft.submissionStatus='Submitted';
+        if(subject){
+          db.draft.finalSentSubject=subject;
+          db.draft.subject=subject;
+          const subjectInput=document.getElementById('emailSubject');
+          if(subjectInput&&!subjectInput.matches(':focus'))subjectInput.value=subject;
+        }
+      }
       changed=true;
     }
     const modelSignalId=header(meta,'X-CLM-Signal-ID');
