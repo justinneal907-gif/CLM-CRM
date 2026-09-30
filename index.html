@@ -1979,7 +1979,7 @@ async function createFormattedWorkGmailDraft(){
   const to=$('#emailRecipient').value.trim();
   const subject=$('#emailSubject').value.trim();
   if(!to)throw new Error('Add a recipient email first.');
-  const plainHtml=emailHtml();
+  const plainHtml=stripCanvaLinksText(emailHtml());
   const signalContext={id:db.activeDraftId,record:db.draft,models:typeof selectedModels==='function'?selectedModels():[]};
   let html=typeof window.clmPrepareModelSignals==='function'?window.clmPrepareModelSignals(plainHtml,false,signalContext):plainHtml;
   if(window.CLMMediaStore?.resolveHtml)html=await window.CLMMediaStore.resolveHtml(html);
@@ -2764,7 +2764,7 @@ async function copyEmail(){
   const activeRecord=db.activeDraftId?(db.drafts||[]).find(d=>d.id===db.activeDraftId):null;
   const hasLockedPreview=!!String(db.draft?.manualEmailHtml||db.draft?.userOverrides?.fullHtml||activeRecord?.manualEmailHtml||activeRecord?.userOverrides?.fullHtml||'').trim();
   if(!selected.length&&purpose!=='followup'&&!hasLockedPreview)return setStatus('Select at least one model first.');
-  let html=emailHtml();if(window.CLMMediaStore?.resolveHtml)html=await window.CLMMediaStore.resolveHtml(html);const tmp=document.createElement('div');tmp.innerHTML=html;const plain=(tmp.innerText||tmp.textContent||'').trim();
+  let html=stripCanvaLinksText(emailHtml());if(window.CLMMediaStore?.resolveHtml)html=await window.CLMMediaStore.resolveHtml(html);const tmp=document.createElement('div');tmp.innerHTML=html;const plain=(tmp.innerText||tmp.textContent||'').trim();
   try{if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([plain],{type:'text/plain'})})]);setStatus('Formatted email copied.');return}}catch(err){console.warn('Rich clipboard unavailable',err)}
   try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(plain);setStatus('Email copied as plain text.');return}}catch(err){console.warn('Clipboard API unavailable',err)}
   const area=document.createElement('textarea');area.value=plain;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();try{if(document.execCommand('copy'))setStatus('Email copied as plain text.');else setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}catch(err){console.error(err);setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}finally{area.remove()}
@@ -3132,15 +3132,18 @@ function compactPackageActions(){
   ['copySubjectBtn','recordSubmissionBtn','jumpToCastingLeadsBtn'].forEach(id=>{const el=$('#'+id);if(el)popover.appendChild(el)});
   row.appendChild(menu);
 }
-/* CANVA LINK PURGE 2026-09-29 */
+/* CANVA LINK NORMALIZATION 2026-09-30 */
+const CANVA_DRAFT_LINK='https://canva.link/vhk73x4zncw11o7';
 function stripCanvaLinksText(value){
-  let text=String(value??'');
-  text=text.replace(/<a\b[^>]*\bhref=(["'])(?:https?:\/\/)?(?:www\.)?(?:canva\.com|canva\.link)\/[^"']*\1[^>]*>([\s\S]*?)<\/a>/gi,'$2');
-  text=text.replace(/(?:https?:\/\/)?(?:www\.)?(?:canva\.com|canva\.link)\/[^\s"'<>)]*/gi,'');
-  return text;
+  // Compatibility name retained. Canva links are no longer removed: every
+  // Canva destination is forced to the single agency-approved package link.
+  return String(value??'').replace(
+    /(?:https?:\/\/)?(?:www\.)?(?:canva\.com|canva\.link)\/[^\s"'<>)]*/gi,
+    CANVA_DRAFT_LINK
+  );
 }
-function removeCanvaLinksFromWorkspace(data){
-  if(!data||data.recovery?.canvaLinkPurgeVersion>=1)return data;
+function normalizeCanvaLinksInDraftRecord(record){
+  if(!record||typeof record!=='object')return record;
   const seen=new WeakSet();
   const scrub=value=>{
     if(typeof value==='string')return stripCanvaLinksText(value);
@@ -3154,11 +3157,18 @@ function removeCanvaLinksFromWorkspace(data){
     }
     return value;
   };
-  scrub(data);
-  data.recovery={...(data.recovery||{}),canvaLinkPurgeVersion:1,canvaLinkPurgeUpdatedOn:'2026-09-29'};
+  return scrub(record);
+}
+function removeCanvaLinksFromWorkspace(data){
+  if(!data)return data;
+  // Normalize the working draft and every saved draft. Version 2 intentionally
+  // reruns after the old 2026-09-29 purge migration.
+  normalizeCanvaLinksInDraftRecord(data.draft);
+  for(const draft of (data.drafts||[]))normalizeCanvaLinksInDraftRecord(draft);
+  data.recovery={...(data.recovery||{}),canvaLinkPurgeVersion:2,canvaLinkCanonicalUrl:CANVA_DRAFT_LINK,canvaLinkPurgeUpdatedOn:'2026-09-30'};
   return data;
 }
-/* END CANVA LINK PURGE */
+/* END CANVA LINK NORMALIZATION */
 
 /* INDEXEDDB RUNTIME OVERRIDES */
 let workspacePersistTimer=0;
@@ -3169,6 +3179,7 @@ function writeWorkspaceSnapshot(showError=false){
 }
 function persistWorkspaceSafe(showError=true){
   db.selected=[...selected];
+  removeCanvaLinksFromWorkspace(db);
   if(typeof compactDraftCachesForStorage==='function')compactDraftCachesForStorage();
   if(showError){
     clearTimeout(workspacePersistTimer);
