@@ -2807,11 +2807,57 @@ function queueEmailDraftRender(){
   emailDraftPersistTimer=setTimeout(()=>persistWorkspaceSafe(false),500);
 }
 function saveDraft(render=true){
-  captureDraft();const currentId=db.activeDraftId||'';const existingIndex=currentId?db.drafts.findIndex(x=>x.id===currentId):-1;
-  if(existingIndex>=0&&(db.draft?.manualEmailHtml||db.draft?.customBody))db.draft.bodyEdited=true;
+  clearTimeout(emailDraftRenderTimer);emailDraftRenderTimer=0;
+  clearTimeout(emailDraftPersistTimer);emailDraftPersistTimer=0;
+  captureDraft();
+
+  // Update draft is absolute authority: rebuild from the builder and replace
+  // any stale/manual/locked preview, regardless of prior preview state.
+  const freshHtml=emailHtml({ignoreFullPreviewOverride:true});
+  const authoritativeHtml=sanitizeEditableEmailHtml(freshHtml);
+  const editedAt=new Date().toISOString();
+
+  db.draft.manualEmailHtml=authoritativeHtml;
+  db.draft.manualEmailEditedAt=editedAt;
+  db.draft.bodyEdited=false;
+  const workingOverrides=draftUserOverrides(db.draft);
+  workingOverrides.fullHtmlLocked=true;
+  workingOverrides.fullHtml=authoritativeHtml;
+
+  const currentId=db.activeDraftId||'';
+  const existingIndex=currentId?db.drafts.findIndex(x=>x.id===currentId):-1;
   const snapshot={date:nyDate(),...db.draft,models:selectedModels().map(m=>m.name),modelIds:[...selected],html:''};
-  if(existingIndex>=0){db.drafts[existingIndex]={...db.drafts[existingIndex],...snapshot,id:currentId};db.activeDraftId=currentId}else{const id=uid();db.drafts.push({id,...snapshot});db.activeDraftId=id}
-  db.selected=[...selected];if(!persistWorkspaceSafe())return;if(render)renderAll();setStatus(existingIndex>=0?'Draft updated in CRM.':'Draft saved in CRM.')
+
+  if(existingIndex>=0){
+    db.drafts[existingIndex]={...db.drafts[existingIndex],...snapshot,id:currentId};
+    const saved=db.drafts[existingIndex];
+    saved.manualEmailHtml=authoritativeHtml;
+    saved.manualEmailEditedAt=editedAt;
+    saved.bodyEdited=false;
+    const savedOverrides=draftUserOverrides(saved);
+    savedOverrides.fullHtmlLocked=true;
+    savedOverrides.fullHtml=authoritativeHtml;
+    db.activeDraftId=currentId;
+  }else{
+    const id=uid();
+    snapshot.id=id;
+    db.drafts.push(snapshot);
+    db.activeDraftId=id;
+  }
+
+  const preview=$('#emailPreview');
+  if(preview){
+    preview.innerHTML=draftPreviewHtml(authoritativeHtml);
+    preview.dataset.manualRefreshInitialized='1';
+    bindDraftPreviewGifs();
+  }
+  setEmailPreviewRefreshPending(false);
+  if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
+
+  db.selected=[...selected];
+  if(!persistWorkspaceSafe())return;
+  if(render){renderEmailSelection();renderBrandAdvisor();renderBriefSummary();renderSubmissionWarnings();renderDraftScope();}
+  setStatus(existingIndex>=0?'Draft updated. Preview forcibly overwritten from the current builder.':'Draft saved. Preview forcibly set from the current builder.')
 }
 function loadDraft(id){
   const d=db.drafts.find(x=>x.id===id);if(!d)return;db.activeDraftId=id;db.draft={...structuredClone(seed.draft),...structuredClone(d),html:''};
