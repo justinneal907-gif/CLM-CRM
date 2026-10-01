@@ -2578,6 +2578,70 @@ function startBlankManualEmail(){
 }
 /* END USER EMAIL OVERRIDE AUTHORITY */
 
+/* LIVE PACKAGE MODEL PHOTO SYNC 2026-10-01 */
+function livePackageModelBlock(m){
+  const activeRecord=activeDraftRecord();
+  const working=db.draft||{};
+  const includeStats=$('#includeStats')?.checked!==false;
+  const includePhotos=$('#includePhotos')?.checked!==false;
+  const includeSources=$('#includeSources')?.checked!==false;
+  const forcedStats=m.id==='site-women-anhelina'
+    ?ANHELINA_CANONICAL_STATS_2026_09_25
+    :((activeRecord?.modelStats||working?.modelStats||{})[m.id]||m.stats||m.measurements||'');
+  const modelLink=draftModelLinkForModel(m);
+  return `<div data-clm-model-id="${esc(m.id)}" style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${includeStats&&forcedStats?' | '+formatStats(forcedStats):''}</div>${includeSources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftCredentialHtml(m)}${includePhotos?modelDraftPhotosHtml(m):''}</div>`;
+}
+function syncManualPackageModels(html){
+  html=String(html||'');
+  if(!html.trim())return html;
+  const template=document.createElement('template');
+  template.innerHTML=html;
+  const content=template.content;
+  const rosterByName=new Map((db.models||[]).map(m=>[normalizeName(m.name),m]).filter(pair=>pair[0]));
+  const blocks=[];
+  content.querySelectorAll('[data-clm-model-id]').forEach(el=>blocks.push(el));
+  if(!blocks.length){
+    content.querySelectorAll('b,strong').forEach(label=>{
+      const model=rosterByName.get(normalizeName(String(label.textContent||'').trim()));
+      if(!model)return;
+      const line=label.closest('div');
+      const block=line&&line.parentElement;
+      if(block&&!blocks.includes(block))blocks.push(block);
+    });
+  }
+  let parent=null;
+  const marker=document.createComment('clm-live-models');
+  if(blocks.length){
+    parent=blocks[0].parentNode;
+    parent.insertBefore(marker,blocks[0]);
+    blocks.forEach(block=>block.remove());
+  }else{
+    const divs=[...content.querySelectorAll('div')];
+    const placeholder=divs.find(el=>String(el.textContent||'').trim()==='[Select one or more models]');
+    if(placeholder){
+      parent=placeholder.parentNode;
+      parent.insertBefore(marker,placeholder);
+      placeholder.remove();
+    }else{
+      const closingLabels=new Set(['thank you','thank you,','best','best,','best regards','best regards,','regards','regards,','warmly','warmly,','sincerely','sincerely,']);
+      const closing=divs.find(el=>closingLabels.has(String(el.textContent||'').trim().toLowerCase()));
+      if(closing){
+        parent=closing.parentNode;
+        parent.insertBefore(marker,closing);
+      }else{
+        parent=content.firstElementChild||content;
+        parent.appendChild(marker);
+      }
+    }
+  }
+  const models=document.createElement('template');
+  models.innerHTML=selectedModels().map(livePackageModelBlock).join('');
+  parent.insertBefore(models.content,marker);
+  marker.remove();
+  return template.innerHTML;
+}
+/* END LIVE PACKAGE MODEL PHOTO SYNC */
+
 function emailHtml(options={}){
   const ignoreFullPreviewOverride=options?.ignoreFullPreviewOverride===true;
   const activeRecord=activeDraftRecord();
@@ -2589,7 +2653,7 @@ function emailHtml(options={}){
     lockedSaved?(activeRecord.manualEmailHtml??activeRecord.userOverrides?.fullHtml??''):
     (working.manualEmailHtml||activeRecord?.manualEmailHtml||'')
   );
-  if(!ignoreFullPreviewOverride&&(lockedWorking||lockedSaved||manualEmailHtml.trim()))return manualEmailHtml;
+  if(!ignoreFullPreviewOverride&&(lockedWorking||lockedSaved||manualEmailHtml.trim()))return syncManualPackageModels(manualEmailHtml);
 
   const d={
     purpose:$('#emailPurpose').value,
@@ -2671,15 +2735,10 @@ function renderEmail(forcePreview=false){
   if(!$('#emailPreview'))return;
   captureDraft();
   const preview=$('#emailPreview');
-  const needsInitialPreview=preview.dataset.manualRefreshInitialized!=='1';
-  if(forcePreview||needsInitialPreview){
-    preview.innerHTML=draftPreviewHtml(emailHtml());
-    preview.dataset.manualRefreshInitialized='1';
-    bindDraftPreviewGifs();
-    setEmailPreviewRefreshPending(false);
-  }else{
-    markEmailPreviewRefreshPending();
-  }
+  preview.innerHTML=draftPreviewHtml(emailHtml());
+  preview.dataset.manualRefreshInitialized='1';
+  bindDraftPreviewGifs();
+  setEmailPreviewRefreshPending(false);
   renderEmailSelection();renderBrandAdvisor();renderBriefSummary();renderDraftScope();
 }
 function renderEmailPreviewOnly(){
@@ -3200,6 +3259,13 @@ function persistDraftPresentation(){
   db.selected=[...selected];
   db.draft=db.draft||structuredClone(seed.draft);
   db.draft.modelIds=[...selected];
+  db.draft.models=selectedModels().map(m=>m.name);
+  const active=typeof activeSavedDraftRecord==='function'?activeSavedDraftRecord():null;
+  if(active){
+    active.modelIds=[...selected];
+    active.models=selectedModels().map(m=>m.name);
+  }
+  if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
   persistWorkspaceSafe(false);
 }
 async function bootstrapWorkspace(){
