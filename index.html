@@ -1612,19 +1612,19 @@ function setDraftPhotoUrl(id,url){const v=String(url||'').trim(),photos=draftPho
 function resetDraftPhoto(id){const photos=draftPhotoSelections();delete photos[id];persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);setStatus('Draft photo reset to the model default. Click Update draft to save the package.')}
 async function fileToDraftPhoto(file){if(!file)return'';try{if(window.CLMMediaStore?.storeFile)return await window.CLMMediaStore.storeFile(file);return await fileToDataUrl(file)}catch(err){console.error('Photo upload failed',err);return''}}
 async function setDraftPhotoFile(id,input){const file=input?.files?.[0];if(!file)return;const data=await fileToDraftPhoto(file);if(!data)return setStatus('Could not read that image.');draftPhotoSelections()[id]=data;persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);setStatus('Uploaded photo selected for this draft only. Click Update draft to save it.')}
-function moveSelectedModel(id,delta){const i=selected.indexOf(id);if(i<0)return;const j=Math.max(0,Math.min(selected.length-1,i+delta));if(i===j)return;selected.splice(i,1);selected.splice(j,0,id);persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);setStatus('Model order changed. Click Update draft to save the package.')}
-function setSelectedModelPosition(id,position){const from=selected.indexOf(id);if(from<0)return;const target=Math.max(0,Math.min(selected.length-1,Number(position)-1));if(!Number.isFinite(target)||from===target)return;selected.splice(from,1);selected.splice(target,0,id);persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);setStatus(`Moved model to position ${target+1}. Click Update draft to save the package.`)}
+function moveSelectedModel(id,delta){const i=selected.indexOf(id);if(i<0)return;const j=Math.max(0,Math.min(selected.length-1,i+delta));if(i===j)return;selected.splice(i,1);selected.splice(j,0,id);persistDraftPresentation();syncPackageSelectionIntoPreview();setStatus('Model order changed. Preview and saved package updated.')}
+function setSelectedModelPosition(id,position){const from=selected.indexOf(id);if(from<0)return;const target=Math.max(0,Math.min(selected.length-1,Number(position)-1));if(!Number.isFinite(target)||from===target)return;selected.splice(from,1);selected.splice(target,0,id);persistDraftPresentation();syncPackageSelectionIntoPreview();setStatus(`Moved model to position ${target+1}. Preview and saved package updated.`)}
 let selectedDragId='';
 function dragSelectedModel(e,id){selectedDragId=id;if(e?.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id)}}
-function dropSelectedModel(e,targetId){if(e)e.preventDefault();const source=(e?.dataTransfer?.getData('text/plain')||selectedDragId);if(!source||source===targetId)return;const a=selected.indexOf(source),b=selected.indexOf(targetId);if(a<0||b<0)return;selected.splice(a,1);selected.splice(b,0,source);selectedDragId='';persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);setStatus('Model order changed. Click Update draft to save the package.')}
+function dropSelectedModel(e,targetId){if(e)e.preventDefault();const source=(e?.dataTransfer?.getData('text/plain')||selectedDragId);if(!source||source===targetId)return;const a=selected.indexOf(source),b=selected.indexOf(targetId);if(a<0||b<0)return;selected.splice(a,1);selected.splice(b,0,source);selectedDragId='';persistDraftPresentation();syncPackageSelectionIntoPreview();setStatus('Model order changed. Preview and saved package updated.')}
 function captureDraft(){db.draft={...(db.draft||{}),purpose:$('#emailPurpose').value,contactId:$('#emailContact').value,contactName:$('#emailContactName').value,company:$('#emailCompany').value,recipientEmail:$('#emailRecipient').value,brandProject:$('#emailBrand').value,packageLink:$('#emailLink').value,brief:$('#emailContext').value,castingBriefRaw:$('#castingBriefRaw')?.value||db.draft?.castingBriefRaw||'',parsedBrief:db.draft?.parsedBrief||null,subject:$('#emailSubject').value,includeStats:$('#includeStats').checked,includePhotos:$('#includePhotos').checked,includeSources:$('#includeSources').checked,modelIds:[...selected]}}
 function hydrateDraft(){const d=db.draft||seed.draft;$('#emailPurpose').value=d.purpose||'submission';$('#emailContact').value=d.contactId||'';$('#emailContactName').value=d.contactName||'';$('#emailCompany').value=d.company||'';$('#emailRecipient').value=d.recipientEmail||'';$('#emailBrand').value=d.brandProject||'';$('#emailLink').value=d.packageLink||'';$('#emailContext').value=d.brief||'';if($('#castingBriefRaw'))$('#castingBriefRaw').value=d.castingBriefRaw||'';$('#emailSubject').value=d.subject||'Model Package';$('#includeStats').checked=d.includeStats!==false;$('#includePhotos').checked=d.includePhotos!==false;$('#includeSources').checked=d.includeSources!==false;renderBriefSummary()}
 function renderContactOptions(){const cur=$('#emailContact')?.value||db.draft?.contactId||'';if(!$('#emailContact'))return;$('#emailContact').innerHTML='<option value="">— Select contact —</option>'+db.contacts.map(c=>`<option value="${esc(c.id||'')}">${esc(c.name||'Unnamed')}${c.company?' · '+esc(c.company):''}</option>`).join('');$('#emailContact').value=cur}
 function contactObj(){return db.contacts.find(c=>c.id===$('#emailContact').value)}
 function applyContact(){const c=contactObj();if(c){$('#emailContactName').value=c.name||'';$('#emailCompany').value=c.company||'';$('#emailRecipient').value=c.email||'';renderEmail();captureDraft();persistWorkspaceSafe(false)}}
 function renderEmailMatches(){if(!$('#emailModelMatches'))return;const q=$('#emailModelSearch').value.trim().toLowerCase();const list=q?db.models.filter(m=>[m.name,m.location,m.division,m.niche,m.secondaryNiche,m.focusRoster?'focus roster':'general roster'].join(' ').toLowerCase().includes(q)&&!selected.includes(m.id)).sort((a,b)=>(b.focusRoster===true)-(a.focusRoster===true)).slice(0,12):[];$('#emailModelMatches').innerHTML=list.map(m=>`<button class="btn" style="margin:3px" onclick="addToEmail('${m.id}')">${m.focusRoster?'<span class="focus-roster-inline">FOCUS</span>':''}${esc(m.name)} · ${esc(m.location)} · ${esc(m.niche||'Unclassified')}</button>`).join('')}
-function addToEmail(id){if(!selected.includes(id))selected.push(id);save();renderEmailMatches()}
-function removeFromEmail(id){selected=selected.filter(x=>x!==id);save()}
+function addToEmail(id){if(!selected.includes(id))selected.push(id);persistDraftPresentation();syncPackageSelectionIntoPreview();renderEmailMatches();setStatus('Model added. Preview and saved package updated.')}
+function removeFromEmail(id){selected=selected.filter(x=>x!==id);persistDraftPresentation();syncPackageSelectionIntoPreview();renderEmailMatches();setStatus('Model removed. Preview and saved package updated.')}
 const MODEL_DRAFT_CREDENTIALS={
   'new-york-women-claudia-lucchini':{text:'Walked for Mugler and Rick Owens.'},
   'new-york-women-maja-stockwell':{text:'Her mom was a model.',link:'https://www.instagram.com/maddestockwell?stkn=MXdqbnhzd2R3dnlkMw==',linkLabel:"Mom's Instagram"},
@@ -2542,9 +2542,8 @@ function setDraftModelLink(id,value){
   }
   if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
   persistWorkspaceSafe(false);
-  markEmailPreviewRefreshPending();
-  renderEmailSelection();
-  setStatus(v?'Portfolio link override saved. Click Refresh preview when ready.':'Portfolio link hidden for this model. Click Refresh preview when ready.');
+  syncPackageSelectionIntoPreview();
+  setStatus(v?'Portfolio link override saved. Preview and saved package updated.':'Portfolio link hidden. Preview and saved package updated.');
 }
 function resetDraftModelLink(id){
   if(db.draft?.modelLinks)delete db.draft.modelLinks[id];
@@ -2554,9 +2553,8 @@ function resetDraftModelLink(id){
   if(saved?.userOverrides?.modelLinks)delete saved.userOverrides.modelLinks[id];
   if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
   persistWorkspaceSafe(false);
-  markEmailPreviewRefreshPending();
-  renderEmailSelection();
-  setStatus('Portfolio link reset to the model default. Click Refresh preview when ready.');
+  syncPackageSelectionIntoPreview();
+  setStatus('Portfolio link reset. Preview and saved package updated.');
 }
 function startBlankManualEmail(){
   const html='<div><br></div>';
@@ -2578,6 +2576,144 @@ function startBlankManualEmail(){
 }
 /* END USER EMAIL OVERRIDE AUTHORITY */
 
+function currentPackageModelBlockHtml(m){
+  const activeRecord=typeof activeDraftRecord==='function'?activeDraftRecord():null;
+  const working=db.draft||{};
+  const includeStats=$('#includeStats')?.checked??(working.includeStats!==false);
+  const includePhotos=$('#includePhotos')?.checked??(working.includePhotos!==false);
+  const includeSources=$('#includeSources')?.checked??(working.includeSources!==false);
+  const forcedStats=m.id==='site-women-anhelina'
+    ?ANHELINA_CANONICAL_STATS_2026_09_25
+    :((activeRecord?.modelStats||working?.modelStats||{})[m.id]||m.stats||m.measurements||'');
+  const modelLink=draftModelLinkForModel(m);
+  return `<div data-clm-package-model="${esc(m.id)}" style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${includeStats&&forcedStats?' | '+formatStats(forcedStats):''}</div>${includeSources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftCredentialHtml(m)}${includePhotos?modelDraftPhotosHtml(m):''}</div>`;
+}
+
+function mergeCurrentPackageIntoLockedHtml(html){
+  html=String(html||'');
+  if(!html.trim())return html;
+  const template=document.createElement('template');
+  template.innerHTML=html;
+  const rosterNames=new Set((db.models||[]).map(m=>normalizeName(m.name)).filter(Boolean));
+  const isModelBold=el=>!!el&&rosterNames.has(normalizeName(String(el.textContent||'').trim()));
+  let blocks=[...template.content.querySelectorAll('[data-clm-package-model]')];
+
+  if(!blocks.length){
+    const bolds=[...template.content.querySelectorAll('b,strong')].filter(isModelBold);
+    const found=[];
+    for(const bold of bolds){
+      let cur=bold.closest('div');
+      if(!cur)continue;
+      let chosen=cur;
+      while(cur.parentElement){
+        const parent=cur.parentElement;
+        const modelBolds=[...parent.querySelectorAll('b,strong')].filter(isModelBold);
+        const parentText=String(parent.textContent||'');
+        const signatureContainer=/Chez Les Mannequins/i.test(parentText)&&/\bJustin\b/.test(parentText);
+        if(modelBolds.length!==1||signatureContainer)break;
+        chosen=parent;
+        cur=parent;
+      }
+      if(!found.includes(chosen))found.push(chosen);
+    }
+    blocks=found;
+  }
+
+  const marker=document.createComment('clm-current-package-models');
+  let insertionParent=null;
+  if(blocks.length){
+    insertionParent=blocks[0].parentNode;
+    insertionParent.insertBefore(marker,blocks[0]);
+    for(const block of blocks)block.remove();
+  }else{
+    const all=[...template.content.querySelectorAll('div')];
+    const placeholder=all.find(el=>/^\s*\[Select one or more models\]\s*$/i.test(String(el.textContent||'')));
+    if(placeholder){
+      insertionParent=placeholder.parentNode;
+      insertionParent.insertBefore(marker,placeholder);
+      placeholder.remove();
+    }else{
+      const close=all.find(el=>/^(thank you,?|best,?|best regards,?|regards,?|warmly,?|sincerely,?)$/i.test(String(el.textContent||'').trim()));
+      if(close){
+        insertionParent=close.parentNode;
+        insertionParent.insertBefore(marker,close);
+      }else{
+        insertionParent=template.content.firstElementChild||template.content;
+        insertionParent.appendChild(marker);
+      }
+    }
+  }
+
+  const modelTemplate=document.createElement('template');
+  modelTemplate.innerHTML=selectedModels().map(currentPackageModelBlockHtml).join('');
+  insertionParent.insertBefore(modelTemplate.content,marker);
+  marker.remove();
+  return template.innerHTML;
+}
+
+function syncPackageSelectionIntoPreview(options={}){
+  db.draft=db.draft||structuredClone(seed.draft);
+  const active=typeof activeSavedDraftRecord==='function'?activeSavedDraftRecord():null;
+  const working=db.draft||{};
+  const lockedWorking=working?.userOverrides?.fullHtmlLocked===true;
+  const lockedSaved=active?.userOverrides?.fullHtmlLocked===true;
+  const source=String(
+    lockedWorking?(working.manualEmailHtml??working.userOverrides?.fullHtml??''):
+    lockedSaved?(active.manualEmailHtml??active.userOverrides?.fullHtml??''):
+    (working.manualEmailHtml||active?.manualEmailHtml||'')
+  );
+  let html='';
+  if(lockedWorking||lockedSaved||source.trim()){
+    html=mergeCurrentPackageIntoLockedHtml(source);
+    for(const target of activeDraftOverrideTargets()){
+      target.manualEmailHtml=html;
+      target.packagePresentationSyncedAt=new Date().toISOString();
+      const o=draftUserOverrides(target);
+      o.fullHtmlLocked=true;
+      o.fullHtml=html;
+    }
+  }else{
+    html=emailHtml({ignoreFullPreviewOverride:true});
+  }
+
+  if(options.render!==false){
+    const preview=$('#emailPreview');
+    if(preview){
+      preview.innerHTML=draftPreviewHtml(html);
+      preview.dataset.manualRefreshInitialized='1';
+      bindDraftPreviewGifs();
+      setEmailPreviewRefreshPending(false);
+    }
+    renderEmailSelection();
+    renderSubmissionWarnings();
+    renderDraftScope();
+  }
+  if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
+  if(options.persist!==false)persistWorkspaceSafe(false);
+  return html;
+}
+
+function reconcileActiveDraftPresentation(data){
+  if(!data||!data.activeDraftId||!data.draft)return data;
+  const active=(data.drafts||[]).find(d=>d?.id===data.activeDraftId);
+  if(!active)return data;
+  const source=data.draft;
+  const ids=Array.isArray(source.modelIds)&&source.modelIds.length
+    ?[...source.modelIds]
+    :(Array.isArray(data.selected)?[...data.selected]:[]);
+  if(ids.length||Array.isArray(source.modelIds)){
+    active.modelIds=[...ids];
+    active.models=ids.map(id=>(data.models||[]).find(m=>m.id===id)?.name).filter(Boolean);
+  }
+  for(const key of ['photoSelections','packagePhotos','modelLinks']){
+    if(source[key]&&typeof source[key]==='object')active[key]=structuredClone(source[key]);
+  }
+  if(source.userOverrides&&typeof source.userOverrides==='object'){
+    active.userOverrides={...(active.userOverrides||{}),...structuredClone(source.userOverrides)};
+  }
+  return data;
+}
+
 function emailHtml(options={}){
   const ignoreFullPreviewOverride=options?.ignoreFullPreviewOverride===true;
   const activeRecord=activeDraftRecord();
@@ -2589,7 +2725,7 @@ function emailHtml(options={}){
     lockedSaved?(activeRecord.manualEmailHtml??activeRecord.userOverrides?.fullHtml??''):
     (working.manualEmailHtml||activeRecord?.manualEmailHtml||'')
   );
-  if(!ignoreFullPreviewOverride&&(lockedWorking||lockedSaved||manualEmailHtml.trim()))return manualEmailHtml;
+  if(!ignoreFullPreviewOverride&&(lockedWorking||lockedSaved||manualEmailHtml.trim()))return mergeCurrentPackageIntoLockedHtml(manualEmailHtml);
 
   const d={
     purpose:$('#emailPurpose').value,
@@ -2626,11 +2762,7 @@ function emailHtml(options={}){
   }else{
     lead=tone.tone==='personal'?`Wanted to send over a few more models from our roster${d.brand?' for '+esc(d.brand):''}.`:`I wanted to introduce a few models from our roster${d.brand?' for '+esc(d.brand):''}.`;
   }
-  const blocks=picked.map(m=>{
-    const forcedStats=m.id==='site-women-anhelina'?ANHELINA_CANONICAL_STATS_2026_09_25:((activeRecord?.modelStats||working?.modelStats||{})[m.id]||m.stats||m.measurements||'');
-    const modelLink=draftModelLinkForModel(m);
-    return `<div style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&forcedStats?' | '+formatStats(forcedStats):''}</div>${d.sources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftCredentialHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`;
-  }).join('');
+  const blocks=picked.map(currentPackageModelBlockHtml).join('');
   const extra=!customBodyOverride&&d.purpose!=='submission'&&d.brief?`<br><div>${esc(d.brief).replace(/\n/g,'<br>')}</div>`:'';
   const more=(d.purpose==='submission'||!picked.length||!d.link)?'':tone.tone==='personal'?`More model options <a href="${esc(d.link)}" style="color:#4285f4" target="_blank">HERE</a> if helpful.`:`Please see additional model suggestions <a href="${esc(d.link)}" style="color:#4285f4" target="_blank">HERE</a>.`;
   const modelSection=blocks||(d.purpose==='followup'?'':'<div>[Select one or more models]</div>');
@@ -3040,8 +3172,8 @@ function togglePackagePhoto(id,i){
   const current=draftPhotosForModel(m),key=galleryPhotoKey(p.url);
   const exists=current.some(url=>galleryPhotoKey(url)===key);
   setDraftPhotosForModel(id,exists?current.filter(url=>galleryPhotoKey(url)!==key):[...current,p.url]);
-  persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);
-  setStatus(exists?'Photo removed from this package.':'Photo added to this package.');
+  persistDraftPresentation();syncPackageSelectionIntoPreview();
+  setStatus(exists?'Photo removed. Preview and saved package updated.':'Photo added. Preview and saved package updated.');
 }
 function choosePackagePhoto(id,i){togglePackagePhoto(id,i)}
 function resetDraftPhoto(id){
@@ -3050,16 +3182,16 @@ function resetDraftPhoto(id){
     if(target.packagePhotos)delete target.packagePhotos[id];
     if(target.userOverrides?.photoSelections)delete target.userOverrides.photoSelections[id];
   }
-  persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);
-  setStatus('Draft photos reset to the model default.');
+  persistDraftPresentation();syncPackageSelectionIntoPreview();
+  setStatus('Draft photos reset. Preview and saved package updated.');
 }
 function setDraftPhotoUrl(id,url){
   url=String(url||'').trim();if(!url)return;
   addPackagePhoto(id,url,'Saved URL');
   const m=db.models.find(x=>x.id===id),current=m?draftPhotosForModel(m):[];
   setDraftPhotosForModel(id,[...current,url]);
-  persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);
-  setStatus('Photo saved to the library and added to this package.');
+  persistDraftPresentation();syncPackageSelectionIntoPreview();
+  setStatus('Photo saved and added. Preview and saved package updated.');
 }
 async function setDraftPhotoFile(id,input){
   const files=[...(input?.files||[])];if(!files.length)return;
@@ -3072,8 +3204,8 @@ async function setDraftPhotoFile(id,input){
   if(!added.length)return setStatus('Could not read those images.');
   const m=db.models.find(x=>x.id===id),current=m?draftPhotosForModel(m):[];
   setDraftPhotosForModel(id,[...current,...added]);
-  persistDraftPresentation();renderEmail();persistWorkspaceSafe(false);
-  setStatus(added.length===1?'Uploaded photo added to this package.':`${added.length} uploaded photos added to this package.`);
+  persistDraftPresentation();syncPackageSelectionIntoPreview();
+  setStatus(added.length===1?'Uploaded photo added. Preview and saved package updated.':`${added.length} uploaded photos added. Preview and saved package updated.`);
 }
 function modelDraftPhotosHtml(m){
   const urls=draftPhotosForModel(m);
@@ -3199,7 +3331,15 @@ function save(){
 function persistDraftPresentation(){
   db.selected=[...selected];
   db.draft=db.draft||structuredClone(seed.draft);
+  const names=selectedModels().map(m=>m.name);
   db.draft.modelIds=[...selected];
+  db.draft.models=[...names];
+  const active=typeof activeSavedDraftRecord==='function'?activeSavedDraftRecord():null;
+  if(active){
+    active.modelIds=[...selected];
+    active.models=[...names];
+  }
+  if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
   persistWorkspaceSafe(false);
 }
 async function bootstrapWorkspace(){
@@ -3212,6 +3352,7 @@ async function bootstrapWorkspace(){
     }
   }catch(err){console.info('Pre-repair workspace backup skipped',err)}
   db=await loadWorkspaceIndexedDB();
+  db=reconcileActiveDraftPresentation(db);
   db=removeCanvaLinksFromWorkspace(db);
   db.recovery={...(db.recovery||{}),safeGallerySnapshot20260929:true};
   db=await restoreOldPhotoLibrary20260929(db);
