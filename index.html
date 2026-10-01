@@ -1724,7 +1724,7 @@ function modelFilter(){const q=$('#modelSearch').value.trim().toLowerCase(),l=$(
 function modelsForNiche(niche,market=''){return db.models.filter(m=>m.activeBoard!==false&&m.niche===niche&&(!market||m.location===market))}
 function addNicheGroup(niche,market=''){if(!niche)return 0;const group=modelsForNiche(niche,market);for(const m of group)if(!selected.includes(m.id))selected.push(m.id);save();renderEmailMatches();return group.length}
 function selectNicheFromModels(){const niche=$('#nicheFilter').value;if(!niche)return alert('Choose a main niche first.');const market=$('#locationFilter').value;const count=addNicheGroup(niche,market);alert(`${count} ${niche} model${count===1?'':'s'}${market?' from '+market:''} added to the package.`)}
-function renderModels(){const list=modelFilter(),focusCount=db.models.filter(m=>m.focusRoster===true).length;$('#modelStats').textContent=`${list.length} shown · ${focusCount} focus roster · ${selected.length} selected for package`;$('#modelCards').innerHTML=list.map(m=>{const status=m.availabilityStatus||'Unknown',showStatus=status!=='Available'||m.activeBoard===false;return `<article class="card${m.focusRoster?' focus-roster':''}"><div class="model-photo">${getPhoto(m)?`<img loading="lazy" decoding="async" src="${esc(photoDisplayUrl(getPhoto(m)))}" alt="${esc(m.name)}">`:`<div class="placeholder">${esc(initials(m.name))}</div>`}</div><div class="card-body"><div class="card-title-row"><b class="card-title">${esc(m.name)}</b>${m.focusRoster?'<span class="focus-roster-badge">FOCUS</span>':''}</div><div class="model-meta">${esc([m.location,m.division,m.niche||'Unclassified'].filter(Boolean).join(' · '))}</div>${showStatus?`<span class="status-pill ${status==='Available'?'available':''}">${esc(m.activeBoard===false?'Legacy board':status)}</span>`:''}<div class="statsline">${esc(m.stats||m.measurements||'Measurements not listed')}</div>${m.holdProject?`<div class="muted tiny">${esc(m.holdProject)}${m.statusFrom||m.statusTo?' · '+esc([m.statusFrom,m.statusTo].filter(Boolean).join(' → ')):''}</div>`:''}<div class="card-actions"><button class="btn primary" onclick="createPackage('${m.id}')">Create package</button><details class="action-menu"><summary aria-label="More actions for ${esc(m.name)}">•••</summary><div class="action-menu-popover"><button class="btn" onclick="openModel('${m.id}')">Details</button>${m.profile?`<a class="btn" href="${esc(m.profile)}" target="_blank" rel="noopener">Portfolio</a>`:''}</div></details></div></div></article>`}).join('')||'<div class="empty">No matching models.</div>'}
+function renderModels(){const list=modelFilter(),focusCount=db.models.filter(m=>m.focusRoster===true).length;$('#modelStats').textContent=`${list.length} shown · ${focusCount} focus roster · ${selected.length} selected for package`;$('#modelCards').innerHTML=list.map(m=>{const status=m.availabilityStatus||'Unknown',showStatus=status!=='Available'||m.activeBoard===false;return `<article class="card${m.focusRoster?' focus-roster':''}"><div class="model-photo">${getPhoto(m)?`<img loading="lazy" decoding="async" src="${esc(photoDisplayUrl(getPhoto(m)))}" alt="${esc(m.name)}">`:`<div class="placeholder">${esc(initials(m.name))}</div>`}</div><div class="card-body"><div class="card-title-row"><b class="card-title">${esc(m.name)}</b>${m.focusRoster?'<span class="focus-roster-badge">FOCUS</span>':''}</div><div class="model-meta">${esc([m.location,m.division,m.niche||'Unclassified'].filter(Boolean).join(' · '))}</div>${showStatus?`<span class="status-pill ${status==='Available'?'available':''}">${esc(m.activeBoard===false?'Legacy board':status)}</span>`:''}<div class="statsline">${esc(m.stats||m.measurements||'Measurements not listed')}</div>${m.holdProject?`<div class="muted tiny">${esc(m.holdProject)}${m.statusFrom||m.statusTo?' · '+esc([m.statusFrom,m.statusTo].filter(Boolean).join(' → ')):''}</div>`:''}<div class="card-actions"><button class="btn primary" onclick="createPackage('${m.id}')">Create package</button><button class="btn" onclick="openModelTexts('${m.id}')">Text options</button><details class="action-menu"><summary aria-label="More actions for ${esc(m.name)}">•••</summary><div class="action-menu-popover"><button class="btn" onclick="openModel('${m.id}')">Details</button>${m.profile?`<a class="btn" href="${esc(m.profile)}" target="_blank" rel="noopener">Portfolio</a>`:''}</div></details></div></div></article>`}).join('')||'<div class="empty">No matching models.</div>'}
 function openModel(id){const m=db.models.find(x=>x.id===id);if(!m)return;$('#modelModal').innerHTML=`<h2>${esc(m.name)}</h2><p><span class="pill">${esc(m.location)}</span><span class="pill">${esc(m.division)}</span><span class="pill">${esc(m.niche||'Unclassified')}</span>${m.secondaryNiche?`<span class="pill">Secondary: ${esc(m.secondaryNiche)}</span>`:''}</p><div class="field"><label>Main niche</label><select id="modalNiche">${NICHE_ORDER.map(n=>`<option ${m.niche===n?'selected':''}>${esc(n)}</option>`).join('')}</select></div><div class="field"><label>Secondary niche</label><select id="modalSecondaryNiche"><option value="">— None —</option>${NICHE_ORDER.map(n=>`<option ${m.secondaryNiche===n?'selected':''}>${esc(n)}</option>`).join('')}</select></div><div class="field"><label>Roster group</label><select id="modalFocusRoster"><option value="focus" ${m.focusRoster?'selected':''}>Focus roster</option><option value="general" ${!m.focusRoster?'selected':''}>General roster</option></select><div class="muted tiny" style="margin-top:5px">Focus roster models are the smaller group you are actively developing and pitching year-round.</div></div><div class="field"><label>Availability / hold status</label><select id="modalAvailability">${AVAILABILITY_OPTIONS.map(n=>`<option ${m.availabilityStatus===n?'selected':''}>${esc(n)}</option>`).join('')}</select></div><div class="split" style="grid-template-columns:1fr 1fr"><div class="field"><label>Status from</label><input id="modalStatusFrom" type="date" value="${esc(m.statusFrom||'')}"></div><div class="field"><label>Status through</label><input id="modalStatusTo" type="date" value="${esc(m.statusTo||'')}"></div></div><div class="field"><label>Hold / booking project</label><input id="modalHoldProject" value="${esc(m.holdProject||'')}" placeholder="Client or project"></div><div class="field"><label>Availability notes</label><textarea id="modalAvailabilityNotes" rows="3">${esc(m.availabilityNotes||'')}</textarea></div><div class="field"><label>Measurements</label><textarea id="modalStats" rows="4">${esc(m.stats||m.measurements||'')}</textarea></div><div class="split" style="grid-template-columns:1fr 1fr"><div class="field"><label>Hair</label><input id="modalHair" value="${esc(m.hair||'')}"></div><div class="field"><label>Eyes</label><input id="modalEyes" value="${esc(m.eyes||'')}"></div></div><div class="field"><label>Primary photo URL</label><input id="modalPhoto" value="${esc(getPhoto(m))}"></div><div class="field"><label>Upload / replace primary photo</label><input id="modalFile" type="file" accept="image/*"></div><div class="field"><label>Portfolio source</label><input value="${esc(m.profile||m.profileUrl||'')}" readonly></div><div class="actions"><button class="btn primary" onclick="saveModel('${m.id}')">Save</button><button class="btn" onclick="createPackage('${m.id}');$('#modelDialog').close()">Create Package</button><button class="btn" onclick="$('#modelDialog').close()">Close</button></div>`;$('#modelDialog').showModal()}
 function fileToDataUrl(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
 async function saveModel(id){const m=db.models.find(x=>x.id===id);m.niche=$('#modalNiche').value;m.secondaryNiche=$('#modalSecondaryNiche').value;m.focusRoster=$('#modalFocusRoster').value==='focus';m.availabilityStatus=$('#modalAvailability').value;m.statusFrom=$('#modalStatusFrom').value;m.statusTo=$('#modalStatusTo').value;m.holdProject=$('#modalHoldProject').value.trim();m.availabilityNotes=$('#modalAvailabilityNotes').value.trim();m.hair=$('#modalHair').value.trim();m.eyes=$('#modalEyes').value.trim();m.stats=mergeAppearanceStats($('#modalStats').value,m.hair,m.eyes);m.measurements=m.stats;const url=$('#modalPhoto').value.trim();if(url)m.photo=url;const file=$('#modalFile').files[0];if(file){db.customPhotos=db.customPhotos||{};db.customPhotos[id]=await fileToDraftPhoto(file)}save();$('#modelDialog').close()}
@@ -1771,25 +1771,66 @@ function defaultModelDraftExtra(m){
     mediaLabel:String(base.linkLabel||'Media')
   };
 }
+function modelTextOptions(m){
+  if(Array.isArray(m?.textOptions))return m.textOptions;
+  const d=defaultModelDraftExtra(m);
+  return d.text?[{id:'original',label:'Original text',text:d.text}]:[];
+}
 function draftModelExtra(m){
   const defaults=defaultModelDraftExtra(m);
   if(!m)return defaults;
+  let extra=defaults;
   const saved=typeof activeSavedDraftRecord==='function'?activeSavedDraftRecord():null;
   for(const source of [db?.draft,saved]){
-    if(!source)continue;
-    const user=source.userOverrides?.modelExtras;
-    if(user&&Object.prototype.hasOwnProperty.call(user,m.id))return {...defaults,...user[m.id]};
-    const direct=source.modelExtras;
-    if(direct&&Object.prototype.hasOwnProperty.call(direct,m.id))return {...defaults,...direct[m.id]};
+    const override=source?.userOverrides?.modelExtras?.[m.id]||source?.modelExtras?.[m.id];
+    if(override){extra={...defaults,...override};break;}
   }
-  return defaults;
+  const option=modelTextOptions(m).find(x=>x.id===extra.textOptionId);
+  return option?{...extra,text:option.text}:extra;
+}
+let modelTextEditor=null;
+function openModelTexts(id){
+  const m=db.models.find(x=>x.id===id);if(!m)return;
+  modelTextEditor={id,options:structuredClone(modelTextOptions(m))};
+  renderModelTextEditor();
+  if(!$('#modelDialog').open)$('#modelDialog').showModal();
+}
+function renderModelTextEditor(){
+  const m=db.models.find(x=>x.id===modelTextEditor?.id);if(!m)return;
+  $('#modelModal').innerHTML=`<h2>${esc(m.name)}: Text options</h2><p>Create named texts to choose from in any package. Editing a saved option updates the text when packages using it are refreshed.</p>${modelTextEditor.options.map((o,i)=>`<div class="field" style="padding:12px;border:1px solid var(--line);margin-bottom:12px"><label for="modelTextLabel${i}">Option name</label><input id="modelTextLabel${i}" value="${esc(o.label)}" oninput="modelTextEditor.options[${i}].label=this.value"><label for="modelTextBody${i}">Text</label><textarea id="modelTextBody${i}" rows="4" oninput="modelTextEditor.options[${i}].text=this.value">${esc(o.text)}</textarea><button type="button" class="btn danger" onclick="modelTextEditor.options.splice(${i},1);renderModelTextEditor()">Remove option</button></div>`).join('')||'<p>No text options yet.</p>'}<div class="actions"><button type="button" class="btn" onclick="modelTextEditor.options.push({id:uid(),label:'',text:''});renderModelTextEditor()">Add text option</button><button type="button" class="btn primary" onclick="saveModelTexts()">Save text options</button><button type="button" class="btn" onclick="modelTextEditor=null;$('#modelDialog').close()">Cancel</button></div>`;
+}
+function saveModelTexts(){
+  const m=db.models.find(x=>x.id===modelTextEditor?.id);if(!m)return;
+  if(modelTextEditor.options.some(o=>!o.label.trim()||!o.text.trim()))return alert('Give each option a name and text, or remove empty options.');
+  const next=structuredClone(modelTextEditor.options);
+  // Preserve the last text in packages if its reusable option is removed.
+  for(const d of [db.draft,...(db.drafts||[])])for(const map of [d?.modelExtras,d?.userOverrides?.modelExtras]){
+    const extra=map?.[m.id];if(!extra?.textOptionId)continue;
+    const old=modelTextOptions(m).find(o=>o.id===extra.textOptionId);
+    if(old&&!next.some(o=>o.id===old.id)){extra.text=old.text;delete extra.textOptionId;}
+  }
+  m.textOptions=next;
+  persistWorkspaceSafe(false);
+  modelTextEditor=null;$('#modelDialog').close();
+  renderModels();renderEmailSelection();
+  if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
+  markEmailPreviewRefreshPending();
+  setStatus('Text options saved. Choose an option in a package and refresh its preview.');
+}
+function selectModelTextOption(id,optionId){
+  const m=db.models.find(x=>x.id===id),option=modelTextOptions(m).find(o=>o.id===optionId);
+  if(!option)return;
+  setDraftModelExtraField(id,'text',option.text);
+  setDraftModelExtraField(id,'textOptionId',option.id);
+  setDraftModelExtraField(id,'enabled',true);
+  renderEmailSelection();
 }
 function modelDraftExtraHtml(m,ui=false){
   const extra=draftModelExtra(m);
   const parts=[];
   if(extra.enabled&&String(extra.text||'').trim()){
     const text=extra.bold?`<b>${esc(extra.text)}</b>`:esc(extra.text);
-    parts.push(text);
+    parts.push(text.replace(/\r?\n/g,'<br>'));
   }
   if(extra.mediaEnabled&&String(extra.mediaUrl||'').trim()){
     parts.push(`<a href="${esc(extra.mediaUrl)}"${ui?' target="_blank" rel="noopener"':''}>${esc(extra.mediaLabel||'Media')}</a>`);
@@ -1805,7 +1846,7 @@ function modelDraftExtraControlsHtml(m){
       <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${extra.mediaEnabled?'checked':''} onchange="setDraftModelExtraField('${m.id}','mediaEnabled',this.checked)"> Show media link</label>
       <button class="btn" type="button" onclick="resetDraftModelExtra('${m.id}')">Reset extra</button>
     </div>
-    <div class="field" style="margin-bottom:8px"><label>Extra text</label><input type="text" value="${esc(extra.text||'')}" placeholder="Add or edit the extra text for this model" oninput="setDraftModelExtraField('${m.id}','text',this.value)"></div>
+    <div class="field" style="margin-bottom:8px"><label for="textOption-${esc(m.id)}">Saved text option</label><select id="textOption-${esc(m.id)}" onchange="selectModelTextOption('${m.id}',this.value)"><option value="">${extra.textOptionId?'Choose text':'Current draft text'}</option>${modelTextOptions(m).map(o=>`<option value="${esc(o.id)}" ${extra.textOptionId===o.id?'selected':''}>${esc(o.label)}</option>`).join('')}</select><button type="button" class="btn" onclick="openModelTexts('${m.id}')">Edit model text options</button><div class="muted tiny" style="white-space:pre-wrap">${esc(extra.text||'')}</div></div>
     <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:8px">
       <div class="field"><label>Media URL</label><input type="url" value="${esc(extra.mediaUrl||'')}" placeholder="Paste a video, image, reel, or other media link" oninput="setDraftModelExtraField('${m.id}','mediaUrl',this.value)"></div>
       <div class="field"><label>Media link text</label><input type="text" value="${esc(extra.mediaLabel||'')}" placeholder="Media" oninput="setDraftModelExtraField('${m.id}','mediaLabel',this.value)"></div>
