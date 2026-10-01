@@ -968,86 +968,6 @@
     return unique.slice(0,-1).join(', ')+' and '+unique[unique.length-1];
   }
 
-  function introCopy(d,picked,record){
-    const recordText=[
-      record&&record.id,record&&record.brandProject,record&&record.project,
-      record&&record.subject,record&&record.parsedBrief&&record.parsedBrief.project,
-      record&&record.parsedBrief&&record.parsedBrief.location
-    ].filter(Boolean).join(' ');
-    if(/Paris/i.test(recordText)&&/In[\\s-]?Town|in town model update/i.test(recordText)){
-      const names=templateModelNames(picked);
-      if(names){
-        const verb=(picked||[]).length===1?'is':'are';
-        const pronoun=(picked||[]).length===1?'Their':'Their';
-        return 'Another quick Paris update '+names+' '+verb+' in Paris as well. '+pronoun+' materials are below.';
-      }
-    }
-    const custom=cleanCopy(d.customBody||'');
-    if(custom)return custom;
-    if(d.purpose==='submission')return 'I preselected a few models I think would be a good fit. Their materials are below.';
-    if(d.purpose==='availability')return 'Sharing the latest availability and model details. Their materials are below.';
-    if(d.purpose==='introduction')return 'I wanted to introduce a few models from our roster. Their materials are below.';
-    if(d.purpose==='followup')return 'Just following up with a few model options. Their materials are below.';
-    return picked.length?'Their materials are below.':'';
-  }
-
-  function modelBlock(model,d){
-    const name=String(model.name||'').trim();
-    const stats=d.stats&&model.stats?' | '+formatStats(model.stats):'';
-    const portfolio=d.sources&&model.profile
-      ?'<div style="margin:0 0 10px"><a href="'+esc(model.profile)+'" target="_blank" style="color:#1155cc;text-decoration:underline">'+esc(model.profileLabel||'Portfolio')+'</a></div>'
-      :'';
-    const photo=d.photos&&typeof modelDraftPhotosHtml==='function'?modelDraftPhotosHtml(model):'';
-    return '<div style="margin:0 0 28px;color:#000;font-size:13px">'+
-      '<div style="line-height:1.55"><b>'+esc(name)+'</b>'+stats+'</div>'+
-      portfolio+
-      photo+
-      '</div>';
-  }
-
-  function exactEmailHtml(){
-    const d={
-      purpose:document.getElementById('emailPurpose')?.value||'submission',
-      contactName:String(document.getElementById('emailContactName')?.value||'').trim(),
-      recipientEmail:String(document.getElementById('emailRecipient')?.value||'').trim(),
-      brand:String(document.getElementById('emailBrand')?.value||'').trim(),
-      brief:String(document.getElementById('emailContext')?.value||'').trim(),
-      customBody:String(document.getElementById('emailCustomBody')?.value||'').trim(),
-      stats:document.getElementById('includeStats')?.checked!==false,
-      photos:document.getElementById('includePhotos')?.checked!==false,
-      sources:document.getElementById('includeSources')?.checked!==false
-    };
-
-    const record=activeRecord()||db.draft||{};
-    const manual=String(record.manualEmailHtml||db.draft?.manualEmailHtml||'').trim();
-    if(manual)return manual;
-
-    const picked=currentSelectedModels();
-    const greetingNames=greetingName(record,d.contactName);
-    const greeting=greetingNames.length?'Hi '+esc(namesText(greetingNames))+',':'Hi,';
-    const intro=introCopy(d,picked,record);
-    const brief=cleanCopy(d.brief||'');
-    const blocks=picked.map(function(model){return modelBlock(model,d)}).join('');
-    const more=picked.length
-      ?'<div style="margin:0 0 28px">More model options <a href="https://canva.link/hkqja7ybl587pm8" target="_blank" style="color:#1155cc;text-decoration:underline">HERE</a> if helpful.</div>'
-      :'';
-
-    return '<div style="font-family:Arial,sans-serif;font-size:13px;line-height:1.35;color:#000">'+
-      '<div>'+greeting+'</div>'+
-      '<div style="height:18px"></div>'+
-      (intro?'<div>'+esc(intro).replace(/\n/g,'<br>')+'</div>':'')+
-      (brief&&cleanCopy(brief)!==cleanCopy(intro)?'<div style="height:18px"></div><div>'+esc(brief).replace(/\n/g,'<br>')+'</div>':'')+
-      '<div style="height:18px"></div>'+
-      (blocks||'<div>[Select one or more models]</div>')+
-      more+
-      '<div>Thank you,</div>'+
-      '<div>Justin</div>'+
-      '<div style="height:18px"></div>'+
-      '<div><b>Chez Les Mannequins · Creative Agency</b></div>'+
-      '<div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div>'+
-      '</div>';
-  }
-
   function parisInTownCopy(record){
     if(!record||typeof record!=='object')return false;
     const text=[record.id,record.brandProject,record.project,record.subject,record.parsedBrief&&record.parsedBrief.project].filter(Boolean).join(' ');
@@ -1111,8 +1031,7 @@
     return changed;
   }
 
-  emailHtml=exactEmailHtml;
-  emailHtml.__clmExactTemplate=true;
+  // Preserve the canonical builder and its refresh options from index.html.
 
   if(typeof hydrateDraft==='function'&&!hydrateDraft.__clmExactTemplate){
     const originalHydrate=hydrateDraft;
