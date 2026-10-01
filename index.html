@@ -2147,7 +2147,7 @@ function packageIdentity(d={}){
 }
 function syncPackageIdentity(){
   const identity=packageIdentity(db.draft);
-  const subject=identity.name?identity.name+' | Model Package':'Model Package';
+  const subject=identity.name;
   Object.assign(db.draft,{packageName:identity.name,subject});
   $('#emailSubject').value=subject;
   for(const target of activeDraftOverrideTargets()){
