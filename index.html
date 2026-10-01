@@ -1317,66 +1317,28 @@ const NYBFW_SPRINT_CONTACTS_2026_09_30=[
 ];
 
 const NYBFW_SPRINT_DRAFTS_2026_09_30=[
-  {"id":"nybfw_oct26_anne_barge","date":"2026-09-30","purpose":"submission","contactId":"nybfw_2026_anne_barge_ny","contactName":"Amanda Gavras","company":"Anne Barge","recipientEmail":"amanda@annebarge.com","brandProject":"Anne Barge | New York Bridal Week October 2026","packageLink":"","brief":"","customBody":"","castingBriefRaw":"","parsedBrief":{"project":"Anne Barge","shootDate":"2026-10-13","dateText":"October 13, 2026, 9:00 AM to 11:00 AM","location":"New York","requirements":"Official NYFW Bridal presentation window. Package draft created without models.","nicheClues":["Bridal","Luxury / Runway","Fashion Commercial"]},"subject":"New York Bridal Week | Anne Barge Model Package","includeStats":true,"includePhotos":true,"includeSources":true,"models":[],"modelIds":[],"html":"","researchUrl":"https://www.annebarge.com/blogs/campaigns/anne-barge-fall-2026-portrait-of-elegance","selectionRationale":"Recent Anne Barge imagery emphasizes polished editorial beauty, refined structure, elegant posture, long clean proportions and classic bridal presentation with a modern finish. No comparable recent Models.com bridal runway page with a complete cast was verified for this package, so the research is anchored to the latest official brand campaign imagery and the current NYFW Bridal schedule.","source":"Anne Barge Fall 2026 official campaign review, CFDA NYFW Bridal October 2026 schedule, curated September 30, 2026","notes":"CRM package only. No models added yet. The recipient is the official Anne Barge New York flagship contact and is not verified as the direct casting route."},
-  {"id":"nybfw_oct26_blue_willow","date":"2026-09-30","purpose":"submission","contactId":"nybfw_2026_anne_barge_ny","contactName":"Amanda Gavras","company":"Blue Willow by Anne Barge","recipientEmail":"amanda@annebarge.com","brandProject":"Blue Willow by Anne Barge | New York Bridal Week October 2026","packageLink":"","brief":"","customBody":"","castingBriefRaw":"","parsedBrief":{"project":"Blue Willow by Anne Barge","shootDate":"2026-10-13","dateText":"October 13, 2026, 9:00 AM to 11:00 AM","location":"New York","requirements":"Official NYFW Bridal presentation window. Package draft created without models.","nicheClues":["Bridal","Fashion Commercial","Luxury / Runway"]},"subject":"New York Bridal Week | Blue Willow Model Package","includeStats":true,"includePhotos":true,"includeSources":true,"models":[],"modelIds":[],"html":"","researchUrl":"https://www.annebarge.com/blogs/campaigns/blue-willow-fall-2026-treasured-moments","selectionRationale":"Blue Willow is the softer and more romantic Anne Barge line, with delicate lace, floral detail, graceful movement and approachable bridal polish while still retaining fashion credibility. This is the final brand in the assigned Tuesday window. No comparable recent Models.com bridal runway page with a complete cast was verified, so the package research uses the latest official Blue Willow campaign imagery and the current NYFW Bridal schedule.","source":"Blue Willow Fall 2026 official campaign review, CFDA NYFW Bridal October 2026 schedule, curated September 30, 2026","notes":"CRM package only. No models added yet. The recipient is the official Anne Barge New York flagship contact, which carries Blue Willow, and is not verified as the direct casting route."},
   {"id":"nybfw_oct26_heli_kalkstein","date":"2026-09-30","purpose":"submission","contactId":"nybfw_2026_heli_kalkstein","contactName":"Heli Kalkstein Team","company":"Heli Kalkstein","recipientEmail":"contact@helikalkstein.com","brandProject":"Heli Kalkstein | New York Bridal Week October 2026","packageLink":"","brief":"","customBody":"","castingBriefRaw":"","parsedBrief":{"project":"Heli Kalkstein","shootDate":"2026-10-14","dateText":"October 14, 2026, 9:00 AM to 11:00 AM","location":"New York","requirements":"Official NYFW Bridal presentation window. Package draft created without models.","nicheClues":["Bridal","Luxury / Runway","Fashion Commercial"]},"subject":"New York Bridal Week | Heli Kalkstein Model Package","includeStats":true,"includePhotos":true,"includeSources":true,"models":[],"modelIds":[],"html":"","researchUrl":"https://www.helikalkstein.com/","selectionRationale":"Recent Heli Kalkstein bridal direction favors body conscious silhouettes, corsetry, sheer tulle, lace, floral detail and confident red carpet bridal glamour. Model selection should therefore prioritize presence, posture and the ability to carry fitted gowns rather than relying only on conventional bridal softness. No recent Models.com show page with a complete cast was verified for this package, so the current brand imagery and official schedule are the primary references.","source":"Heli Kalkstein official collection and brand review, CFDA NYFW Bridal October 2026 schedule, curated September 30, 2026","notes":"CRM package only. No models added yet. This is the final brand in the assigned Wednesday window. The recipient is the official public Heli Kalkstein contact and is not verified as the direct casting route."},
   {"id":"nybfw_oct26_hera_couture","date":"2026-09-30","purpose":"submission","contactId":"nybfw_2026_hera_couture","contactName":"Hera Couture Team","company":"Hera Couture","recipientEmail":"hello@heracouture.co.nz","brandProject":"Hera Couture | New York Bridal Week October 2026","packageLink":"","brief":"","customBody":"","castingBriefRaw":"","parsedBrief":{"project":"Hera Couture","shootDate":"2026-10-15","dateText":"October 15, 2026, 1:00 PM","location":"New York","requirements":"Official NYFW Bridal presentation. Package draft created without models.","nicheClues":["Bridal","Luxury / Runway","Curve / Body"]},"subject":"New York Bridal Week | Hera Couture Model Package","includeStats":true,"includePhotos":true,"includeSources":true,"models":[],"modelIds":[],"html":"","researchUrl":"https://heracouture.co.nz/","selectionRationale":"Hera Couture combines architectural construction with softness, dramatic scale and strong feminine presence. Current brand direction supports both statuesque runway casting and genuine curve representation because the house maintains dedicated curve designs alongside its main collection. No recent Models.com show page with a complete cast was verified for this package, so the latest official brand imagery and current NYFW Bridal schedule are the primary references.","source":"Hera Couture official collection review, CFDA NYFW Bridal October 2026 schedule, curated September 30, 2026","notes":"CRM package only. No models added yet. This is the final brand in the assigned Thursday window. The recipient is the official public Hera Couture contact and is not verified as the direct casting route."}
 ];
 
 
-function duplicateCarolineCommercialBridalPackages20260930(data){
-  data.drafts=Array.isArray(data.drafts)?data.drafts:[];
-  const clean=value=>String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-  const source=data.drafts.find(d=>{
-    const hay=clean([d?.subject,d?.brandProject,d?.company].filter(Boolean).join(' '));
-    return hay.includes('caroline castigliano')&&hay.includes('new york');
-  });
-  if(!source)return data;
-
-  const targets=[
-    {id:'nybfw_fall27_rebecca_schoneveld_commercial_copy',brand:'Rebecca Schoneveld'},
-    {id:'nybfw_fall27_amsale_commercial_copy',brand:'Amsale'},
-    {id:'nybfw_fall27_yellow_by_sahar_commercial_copy',brand:'Yellow by Sahar'},
-    {id:'nybfw_fall27_arava_polak_commercial_copy',brand:'Arava Polak'},
-    {id:'nybfw_fall27_eve_of_milady_commercial_copy',brand:'Eve of Milady'},
-    {id:'nybfw_fall27_marrow_bridal_commercial_copy',brand:'Marrow Bridal'},
-    {id:'nybfw_fall27_renhue_commercial_copy',brand:'Renhue Bridal'}
-  ];
-
-  const resetSendState=copy=>{
-    [
-      'gmailDraftId','gmailUrl','gmailMessageId','gmailThreadId','threadId',
-      'openTrackingId','openTrackingState','openTrackingArmedAt','openTrackingCount',
-      'openTrackingLastDetectedAt','modelSignalSubmissionId','sentAt','submittedAt',
-      'submittedDate','finalSentSubject','submissionStatus','previewNeedsGmailUpdate'
-    ].forEach(key=>delete copy[key]);
-  };
-
-  for(const target of targets){
-    const exact=structuredClone(source);
-    resetSendState(exact);
-
-    // Keep every draft field exactly as Caroline Castigliano, including the
-    // full body text, model order, images, measurements, links and user edits.
-    // Only package identity and subject change.
-    exact.id=target.id;
-    exact.date='2026-09-30';
-    exact.company=target.brand;
-    exact.brandProject=target.brand;
-    exact.subject='New York Fashion Week | '+target.brand;
-    exact.html='';
-
-    const existingIndex=data.drafts.findIndex(d=>d?.id===target.id);
-    if(existingIndex>=0)data.drafts[existingIndex]=exact;
-    else data.drafts.push(exact);
+function removeRequestedBridalDrafts20261001(data){
+  const mentionsRemovedBrand=record=>/caroline\s+castigliano|blue\s+willow|anne\s+barge/.test(JSON.stringify(record||{}).toLowerCase().replace(/[^a-z0-9]+/g,' '));
+  const removed=new Set((data.drafts||[]).filter(mentionsRemovedBrand).map(d=>d.id));
+  data.drafts=(data.drafts||[]).filter(d=>!mentionsRemovedBrand(d));
+  // Preserve unrelated working drafts and their exact model/photo selections.
+  if(mentionsRemovedBrand(data.draft)){
+    data.draft=structuredClone(seed.draft);
+    data.activeDraftId='';
+    data.selected=[];
+  }else if(removed.has(data.activeDraftId)){
+    data.activeDraftId='';
   }
-
-  data.recovery={
-    ...(data.recovery||{}),
-    carolineCommercialBridalCopiesVersion:2,
-    carolineCommercialBridalCopiesCreatedOn:'2026-09-30',
-    carolineCommercialBridalCopiesCreated:targets.length
-  };
+  if(data.recovery){
+    delete data.recovery.carolineCommercialBridalCopiesVersion;
+    delete data.recovery.carolineCommercialBridalCopiesCreatedOn;
+    delete data.recovery.carolineCommercialBridalCopiesCreated;
+  }
   return data;
 }
 
@@ -1408,7 +1370,7 @@ function recoverGaliaLahavPackage20260930(data){
   return data;
 }
 
-function applyRecovered(data){const incoming=data||{};data={...structuredClone(seed),...incoming};data.settings={...structuredClone(seed.settings),...(incoming.settings||{})};data.draft={...structuredClone(seed.draft),...(incoming.draft||{})};data.activeDraftId=incoming.activeDraftId||data.activeDraftId||'';data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>applyModelIdentity({...m,availabilityStatus:m.availabilityStatus||'Unknown',statusFrom:m.statusFrom||'',statusTo:m.statusTo||'',holdProject:m.holdProject||'',availabilityNotes:m.availabilityNotes||'',focusRoster:typeof m.focusRoster==='boolean'?m.focusRoster:FOCUS_ROSTER_NAMES.has(m.name)}));data=applyCanonicalAnhelinaMeasurements20260925(data);const parisDrafts=parisPostDiorDrafts(data.models);data.contacts=mergeContacts([...NYBFW_SPRINT_CONTACTS_2026_09_30,...BRIDAL_WEEK_CONTACTS_2026_09_28,...ADDITIONAL_CRM_CONTACTS_2026_09_24,...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS],data.contacts||[]).map(c=>({...c,relationship:c.relationship||'Developing',preferredNiches:c.preferredNiches||''}));data.submissions=mergeRecovered([...RECOVERED_SUBMISSIONS,...WORK_GMAIL_SUBMISSIONS],data.submissions||[]).map(normalizeRecordModelNames);data.drafts=mergeRecovered([...NYBFW_SPRINT_DRAFTS_2026_09_30,...BRIDAL_WEEK_DRAFTS_2026_09_28,...CALLIE_EUROPE_GOSEE_DRAFTS_2026_09_25,...ADDITIONAL_CRM_DRAFTS_2026_09_25,...ADDITIONAL_CRM_DRAFTS_2026_09_24,...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS,...parisDrafts],data.drafts||[]).map(normalizeRecordModelNames);data=repairDraftModelIdsFromNames20260925(data);data=applyUrbanDecayDraftFix20260925(data);data=applyRequestedDraftMeasurements20260925(data);data=applyAnhelinaDraftStats20260925(data);data=applyCallieEuropeGoSeeCopyV2(data);data.drafts=data.drafts.filter(d=>!PARIS_INTOWN_FOLLOWUP_REMOVED_IDS_2026_09_25.has(d.id));if(PARIS_INTOWN_FOLLOWUP_REMOVED_IDS_2026_09_25.has(data.activeDraftId||'')){data.activeDraftId='';data.draft=structuredClone(seed.draft);data.selected=[]}data=applyMilanPostEtroCastingContacts(data);data.bookings=(data.bookings||[]).map(normalizeRecordModelNames);data.recovery={...(data.recovery||{}),gmailRecoveredOn:'2026-09-14',submissionCount:RECOVERED_SUBMISSIONS.length,draftCount:RECOVERED_DRAFTS.length,tasksRecovered:0,rosterCheckedOn:'2026-09-14',supplementalModels:['Sophia Pippen'],newModels:['Anhelena','Bianca'],nicheSystemVersion:2,nicheTaxonomy:'standard-no-specialty-story',workflowSystemVersion:3,workGmail:WORK_EMAIL,workGmailSyncedOn:'2026-09-14',workGmailSubmissionCount:WORK_GMAIL_SUBMISSIONS.length,milanFirstDayDraftsAddedOn:'2026-09-16',milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,milanRestDraftsAddedOn:'2026-09-16',milanRestDraftCount:MILAN_REST_DRAFTS.length,parisPostDiorDraftsAddedOn:'2026-09-19',parisPostDiorDraftCount:parisDrafts.length,modelIdentityUpdatedOn:'2026-09-16',modelAppearanceReviewedOn:'2026-09-16'};return duplicateCarolineCommercialBridalPackages20260930(recoverGaliaLahavPackage20260930(applyVerifiedCastingEmailDirectory(applyCameliaGlobalDraftRemoval(applyEuropeNoTravelRemovals(applyParisPostCarvenCastingReview(applyPhotoManagement(maintainSophiaProfileWithoutAutoAdd(removeEm0FromDrafts(repairParisSS27Packages(applySophiaDescription(applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data)))))))))))))))}
+function applyRecovered(data){const incoming=data||{};data={...structuredClone(seed),...incoming};data.settings={...structuredClone(seed.settings),...(incoming.settings||{})};data.draft={...structuredClone(seed.draft),...(incoming.draft||{})};data.activeDraftId=incoming.activeDraftId||data.activeDraftId||'';data.models=sanitizeModelNiches(mergeModels(structuredClone(seed.models),incoming.models||[])).map(m=>applyModelIdentity({...m,availabilityStatus:m.availabilityStatus||'Unknown',statusFrom:m.statusFrom||'',statusTo:m.statusTo||'',holdProject:m.holdProject||'',availabilityNotes:m.availabilityNotes||'',focusRoster:typeof m.focusRoster==='boolean'?m.focusRoster:FOCUS_ROSTER_NAMES.has(m.name)}));data=applyCanonicalAnhelinaMeasurements20260925(data);const parisDrafts=parisPostDiorDrafts(data.models);data.contacts=mergeContacts([...NYBFW_SPRINT_CONTACTS_2026_09_30,...BRIDAL_WEEK_CONTACTS_2026_09_28,...ADDITIONAL_CRM_CONTACTS_2026_09_24,...WORK_GMAIL_CONTACTS,...MILAN_FIRST_DAY_CONTACTS],data.contacts||[]).map(c=>({...c,relationship:c.relationship||'Developing',preferredNiches:c.preferredNiches||''}));data.submissions=mergeRecovered([...RECOVERED_SUBMISSIONS,...WORK_GMAIL_SUBMISSIONS],data.submissions||[]).map(normalizeRecordModelNames);data.drafts=mergeRecovered([...NYBFW_SPRINT_DRAFTS_2026_09_30,...BRIDAL_WEEK_DRAFTS_2026_09_28,...CALLIE_EUROPE_GOSEE_DRAFTS_2026_09_25,...ADDITIONAL_CRM_DRAFTS_2026_09_25,...ADDITIONAL_CRM_DRAFTS_2026_09_24,...RECOVERED_DRAFTS,...MILAN_FIRST_DAY_DRAFTS,...MILAN_REST_DRAFTS,...parisDrafts],data.drafts||[]).map(normalizeRecordModelNames);data=repairDraftModelIdsFromNames20260925(data);data=applyUrbanDecayDraftFix20260925(data);data=applyRequestedDraftMeasurements20260925(data);data=applyAnhelinaDraftStats20260925(data);data=applyCallieEuropeGoSeeCopyV2(data);data.drafts=data.drafts.filter(d=>!PARIS_INTOWN_FOLLOWUP_REMOVED_IDS_2026_09_25.has(d.id));if(PARIS_INTOWN_FOLLOWUP_REMOVED_IDS_2026_09_25.has(data.activeDraftId||'')){data.activeDraftId='';data.draft=structuredClone(seed.draft);data.selected=[]}data=applyMilanPostEtroCastingContacts(data);data.bookings=(data.bookings||[]).map(normalizeRecordModelNames);data.recovery={...(data.recovery||{}),gmailRecoveredOn:'2026-09-14',submissionCount:RECOVERED_SUBMISSIONS.length,draftCount:RECOVERED_DRAFTS.length,tasksRecovered:0,rosterCheckedOn:'2026-09-14',supplementalModels:['Sophia Pippen'],newModels:['Anhelena','Bianca'],nicheSystemVersion:2,nicheTaxonomy:'standard-no-specialty-story',workflowSystemVersion:3,workGmail:WORK_EMAIL,workGmailSyncedOn:'2026-09-14',workGmailSubmissionCount:WORK_GMAIL_SUBMISSIONS.length,milanFirstDayDraftsAddedOn:'2026-09-16',milanFirstDayDraftCount:MILAN_FIRST_DAY_DRAFTS.length,milanRestDraftsAddedOn:'2026-09-16',milanRestDraftCount:MILAN_REST_DRAFTS.length,parisPostDiorDraftsAddedOn:'2026-09-19',parisPostDiorDraftCount:parisDrafts.length,modelIdentityUpdatedOn:'2026-09-16',modelAppearanceReviewedOn:'2026-09-16'};return removeRequestedBridalDrafts20261001(recoverGaliaLahavPackage20260930(applyVerifiedCastingEmailDirectory(applyCameliaGlobalDraftRemoval(applyEuropeNoTravelRemovals(applyParisPostCarvenCastingReview(applyPhotoManagement(maintainSophiaProfileWithoutAutoAdd(removeEm0FromDrafts(repairParisSS27Packages(applySophiaDescription(applyLanaMeasurements(applyMilanOpenCloseResearch(expandMilanPackages(applyMilanAvailability(data)))))))))))))))}
 /* CRM INDEXEDDB STORAGE V1 */
 const IDB_DB_NAME='jn-agency-crm';
 const IDB_DB_VERSION=2;
