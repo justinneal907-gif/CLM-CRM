@@ -1795,9 +1795,41 @@ function openModelTexts(id){
   renderModelTextEditor();
   if(!$('#modelDialog').open)$('#modelDialog').showModal();
 }
+function modelTextLinkUrl(value){
+  try{const url=new URL(String(value||'').trim());return ['https:','http:'].includes(url.protocol)?url.href:''}catch(e){return''}
+}
+function renderLinkedModelText(value){
+  const text=String(value||'');
+  const pattern=/\[((?:\\.|[^\]\\])+)\]\(([^\s]*)\)/g;
+  let html='',offset=0;
+  for(const match of text.matchAll(pattern)){
+    html+=esc(text.slice(offset,match.index));
+    const url=modelTextLinkUrl(match[2]),label=match[1].replace(/\\([\\\[\]])/g,'$1');
+    html+=url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`:esc(match[0]);
+    offset=match.index+match[0].length;
+  }
+  return (html+esc(text.slice(offset))).replace(/\r?\n/g,'<br>');
+}
+function insertModelTextLink(index){
+  const field=$('#modelTextBody'+index);if(!field||!modelTextEditor?.options[index])return;
+  const start=field.selectionStart,end=field.selectionEnd;
+  const selected=field.value.slice(start,end);
+  const label=selected||prompt('Text to make clickable:','');if(!label)return;
+  const raw=prompt('Paste the media URL (https://):','');if(raw===null)return;
+  const url=modelTextLinkUrl(raw);if(!url)return alert('Enter a full http:// or https:// media URL.');
+  const safeLabel=label.replace(/[\\\[\]]/g,'\\$&');
+  const link='['+safeLabel+']('+url.replace(/\(/g,'%28').replace(/\)/g,'%29')+')';
+  field.setRangeText(link,start,end,'end');
+  modelTextEditor.options[index].text=field.value;
+  updateModelTextLinkPreview(index);field.focus();
+}
+function updateModelTextLinkPreview(index){
+  const preview=$('#modelTextPreview'+index);
+  if(preview)preview.innerHTML=renderLinkedModelText(modelTextEditor?.options[index]?.text||'');
+}
 function renderModelTextEditor(){
   const m=db.models.find(x=>x.id===modelTextEditor?.id);if(!m)return;
-  $('#modelModal').innerHTML=`<h2>${esc(m.name)}: Text options</h2><p>Create named texts to choose from in any package. Editing a saved option updates the text when packages using it are refreshed.</p>${modelTextEditor.options.map((o,i)=>`<div class="field" style="padding:12px;border:1px solid var(--line);margin-bottom:12px"><label for="modelTextLabel${i}">Option name</label><input id="modelTextLabel${i}" value="${esc(o.label)}" oninput="modelTextEditor.options[${i}].label=this.value"><label for="modelTextBody${i}">Text</label><textarea id="modelTextBody${i}" rows="4" oninput="modelTextEditor.options[${i}].text=this.value">${esc(o.text)}</textarea><button type="button" class="btn danger" onclick="modelTextEditor.options.splice(${i},1);renderModelTextEditor()">Remove option</button></div>`).join('')||'<p>No text options yet.</p>'}<div class="actions"><button type="button" class="btn" onclick="modelTextEditor.options.push({id:uid(),label:'',text:''});renderModelTextEditor()">Add text option</button><button type="button" class="btn primary" onclick="saveModelTexts()">Save text options</button><button type="button" class="btn" onclick="modelTextEditor=null;$('#modelDialog').close()">Cancel</button></div>`;
+  $('#modelModal').innerHTML=`<h2>${esc(m.name)}: Text options</h2><p>Create named texts to choose from in any package. Editing a saved option updates the text when packages using it are refreshed.</p>${modelTextEditor.options.map((o,i)=>`<div class="field" style="padding:12px;border:1px solid var(--line);margin-bottom:12px"><label for="modelTextLabel${i}">Option name</label><input id="modelTextLabel${i}" value="${esc(o.label)}" oninput="modelTextEditor.options[${i}].label=this.value"><label for="modelTextBody${i}">Text</label><textarea id="modelTextBody${i}" rows="4" oninput="modelTextEditor.options[${i}].text=this.value;updateModelTextLinkPreview(${i})">${esc(o.text)}</textarea><button type="button" class="btn" onclick="insertModelTextLink(${i})">Insert media link</button><div class="muted tiny">Select words above, then insert a media link. Links appear as [text](https://url) while editing.</div><div id="modelTextPreview${i}" style="margin:10px 0;overflow-wrap:anywhere">${renderLinkedModelText(o.text)}</div><button type="button" class="btn danger" onclick="modelTextEditor.options.splice(${i},1);renderModelTextEditor()">Remove option</button></div>`).join('')||'<p>No text options yet.</p>'}<div class="actions"><button type="button" class="btn" onclick="modelTextEditor.options.push({id:uid(),label:'',text:''});renderModelTextEditor()">Add text option</button><button type="button" class="btn primary" onclick="saveModelTexts()">Save text options</button><button type="button" class="btn" onclick="modelTextEditor=null;$('#modelDialog').close()">Cancel</button></div>`;
 }
 function saveModelTexts(){
   const m=db.models.find(x=>x.id===modelTextEditor?.id);if(!m)return;
@@ -1829,7 +1861,8 @@ function modelDraftExtraHtml(m,ui=false){
   const extra=draftModelExtra(m);
   const parts=[];
   if(extra.enabled&&String(extra.text||'').trim()){
-    const text=extra.bold?`<b>${esc(extra.text)}</b>`:esc(extra.text);
+    const linked=renderLinkedModelText(extra.text);
+    const text=extra.bold?`<b>${linked}</b>`:linked;
     parts.push(text.replace(/\r?\n/g,'<br>'));
   }
   if(extra.mediaEnabled&&String(extra.mediaUrl||'').trim()){
@@ -1846,7 +1879,7 @@ function modelDraftExtraControlsHtml(m){
       <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${extra.mediaEnabled?'checked':''} onchange="setDraftModelExtraField('${m.id}','mediaEnabled',this.checked)"> Show media link</label>
       <button class="btn" type="button" onclick="resetDraftModelExtra('${m.id}')">Reset extra</button>
     </div>
-    <div class="field" style="margin-bottom:8px"><label for="textOption-${esc(m.id)}">Saved text option</label><select id="textOption-${esc(m.id)}" onchange="selectModelTextOption('${m.id}',this.value)"><option value="">${extra.textOptionId?'Choose text':'Current draft text'}</option>${modelTextOptions(m).map(o=>`<option value="${esc(o.id)}" ${extra.textOptionId===o.id?'selected':''}>${esc(o.label)}</option>`).join('')}</select><button type="button" class="btn" onclick="openModelTexts('${m.id}')">Edit model text options</button><div class="muted tiny" style="white-space:pre-wrap">${esc(extra.text||'')}</div></div>
+    <div class="field" style="margin-bottom:8px"><label for="textOption-${esc(m.id)}">Saved text option</label><select id="textOption-${esc(m.id)}" onchange="selectModelTextOption('${m.id}',this.value)"><option value="">${extra.textOptionId?'Choose text':'Current draft text'}</option>${modelTextOptions(m).map(o=>`<option value="${esc(o.id)}" ${extra.textOptionId===o.id?'selected':''}>${esc(o.label)}</option>`).join('')}</select><button type="button" class="btn" onclick="openModelTexts('${m.id}')">Edit model text options</button><div class="muted tiny" style="white-space:pre-wrap">${renderLinkedModelText(extra.text||'')}</div></div>
     <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:8px">
       <div class="field"><label>Media URL</label><input type="url" value="${esc(extra.mediaUrl||'')}" placeholder="Paste a video, image, reel, or other media link" oninput="setDraftModelExtraField('${m.id}','mediaUrl',this.value)"></div>
       <div class="field"><label>Media link text</label><input type="text" value="${esc(extra.mediaLabel||'')}" placeholder="Media" oninput="setDraftModelExtraField('${m.id}','mediaLabel',this.value)"></div>
