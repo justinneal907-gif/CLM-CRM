@@ -1781,36 +1781,86 @@ const MODEL_DRAFT_CREDENTIALS={
   'new-york-women-mary-timms':{text:'Partook in Vogue World with DVF, Former Miss Nigeria, over 1M followers on Instagram.',bold:true},
   'los-angeles-women-malia':{text:'Previously appeared in a Miu Miu ad.'}
 };
-const CALLIE_BRIDAL_WEAR_URL='https://raw.githubusercontent.com/justinneal907-gif/CLM-CRM/main/assets/models/callie-bridal-wear.jpg?v=20261001';
-const BRIDAL_WEEK_MODEL_CREDENTIALS={
-  'new-york-women-callie-steg':{link:CALLIE_BRIDAL_WEAR_URL,linkLabel:'Callie in Bridal Wear'},
-  'new-york-women-sophia-pippen':{text:'Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian'}
-};
-function isBridalWeekDraftContext(){
-  const saved=typeof activeDraftRecord==='function'?activeDraftRecord():null;
-  const working=db?.draft||{};
-  const d=saved||working||{};
-  const raw=[d.id,d.eventName,d.packageName,d.subject,d.brandProject,d.company,d.parsedBrief?.project].filter(Boolean).join(' ').toLowerCase();
-  return /^nybfw/.test(String(d.id||'').toLowerCase())||/new york bridal week|nyfw bridal|bridal week|nybfw/.test(raw);
+function defaultModelDraftExtra(m){
+  const base=m?MODEL_DRAFT_CREDENTIALS[m.id]||{}:{};
+  const description=String(m?.description||'').trim();
+  return {
+    enabled:!!base.text,
+    text:String(base.text||description||''),
+    bold:!!base.bold,
+    mediaEnabled:!!base.link,
+    mediaUrl:String(base.link||''),
+    mediaLabel:String(base.linkLabel||'Media')
+  };
 }
-function modelDraftCredential(m){
-  if(!m)return null;
-  const base=MODEL_DRAFT_CREDENTIALS[m.id]||null;
-  const bridal=isBridalWeekDraftContext()?BRIDAL_WEEK_MODEL_CREDENTIALS[m.id]||null:null;
-  if(!base)return bridal;
-  if(!bridal)return base;
-  return {...base,...bridal,text:[base.text,bridal.text].filter(Boolean).join(' ')};
+function draftModelExtra(m){
+  const defaults=defaultModelDraftExtra(m);
+  if(!m)return defaults;
+  const saved=typeof activeSavedDraftRecord==='function'?activeSavedDraftRecord():null;
+  for(const source of [db?.draft,saved]){
+    if(!source)continue;
+    const user=source.userOverrides?.modelExtras;
+    if(user&&Object.prototype.hasOwnProperty.call(user,m.id))return {...defaults,...user[m.id]};
+    const direct=source.modelExtras;
+    if(direct&&Object.prototype.hasOwnProperty.call(direct,m.id))return {...defaults,...direct[m.id]};
+  }
+  return defaults;
 }
-function modelDraftCredentialHtml(m,ui=false){
-  const c=modelDraftCredential(m);
-  if(!c)return'';
-  const text=c.text?(c.bold?`<b>${esc(c.text)}</b>`:esc(c.text)):'';
-  const link=c.link?`<a href="${esc(c.link)}"${ui?' target="_blank" rel="noopener"':''}>${esc(c.linkLabel||'Link')}</a>`:'';
-  const content=[text,link].filter(Boolean).join(' ');
-  if(!content)return'';
-  return ui?`<div class="credential-note">${content}</div>`:`<div style="margin:6px 0 0">${content}</div>`;
+function modelDraftExtraHtml(m,ui=false){
+  const extra=draftModelExtra(m);
+  const parts=[];
+  if(extra.enabled&&String(extra.text||'').trim()){
+    const text=extra.bold?`<b>${esc(extra.text)}</b>`:esc(extra.text);
+    parts.push(text);
+  }
+  if(extra.mediaEnabled&&String(extra.mediaUrl||'').trim()){
+    parts.push(`<a href="${esc(extra.mediaUrl)}"${ui?' target="_blank" rel="noopener"':''}>${esc(extra.mediaLabel||'Media')}</a>`);
+  }
+  if(!parts.length)return'';
+  return ui?`<div class="credential-note">${parts.join(' ')}</div>`:`<div style="margin:6px 0 0">${parts.join(' ')}</div>`;
 }
-function renderEmailSelection(){if(!$('#selectedModels'))return;const date=briefPrimaryDate(),picked=selectedModels();$('#selectedModels').innerHTML=(picked.length?'<div class="drag-hint">Email order follows this list. Drag models on desktop or use Move up / Move down. Each photo selection is draft-specific.</div>':'')+picked.map((m,index)=>{const pick=draftPhotoForModel(m),override=draftPhotoSelections()[m.id]||'',urlValue=override&&!override.startsWith('data:')?override:'',options=draftPhotoOptions(m);return `<div class="draft-model-card${m.focusRoster?' focus-roster':''}" draggable="true" ondragstart="dragSelectedModel(event,'${m.id}')" ondragover="event.preventDefault()" ondrop="dropSelectedModel(event,'${m.id}')"><div class="draft-model-head">${pick?`<img class="draft-model-thumb" loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(pick))}" alt="${esc(m.name)} draft photo">`:`<div class="draft-model-thumb placeholder" style="display:flex;align-items:center;justify-content:center">${esc(initials(m.name))}</div>`}<div><div><b>${index+1}. ${esc(m.name)}</b> ${m.focusRoster?'<span class="focus-roster-badge">FOCUS</span>':''} · ${esc(m.location)} / ${esc(m.division)}</div><div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div><div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div>${modelDraftCredentialHtml(m,true)}<div class="draft-model-controls"><button class="btn" type="button" onclick="moveSelectedModel('${m.id}',-1)" ${index===0?'disabled':''}>↑ Move up</button><button class="btn" type="button" onclick="moveSelectedModel('${m.id}',1)" ${index===picked.length-1?'disabled':''}>↓ Move down</button><button class="btn danger" type="button" onclick="removeFromEmail('${m.id}')">Remove</button></div></div></div>${options.length>1?`<div class="draft-photo-strip">${options.map((p,i)=>`<button class="draft-photo-choice ${pick===p.url?'active':''}" type="button" title="${esc(p.label)}" onclick="setDraftPhotoUrl('${m.id}',${JSON.stringify(p.url)})"><img loading="lazy" decoding="async" src="${esc(p.url)}" alt="${esc(m.name)} photo option ${i+1}"></button>`).join('')}</div>`:''}<div class="draft-photo-controls"><input type="url" value="${esc(urlValue)}" placeholder="Paste a photo URL for this draft" onchange="setDraftPhotoUrl('${m.id}',this.value)"><button class="btn" type="button" onclick="resetDraftPhoto('${m.id}')">Use default</button></div><div class="draft-photo-upload"><input type="file" accept="image/*" onchange="setDraftPhotoFile('${m.id}',this)"><span class="muted tiny">Upload is compressed and stored only with this working draft.</span></div></div>`}).join('')||'<div class="empty">No models selected.</div>';renderSubmissionWarnings()}
+function modelDraftExtraControlsHtml(m){
+  const extra=draftModelExtra(m);
+  return `<div class="draft-extra-controls" style="margin-top:10px;padding:10px;border:1px solid var(--line,#d7dbd8);border-radius:8px">
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${extra.enabled?'checked':''} onchange="setDraftModelExtraField('${m.id}','enabled',this.checked)"> Show extra text</label>
+      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${extra.mediaEnabled?'checked':''} onchange="setDraftModelExtraField('${m.id}','mediaEnabled',this.checked)"> Show media link</label>
+      <button class="btn" type="button" onclick="resetDraftModelExtra('${m.id}')">Reset extra</button>
+    </div>
+    <div class="field" style="margin-bottom:8px"><label>Extra text</label><input type="text" value="${esc(extra.text||'')}" placeholder="Add or edit the extra text for this model" oninput="setDraftModelExtraField('${m.id}','text',this.value)"></div>
+    <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:8px">
+      <div class="field"><label>Media URL</label><input type="url" value="${esc(extra.mediaUrl||'')}" placeholder="Paste a video, image, reel, or other media link" oninput="setDraftModelExtraField('${m.id}','mediaUrl',this.value)"></div>
+      <div class="field"><label>Media link text</label><input type="text" value="${esc(extra.mediaLabel||'')}" placeholder="Media" oninput="setDraftModelExtraField('${m.id}','mediaLabel',this.value)"></div>
+    </div>
+    <div class="muted tiny" style="margin-top:6px">These settings apply only to this draft.</div>
+  </div>`;
+}
+function setDraftModelExtraField(id,field,value){
+  const normalized=(field==='enabled'||field==='mediaEnabled')?!!value:String(value??'');
+  db.draft=db.draft||structuredClone(seed.draft);
+  for(const target of activeDraftOverrideTargets()){
+    target.modelExtras=target.modelExtras||{};
+    target.modelExtras[id]={...(target.modelExtras[id]||{}),[field]:normalized};
+    const o=draftUserOverrides(target);
+    o.modelExtras=o.modelExtras||{};
+    o.modelExtras[id]={...(o.modelExtras[id]||{}),[field]:normalized};
+  }
+  if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
+  persistWorkspaceSafe(false);
+  markEmailPreviewRefreshPending();
+}
+function resetDraftModelExtra(id){
+  for(const target of activeDraftOverrideTargets()){
+    if(target.modelExtras)delete target.modelExtras[id];
+    if(target.userOverrides?.modelExtras)delete target.userOverrides.modelExtras[id];
+  }
+  if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
+  persistWorkspaceSafe(false);
+  markEmailPreviewRefreshPending();
+  renderEmailSelection();
+  setStatus('Extra text and media settings reset for this model. Click Refresh preview when ready.');
+}
+function renderEmailSelection(){if(!$('#selectedModels'))return;const date=briefPrimaryDate(),picked=selectedModels();$('#selectedModels').innerHTML=(picked.length?'<div class="drag-hint">Email order follows this list. Drag models on desktop or use Move up / Move down. Each photo selection is draft-specific.</div>':'')+picked.map((m,index)=>{const pick=draftPhotoForModel(m),override=draftPhotoSelections()[m.id]||'',urlValue=override&&!override.startsWith('data:')?override:'',options=draftPhotoOptions(m);return `<div class="draft-model-card${m.focusRoster?' focus-roster':''}" draggable="true" ondragstart="dragSelectedModel(event,'${m.id}')" ondragover="event.preventDefault()" ondrop="dropSelectedModel(event,'${m.id}')"><div class="draft-model-head">${pick?`<img class="draft-model-thumb" loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(pick))}" alt="${esc(m.name)} draft photo">`:`<div class="draft-model-thumb placeholder" style="display:flex;align-items:center;justify-content:center">${esc(initials(m.name))}</div>`}<div><div><b>${index+1}. ${esc(m.name)}</b> ${m.focusRoster?'<span class="focus-roster-badge">FOCUS</span>':''} · ${esc(m.location)} / ${esc(m.division)}</div><div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div><div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div>${modelDraftExtraHtml(m,true)}${modelDraftExtraControlsHtml(m)}<div class="draft-model-controls"><button class="btn" type="button" onclick="moveSelectedModel('${m.id}',-1)" ${index===0?'disabled':''}>↑ Move up</button><button class="btn" type="button" onclick="moveSelectedModel('${m.id}',1)" ${index===picked.length-1?'disabled':''}>↓ Move down</button><button class="btn danger" type="button" onclick="removeFromEmail('${m.id}')">Remove</button></div></div></div>${options.length>1?`<div class="draft-photo-strip">${options.map((p,i)=>`<button class="draft-photo-choice ${pick===p.url?'active':''}" type="button" title="${esc(p.label)}" onclick="setDraftPhotoUrl('${m.id}',${JSON.stringify(p.url)})"><img loading="lazy" decoding="async" src="${esc(p.url)}" alt="${esc(m.name)} photo option ${i+1}"></button>`).join('')}</div>`:''}<div class="draft-photo-controls"><input type="url" value="${esc(urlValue)}" placeholder="Paste a photo URL for this draft" onchange="setDraftPhotoUrl('${m.id}',this.value)"><button class="btn" type="button" onclick="resetDraftPhoto('${m.id}')">Use default</button></div><div class="draft-photo-upload"><input type="file" accept="image/*" onchange="setDraftPhotoFile('${m.id}',this)"><span class="muted tiny">Upload is compressed and stored only with this working draft.</span></div></div>`}).join('')||'<div class="empty">No models selected.</div>';renderSubmissionWarnings()}
 function normalizedBrandName(){return ($('#emailBrand')?.value||$('#emailCompany')?.value||'').trim()}
 function inferBrandProfile(name){const n=String(name||'').toLowerCase().replace(/[^a-z0-9'& ]+/g,' ').replace(/\s+/g,' ').trim();if(!n)return null;const exact=Object.entries(BRAND_PROFILES).find(([k])=>n.includes(k));if(exact)return {...exact[1],source:'Stored brand profile'};const rules=[
  {terms:['beauty','cosmetic','makeup','hair','skincare','skin care','salon'],p:{look:'Beauty / product close-up',niches:['Beauty','Fashion-Commercial','Commercial / Lifestyle'],why:'The brand name signals a beauty-led brief, so close-up face value and consumer readability should lead.'}},
@@ -2683,7 +2733,7 @@ function draftUserOverrides(d){
   if(!d.userOverrides||typeof d.userOverrides!=='object')d.userOverrides={};
   if(!d.userOverrides.fields||typeof d.userOverrides.fields!=='object')d.userOverrides.fields={};
   if(!d.userOverrides.modelLinks||typeof d.userOverrides.modelLinks!=='object')d.userOverrides.modelLinks={};
-  if(!d.userOverrides.photoSelections||typeof d.userOverrides.photoSelections!=='object')d.userOverrides.photoSelections={};
+  if(!d.userOverrides.photoSelections||typeof d.userOverrides.photoSelections!=='object')d.userOverrides.photoSelections={};if(!d.userOverrides.modelExtras||typeof d.userOverrides.modelExtras!=='object')d.userOverrides.modelExtras={};
   return d.userOverrides;
 }
 function userOverrideHasField(d,key){
@@ -2809,7 +2859,7 @@ function livePackageModelBlock(m){
     ?ANHELINA_CANONICAL_STATS_2026_09_25
     :((activeRecord?.modelStats||working?.modelStats||{})[m.id]||m.stats||m.measurements||'');
   const modelLink=draftModelLinkForModel(m);
-  return `<div data-clm-model-id="${esc(m.id)}" style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${includeStats&&forcedStats?' | '+formatStats(forcedStats):''}</div>${includeSources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftCredentialHtml(m)}${includePhotos?modelDraftPhotosHtml(m):''}</div>`;
+  return `<div data-clm-model-id="${esc(m.id)}" style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${includeStats&&forcedStats?' | '+formatStats(forcedStats):''}</div>${includeSources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftExtraHtml(m)}${includePhotos?modelDraftPhotosHtml(m):''}</div>`;
 }
 function syncManualPackageModels(html){
   html=String(html||'');
@@ -2899,7 +2949,7 @@ function emailHtml(options={}){
   const blocks=picked.map(m=>{
     const forcedStats=m.id==='site-women-anhelina'?ANHELINA_CANONICAL_STATS_2026_09_25:((activeRecord?.modelStats||working?.modelStats||{})[m.id]||m.stats||m.measurements||'');
     const modelLink=draftModelLinkForModel(m);
-    return `<div style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&forcedStats?' | '+formatStats(forcedStats):''}</div>${d.sources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftCredentialHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`;
+    return `<div style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&forcedStats?' | '+formatStats(forcedStats):''}</div>${d.sources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftExtraHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`;
   }).join('');
   const extra='';
   const more='Again, you can see more models <a href="https://canva.link/vhk73x4zncw11o7">HERE</a>.';
