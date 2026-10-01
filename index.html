@@ -1876,21 +1876,20 @@ function modelDraftExtraControlsHtml(m){
   const options=modelTextOptions(m);
   const hasText=!!String(extra.text||'').trim();
   const hasMedia=!!String(extra.mediaUrl||'').trim();
-  const textOn=extra.enabled&&hasText;
-  const mediaOn=extra.mediaEnabled&&hasMedia;
+  const textState=extra.enabled&&hasText?'Text on':hasText?'Text off':'No text';
+  const mediaState=extra.mediaEnabled&&hasMedia?'Media on':hasMedia?'Media off':'No media';
+  const savedTextControl=options.length
+    ?`<div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-bottom:8px"><div class="field" style="flex:1;min-width:220px;margin:0"><label for="textOption-${esc(m.id)}">Saved text</label><select id="textOption-${esc(m.id)}" onchange="if(this.value)selectModelTextOption('${m.id}',this.value)"><option value="">Choose saved text</option>${options.map(o=>`<option value="${esc(o.id)}" ${extra.textOptionId===o.id?'selected':''}>${esc(o.label)}</option>`).join('')}</select></div><button type="button" class="btn" onclick="openModelTexts('${m.id}')">Manage saved texts</button></div>`
+    :`<button type="button" class="btn" style="margin-bottom:8px" onclick="openModelTexts('${m.id}')">Create saved text</button>`;
   return `<details class="draft-extra-controls" style="margin-top:10px;border:1px solid var(--line,#d7dbd8);border-radius:8px;padding:0 10px 10px">
-    <summary style="cursor:pointer;padding:10px 0;font-weight:700;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      Text and media
-      <span class="pill">${textOn?'Text on':hasText?'Text off':'No text'}</span>
-      <span class="pill">${mediaOn?'Media on':hasMedia?'Media off':'No media'}</span>
-    </summary>
+    <summary style="cursor:pointer;padding:10px 0;font-weight:700;display:flex;gap:8px;align-items:center;flex-wrap:wrap">Text and media <span class="pill">${textState}</span><span class="pill">${mediaState}</span></summary>
     <div style="display:grid;gap:12px">
       <div style="padding:10px;border:1px solid var(--line,#d7dbd8);border-radius:8px">
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
           <b>Extra text</b>
           <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${extra.enabled?'checked':''} onchange="setDraftModelExtraField('${m.id}','enabled',this.checked)"> Include in email</label>
         </div>
-        ${options.length?`<div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-bottom:8px"><div class="field" style="flex:1;min-width:220px;margin:0"><label for="textOption-${esc(m.id)}">Saved text</label><select id="textOption-${esc(m.id)}" onchange="if(this.value)selectModelTextOption('${m.id}',this.value)"><option value="">Choose saved text</option>${options.map(o=>`<option value="${esc(o.id)}" ${extra.textOptionId===o.id?'selected':''}>${esc(o.label)}</option>`).join('')}</select></div><button type="button" class="btn" onclick="openModelTexts('${m.id}')">Manage saved texts</button></div>`:`<button type="button" class="btn" style="margin-bottom:8px" onclick="openModelTexts('${m.id}')">Create saved text</button>`}
+        ${savedTextControl}
         <div class="field" style="margin:0">
           <label for="draftExtraText-${esc(m.id)}">Text in this draft</label>
           <textarea id="draftExtraText-${esc(m.id)}" rows="3" placeholder="Type the text you want shown under this model" oninput="setDraftModelExtraField('${m.id}','text',this.value)">${esc(extra.text||'')}</textarea>
@@ -1905,10 +1904,7 @@ function modelDraftExtraControlsHtml(m){
           <div class="field" style="margin:0"><label>Media URL</label><input type="url" value="${esc(extra.mediaUrl||'')}" placeholder="Paste video, image, Reel, Drive, or other URL" oninput="setDraftModelExtraField('${m.id}','mediaUrl',this.value)"></div>
           <div class="field" style="margin:0"><label>Clickable text</label><input type="text" value="${esc(extra.mediaLabel||'')}" placeholder="Example: Callie in Bridal Wear" oninput="setDraftModelExtraField('${m.id}','mediaLabel',this.value)"></div>
         </div>
-        <div class="actions" style="margin-top:8px">
-          <button class="btn" type="button" onclick="linkDraftModelTextSelection('${m.id}')">Link selected words in text</button>
-        </div>
-        <div class="muted tiny" style="margin-top:5px">Pasting a URL turns the media link on automatically. Select words in the text box above if you want the URL embedded directly into those words.</div>
+        <div class="muted tiny" style="margin-top:6px">Pasting a URL turns the media link on automatically.</div>
       </div>
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
         <span class="muted tiny">Changes are saved to this draft. Refresh preview when you want to see them in the email.</span>
@@ -1916,54 +1912,6 @@ function modelDraftExtraControlsHtml(m){
       </div>
     </div>
   </details>`;
-}
-function linkDraftModelTextSelection(id){
-  const field=$('#draftExtraText-'+id);
-  const m=db.models.find(x=>x.id===id);
-  if(!field||!m)return;
-  const start=field.selectionStart,end=field.selectionEnd;
-  if(start===end)return setStatus('Select the words in the model text that you want to make clickable.');
-  const extra=draftModelExtra(m);
-  const url=modelTextLinkUrl(extra.mediaUrl);
-  if(!url)return setStatus('Paste a full media URL first, then select the words you want linked.');
-  const label=field.value.slice(start,end);
-  const safeLabel=label.replace(/[\\\[\]]/g,'\\function modelDraftExtraControlsHtml(m){
-  const extra=draftModelExtra(m);
-  return `<div class="draft-extra-controls" style="margin-top:10px;padding:10px;border:1px solid var(--line,#d7dbd8);border-radius:8px">
-    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${extra.enabled?'checked':''} onchange="setDraftModelExtraField('${m.id}','enabled',this.checked)"> Show extra text</label>
-      <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" ${extra.mediaEnabled?'checked':''} onchange="setDraftModelExtraField('${m.id}','mediaEnabled',this.checked)"> Show media link</label>
-      <button class="btn" type="button" onclick="resetDraftModelExtra('${m.id}')">Reset extra</button>
-    </div>
-    <div class="field" style="margin-bottom:8px"><label for="textOption-${esc(m.id)}">Saved text option</label><select id="textOption-${esc(m.id)}" onchange="selectModelTextOption('${m.id}',this.value)"><option value="">${extra.textOptionId?'Choose text':'Current draft text'}</option>${modelTextOptions(m).map(o=>`<option value="${esc(o.id)}" ${extra.textOptionId===o.id?'selected':''}>${esc(o.label)}</option>`).join('')}</select><button type="button" class="btn" onclick="openModelTexts('${m.id}')">Edit model text options</button><div class="muted tiny" style="white-space:pre-wrap">${renderLinkedModelText(extra.text||'')}</div></div>
-    <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:8px">
-      <div class="field"><label>Media URL</label><input type="url" value="${esc(extra.mediaUrl||'')}" placeholder="Paste a video, image, reel, or other media link" oninput="setDraftModelExtraField('${m.id}','mediaUrl',this.value)"></div>
-      <div class="field"><label>Media link text</label><input type="text" value="${esc(extra.mediaLabel||'')}" placeholder="Media" oninput="setDraftModelExtraField('${m.id}','mediaLabel',this.value)"></div>
-    </div>
-    <div class="muted tiny" style="margin-top:6px">These settings apply only to this draft.</div>
-  </div>`;
-}
-function setDraftModelExtraField(id,field,value){
-  const normalized=(field==='enabled'||field==='mediaEnabled')?!!value:String(value??'');
-  db.draft=db.draft||structuredClone(seed.draft);
-  for(const target of activeDraftOverrideTargets()){
-    target.modelExtras=target.modelExtras||{};
-    target.modelExtras[id]={...(target.modelExtras[id]||{}),[field]:normalized};
-    const o=draftUserOverrides(target);
-    o.modelExtras=o.modelExtras||{};
-    o.modelExtras[id]={...(o.modelExtras[id]||{}),[field]:normalized};
-  }
-  if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
-  persistWorkspaceSafe(false);
-  markEmailPreviewRefreshPending();
-}
-');
-  const linked='['+safeLabel+']('+url.replace(/\(/g,'%28').replace(/\)/g,'%29')+')';
-  field.setRangeText(linked,start,end,'end');
-  setDraftModelExtraField(id,'text',field.value);
-  setDraftModelExtraField(id,'enabled',true);
-  markEmailPreviewRefreshPending();
-  setStatus('Media link inserted into the selected model text. Refresh preview when ready.');
 }
 function setDraftModelExtraField(id,field,value){
   const normalized=(field==='enabled'||field==='mediaEnabled')?!!value:String(value??'');
