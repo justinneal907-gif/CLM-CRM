@@ -3195,16 +3195,17 @@ function emailHtml(options={}){
   const greeting=isBridalFollowup?esc(working.followupGreeting||'Hi,'):(names.length?`Hi ${esc(naturalNameList(names))},`:'Hi,');
   const picked=selectedModels();
   const identity=packageIdentity({...working,brandProject:d.brand,eventName:$('#emailEvent').value.trim()});
-  const customBodyOverride=false;
+  const customBodyOverride=String(d.customBody||'').trim().length>0;
   const customBodyHasGreeting=false;
-  const lead=isBridalFollowup?esc(d.customBody||bridalFollowupDefaultBody({...working,models:picked.map(m=>m.name),brandProject:d.brand})).replace(/\r?\n/g,'<br>'):`Below are our recommendations${identity.brand?' for '+esc(identity.brand):''}${identity.event?' for '+esc(identity.event):''}. <a href="https://canva.link/vhk73x4zncw11o7">HERE</a> are additional suggestions. Please also feel free to inquire about anyone on <a href="https://www.chezlesmannequins.com/">our website</a> as many of our models travel and may be in town.`;
+  const generatedLead=isBridalFollowup?bridalFollowupDefaultBody({...working,models:picked.map(m=>m.name),brandProject:d.brand}):`Below are our recommendations${identity.brand?' for '+esc(identity.brand):''}${identity.event?' for '+esc(identity.event):''}. <a href="https://canva.link/vhk73x4zncw11o7">HERE</a> are additional suggestions. Please also feel free to inquire about anyone on <a href="https://www.chezlesmannequins.com/">our website</a> as many of our models travel and may be in town.`;
+  const lead=customBodyOverride?esc(d.customBody).replace(/\r?\n/g,'<br>'):(isBridalFollowup?esc(generatedLead).replace(/\r?\n/g,'<br>'):generatedLead);
   const blocks=picked.map(m=>{
     const forcedStats=m.id==='site-women-anhelina'?ANHELINA_CANONICAL_STATS_2026_09_25:((activeRecord?.modelStats||working?.modelStats||{})[m.id]||m.stats||m.measurements||'');
     const modelLink=draftModelLinkForModel(m);
     return `<div style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&forcedStats?' | '+formatStats(forcedStats,d.units):''}</div>${d.sources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftExtraHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`;
   }).join('');
   const extra='';
-  const more=isBridalFollowup?'':'Again, you can see more models <a href="https://canva.link/vhk73x4zncw11o7">HERE</a>.';
+  const more=(isBridalFollowup||customBodyOverride)?'':'Again, you can see more models <a href="https://canva.link/vhk73x4zncw11o7">HERE</a>.';
   const modelSection=blocks||(d.purpose==='followup'?'':'<div>[Select one or more models]</div>');
   const close=String(activeRecord?.signatureClose||working?.signatureClose||'').trim()||(tone.tone==='personal'?'Best,':'Thank you,');
   const greetingHtml=customBodyHasGreeting?'':`<div>${greeting}</div><br>`;
