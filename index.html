@@ -2897,6 +2897,7 @@ const EMAIL_OVERRIDE_FIELD_MAP={
   emailContext:'brief',
   emailCustomBody:'customBody',
   includeStats:'includeStats',
+  measurementUnits:'measurementUnits',
   includePhotos:'includePhotos',
   includeSources:'includeSources'
 };
@@ -3313,10 +3314,12 @@ function queueEmailDraftRender(){
   updateEmailPurposeUi();
   captureDraft();
   markEmailPreviewRefreshPending();
+  if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
   clearTimeout(emailDraftPersistTimer);
   emailDraftPersistTimer=setTimeout(()=>persistWorkspaceSafe(false),500);
 }
 function currentEmailPreviewHtml(){
+  if(emailPreviewRefreshPending)refreshEmailPreview();
   const preview=$('#emailPreview');
   return sanitizeEditableEmailHtml(
     preview?.dataset.manualRefreshInitialized==='1'?preview.innerHTML:emailHtml()
