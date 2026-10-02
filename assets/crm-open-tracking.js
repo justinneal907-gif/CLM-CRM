@@ -417,7 +417,7 @@
     const check=q('#checkOpenTrackingBtn');
     const alerts=q('#enableOpenNotificationsBtn');
     if(send){
-      send.disabled=sendBusy||!(d&&d.gmailDraftId&&d.openTrackingId&&d.openTrackingState==='ready');
+      send.disabled=sendBusy||previewSendBusy||d?.previewNeedsGmailUpdate===true||!(d&&d.gmailDraftId&&d.openTrackingId&&d.openTrackingState==='ready');
       send.title=d&&d.openTrackingState==='send-uncertain'?'Check Work Gmail Sent Mail before retrying.':(send.disabled?'Create or update the Gmail draft from this CRM package first.':'Send the currently linked Gmail draft immediately with open tracking armed.');
     }
     if(check){check.disabled=trackChecking||!trackingRecords(true).length;check.textContent=trackChecking?'Checking…':'Check now';}
@@ -709,8 +709,9 @@
     try{if(typeof window.clmMarkModelSignalSent==='function')window.clmMarkModelSignalSent(d,sub)}catch(err){console.warn('Model-signal update failed; Gmail send remains confirmed.',err)}
   }
 
+  let previewSendBusy=false;
   async function sendTrackedCurrentDraft(){
-    if(sendBusy)throw new Error('A tracked send is already in progress.');
+    if(sendBusy||previewSendBusy)throw new Error('A tracked send is already in progress.');
     const target=draftTarget();
     let d=currentDraft();
     if(d?.openTrackingState==='send-uncertain'){
@@ -721,6 +722,14 @@
       if(resolution==='blocked'||d?.openTrackingState==='send-uncertain')throw new Error('Check Work Gmail Sent Mail before retrying this uncertain send.');
     }
     if(!d||!d.gmailDraftId||!d.openTrackingId)throw new Error('Create or update this email as a Work Gmail draft first.');
+    // Upload the exact CRM preview before sending, including edits since the last Gmail draft.
+    const sendPreview=typeof currentEmailPreviewHtml==='function'?currentEmailPreviewHtml():null;
+    previewSendBusy=true;renderTrackerStatus();
+    try{await createFormattedWorkGmailDraft()}finally{previewSendBusy=false;renderTrackerStatus()}
+    d=currentDraft();
+    if(d?.previewNeedsGmailUpdate||target.id!==draftTarget().id||
+       (sendPreview!==null&&currentEmailPreviewHtml()!==sendPreview))
+      throw new Error('The preview changed while Gmail was updating. Review it and send again.');
     sendBusy=true;renderTrackerStatus();
     try{
     const linkedDraftId=d.gmailDraftId;
@@ -737,6 +746,8 @@
     }
     const okay=window.confirm('Send this tracked Gmail draft now?\n\nTo: '+to+'\nSubject: '+subject+repeat+'\n\nThis sends immediately. Open tracking is an approximate image-load signal, not a guaranteed human read.');
     if(!okay)return;
+    if(sendPreview!==null&&currentEmailPreviewHtml()!==sendPreview)
+      throw new Error('The preview changed before sending. Review it and send again.');
 
     const sendTrackingId=randomHex(14);
     mime=setTopHeader(mime,'X-CLM-Tracking-ID',sendTrackingId);
@@ -758,6 +769,8 @@
       if(typeof setStatus==='function')setStatus('Preparing the linked Gmail draft…');
       await counterValue(sendTrackingId);
       await updateGmailDraft(linkedDraftId,encoded);
+      if(currentDraft()?.previewNeedsGmailUpdate||target.id!==draftTarget().id||(sendPreview!==null&&currentEmailPreviewHtml()!==sendPreview))
+        throw new Error('The preview changed during send preparation. Review it and send again.');
       phase='send';
       patchTarget(target,{openTrackingState:'send-uncertain'});
       if(typeof setStatus==='function')setStatus('Sending through Work Gmail…');
@@ -836,7 +849,7 @@
         gmailDraftId:(result&&result.id)||'',
         gmailDraftMessageId:(result&&result.message&&result.message.id)||'',
         openTrackingId:id,
-        openTrackingState:'ready',
+        openTrackingState:currentDraft()?.previewNeedsGmailUpdate?'editing':'ready',
         openTrackingCreatedAt:nowIso(),
         openTrackingCount:0,
         openTrackingError:'',
@@ -1108,3 +1121,4 @@
   }
   initWhenReady(0);
 })();
+
