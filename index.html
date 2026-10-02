@@ -3265,7 +3265,7 @@ function emailHtml(options={}){
   const blocks=picked.map(m=>{
     const forcedStats=m.id==='site-women-anhelina'?ANHELINA_CANONICAL_STATS_2026_09_25:((activeRecord?.modelStats||working?.modelStats||{})[m.id]||m.stats||m.measurements||'');
     const modelLink=draftModelLinkForModel(m);
-    return `<div style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&forcedStats?' | '+formatStats(forcedStats,d.units):''}</div>${d.sources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftExtraHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`;
+    return `<div data-clm-model-id="${esc(m.id)}" style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&forcedStats?' | '+formatStats(forcedStats,d.units):''}</div>${d.sources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftExtraHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`;
   }).join('');
   const extra='';
   const more=(isBridalFollowup||customBodyOverride)?'':'Again, you can see more models <a href="https://canva.link/vhk73x4zncw11o7">HERE</a>.';
@@ -3327,9 +3327,14 @@ function refreshEmailPreview(){
   clearTimeout(emailDraftRenderTimer);emailDraftRenderTimer=0;
   clearTimeout(emailDraftPersistTimer);emailDraftPersistTimer=0;
   updateEmailPurposeUi();
-  captureDraft();
   const preview=$('#emailPreview');
   if(!preview)return;
+  const visibleIds=[...preview.querySelectorAll('[data-clm-model-id]')].map(el=>el.getAttribute('data-clm-model-id')).filter(id=>db.models.some(m=>m.id===id));
+  if(visibleIds.length){
+    selected=[...new Set(visibleIds)];
+    db.selected=[...selected];
+  }
+  captureDraft();
 
   // Refresh is explicit permission to rebuild the preview from the builder.
   // Generate around any prior full-preview lock without mutating modelIds/selected.
@@ -3381,7 +3386,6 @@ function queueEmailDraftRender(){
   emailDraftPersistTimer=setTimeout(()=>persistWorkspaceSafe(false),500);
 }
 function currentEmailPreviewHtml(){
-  if(emailPreviewRefreshPending)refreshEmailPreview();
   const preview=$('#emailPreview');
   return sanitizeEditableEmailHtml(
     preview?.dataset.manualRefreshInitialized==='1'?preview.innerHTML:emailHtml()
@@ -3442,7 +3446,7 @@ function saveDraft(render=true){
 }
 function loadDraft(id){
   const d=db.drafts.find(x=>x.id===id);if(!d)return;db.activeDraftId=id;db.draft={...structuredClone(seed.draft),...structuredClone(d),html:''};
-  selected=(d.modelIds||[]).filter(modelId=>db.models.some(m=>m.id===modelId));if(Array.isArray(d.models))for(const name of d.models){const m=db.models.find(x=>normalizeName(x.name)===normalizeName(name)||(normalizeName(name)==='anhelina'&&x.id==='site-women-anhelina'));if(m&&!selected.includes(m.id))selected.push(m.id)}
+  selected=(d.modelIds||[]).filter(modelId=>db.models.some(m=>m.id===modelId));if(!selected.length&&Array.isArray(d.models))for(const name of d.models){const m=db.models.find(x=>normalizeName(x.name)===normalizeName(name)||(normalizeName(name)==='anhelina'&&x.id==='site-women-anhelina'));if(m&&!selected.includes(m.id))selected.push(m.id)}
   db.selected=[...selected];const draftSearch=$('#draftSearch');if(draftSearch)draftSearch.value='';resetDraftUtilityControls();persistWorkspaceSafe(false);const preview=$('#emailPreview');if(preview)preview.dataset.manualRefreshInitialized='';go('email');setStatus(`Loaded ${d.brandProject||d.company||d.subject||'saved package'}.`)
 }
 async function copyEmail(){
@@ -4215,7 +4219,8 @@ $('#clearGmailClientIdBtn').onclick=clearGmailOAuthClientId;
 renderGmailApiStatus();$('#emailModelSearch').oninput=renderEmailMatches;$('#emailContact').onchange=applyContact;$('#suggestLookBtn').onclick=renderBrandAdvisor;$('#brandWebSearchBtn').onclick=searchBrandWeb;
 $('#parseBriefBtn').onclick=parseBriefAction;
 $('#clearBriefBtn').onclick=clearParsedBrief;
-['emailPurpose','emailContactName','emailCompany','emailRecipient','emailBrand','emailSubject','emailLink','emailContext','emailCustomBody','emailPrivateNotes','castingBriefRaw','includeStats','measurementUnits','includePhotos','includeSources'].forEach(id=>{const el=$('#'+id);if(el)el.addEventListener('input',event=>{if(event.isTrusted)markUserFieldOverrideFromElement(id,el);queueEmailDraftRender()})});$('#emailContact')?.addEventListener('change',event=>{if(event.isTrusted)markUserFieldOverrideFromElement('emailContact',$('#emailContact'))});$('#emailPurpose')?.addEventListener('change',()=>{updateEmailPurposeUi();queueEmailDraftRender()});$('#measurementUnits')?.addEventListener('change',event=>{if(event.isTrusted)markUserFieldOverrideFromElement('measurementUnits',$('#measurementUnits'));captureDraft();refreshEmailPreview()});$('#emailBrand')?.addEventListener('change',()=>{renderBrandAdvisor();renderSubmissionWarnings();persistWorkspaceSafe(false)});
+['emailPurpose','emailContactName','emailCompany','emailRecipient','emailBrand','emailSubject','emailLink','emailContext','emailCustomBody','emailPrivateNotes','castingBriefRaw','includeStats','measurementUnits','includePhotos','includeSources'].forEach(id=>{const el=$('#'+id);if(el)el.addEventListener('input',event=>{if(event.isTrusted)markUserFieldOverrideFromElement(id,el);queueEmailDraftRender()})});$('#emailContact')?.addEventListener('change',event=>{if(event.isTrusted)markUserFieldOverrideFromElement('emailContact',$('#emailContact'))});$('#emailPurpose')?.addEventListener('change',()=>{updateEmailPurposeUi();queueEmailDraftRender()});
+$('#emailCustomBody')?.addEventListener('change',()=>{refreshEmailPreview()});$('#measurementUnits')?.addEventListener('change',event=>{if(event.isTrusted)markUserFieldOverrideFromElement('measurementUnits',$('#measurementUnits'));captureDraft();refreshEmailPreview()});$('#emailBrand')?.addEventListener('change',()=>{renderBrandAdvisor();renderSubmissionWarnings();persistWorkspaceSafe(false)});
 $('#emailEvent').addEventListener('input',queueEmailDraftRender);
 $('#copyEmailBtn').onclick=copyEmail;$('#copySubjectBtn').onclick=async()=>{await navigator.clipboard.writeText($('#emailSubject').value);setStatus('Subject copied.')};$('#saveDraftBtn').onclick=saveDraft;$('#recordSubmissionBtn').onclick=recordSubmission;
 $('#exportBtn').onclick=exportAll;$('#exportDataBtn').onclick=exportAll;$('#exportRosterBtn').onclick=exportRoster;$('#importDataInput').onchange=e=>e.target.files[0]&&importAll(e.target.files[0]);$('#resetWorkspaceBtn').onclick=resetWorkspace;$('#refreshBtn').onclick=async()=>{db=await loadWorkspaceIndexedDB();selected=[...(db.selected||[])];hydrateDraft();renderAll()};$('#addBtn').onclick=()=>openRecordModal('tasks');$('#recordSave').onclick=saveRecord;$('#recordCancel').onclick=()=>{modalEditId=null;$('#recordDialog').close()};
