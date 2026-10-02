@@ -2296,7 +2296,7 @@ async function createFormattedWorkGmailDraft(){
   const to=$('#emailRecipient').value.trim();
   const subject=$('#emailSubject').value.trim();
   if(!to)throw new Error('Add a recipient email first.');
-  const plainHtml=stripCanvaLinksText(emailHtml());
+  const plainHtml=currentEmailPreviewHtml();
   const signalContext={id:db.activeDraftId,record:db.draft,models:typeof selectedModels==='function'?selectedModels():[]};
   let html=typeof window.clmPrepareModelSignals==='function'?window.clmPrepareModelSignals(plainHtml,false,signalContext):plainHtml;
   if(window.CLMMediaStore?.resolveHtml)html=await window.CLMMediaStore.resolveHtml(html);
@@ -3028,7 +3028,7 @@ function addBridalFollowups20261002(data){
       if(photo)photoSelections[mid]=[photo];
       modelExtras[mid]={enabled:false,text:'',textOptionId:'',mediaEnabled:true,mediaUrl:bridalMedia[name],mediaLabel:name+' in Bridal Wear'};
     }
-    const customBody='Wanted to send over '+names.join(' and ')+' for '+brand+' for New York Bridal Week as '+(names.length===1?'an additional option':'additional options')+'. '+(names.length===1?'Her materials are':'Their materials are')+' below. Please let me know what you think!';
+    const customBody='';
     const subject='New York Bridal Week | '+brand;
     data.drafts.push({
       id,date:'2026-10-02',eventName:'New York Bridal Week',packageName:subject,
@@ -3047,6 +3047,21 @@ function addBridalFollowups20261002(data){
   data.recovery={...(data.recovery||{}),bridalFollowups20261002:1};
   return data;
 }
+function bridalFollowupDefaultBody(d){
+  const names=d.models||[];
+  return 'Wanted to send over '+names.join(' and ')+' for '+d.brandProject+' for New York Bridal Week as '+(names.length===1?'an additional option':'additional options')+'. '+(names.length===1?'Her materials are':'Their materials are')+' below. Please let me know what you think!';
+}
+function clearBridalFollowupDefaultOverrides20261002(data){
+  if(data.recovery?.bridalFollowupOverrideCleanup20261002)return data;
+  for(const d of [data.draft,...(data.drafts||[])]){
+    if(d?.followupBatch!=='bridal-20261002')continue;
+    const defaultBody=bridalFollowupDefaultBody(d);
+    if(d.customBody===defaultBody)d.customBody='';
+    if(d.userOverrides?.fields?.customBody===defaultBody)delete d.userOverrides.fields.customBody;
+  }
+  data.recovery={...(data.recovery||{}),bridalFollowupOverrideCleanup20261002:true};
+  return data;
+}
 /* End requested Bridal Week follow-ups. */
 
 
@@ -3061,7 +3076,7 @@ function emailHtml(options={}){
     lockedSaved?(activeRecord.manualEmailHtml??activeRecord.userOverrides?.fullHtml??''):
     (working.manualEmailHtml||activeRecord?.manualEmailHtml||'')
   );
-  if(!ignoreFullPreviewOverride&&(lockedWorking||lockedSaved||manualEmailHtml.trim()))return syncManualPackageModels(manualEmailHtml);
+  if(!ignoreFullPreviewOverride&&(lockedWorking||lockedSaved||manualEmailHtml.trim()))return sanitizeEditableEmailHtml(manualEmailHtml);
 
   const d={
     purpose:$('#emailPurpose').value,
@@ -3084,7 +3099,7 @@ function emailHtml(options={}){
   const identity=packageIdentity({...working,brandProject:d.brand,eventName:$('#emailEvent').value.trim()});
   const customBodyOverride=false;
   const customBodyHasGreeting=false;
-  const lead=isBridalFollowup?esc(d.customBody).replace(/\r?\n/g,'<br>'):`Below are our recommendations${identity.brand?' for '+esc(identity.brand):''}${identity.event?' for '+esc(identity.event):''}. <a href="https://canva.link/vhk73x4zncw11o7">HERE</a> are additional suggestions. Please also feel free to inquire about anyone on <a href="https://www.chezlesmannequins.com/">our website</a> as many of our models travel and may be in town.`;
+  const lead=isBridalFollowup?esc(d.customBody||bridalFollowupDefaultBody({...working,models:picked.map(m=>m.name),brandProject:d.brand})).replace(/\r?\n/g,'<br>'):`Below are our recommendations${identity.brand?' for '+esc(identity.brand):''}${identity.event?' for '+esc(identity.event):''}. <a href="https://canva.link/vhk73x4zncw11o7">HERE</a> are additional suggestions. Please also feel free to inquire about anyone on <a href="https://www.chezlesmannequins.com/">our website</a> as many of our models travel and may be in town.`;
   const blocks=picked.map(m=>{
     const forcedStats=m.id==='site-women-anhelina'?ANHELINA_CANONICAL_STATS_2026_09_25:((activeRecord?.modelStats||working?.modelStats||{})[m.id]||m.stats||m.measurements||'');
     const modelLink=draftModelLinkForModel(m);
@@ -3202,21 +3217,26 @@ function queueEmailDraftRender(){
   clearTimeout(emailDraftPersistTimer);
   emailDraftPersistTimer=setTimeout(()=>persistWorkspaceSafe(false),500);
 }
+function currentEmailPreviewHtml(){
+  const preview=$('#emailPreview');
+  return sanitizeEditableEmailHtml(
+    preview?.dataset.manualRefreshInitialized==='1'?preview.innerHTML:emailHtml()
+  );
+}
 function saveDraft(render=true){
   clearTimeout(emailDraftRenderTimer);emailDraftRenderTimer=0;
   clearTimeout(emailDraftPersistTimer);emailDraftPersistTimer=0;
   captureDraft();
 
-  // Update draft is absolute authority: rebuild from the builder and replace
-  // any stale/manual/locked preview, regardless of prior preview state.
+  // Save the visible preview. Only explicit Refresh/Reset rebuilds its body.
   syncPackageIdentity();
-  const freshHtml=emailHtml({ignoreFullPreviewOverride:true});
-  const authoritativeHtml=sanitizeEditableEmailHtml(freshHtml);
+  const authoritativeHtml=currentEmailPreviewHtml();
+  const bodyEdited=db.draft.bodyEdited===true;
   const editedAt=new Date().toISOString();
 
   db.draft.manualEmailHtml=authoritativeHtml;
   db.draft.manualEmailEditedAt=editedAt;
-  db.draft.bodyEdited=false;
+  db.draft.bodyEdited=bodyEdited;
   const workingOverrides=draftUserOverrides(db.draft);
   workingOverrides.fullHtmlLocked=true;
   workingOverrides.fullHtml=authoritativeHtml;
@@ -3230,7 +3250,7 @@ function saveDraft(render=true){
     const saved=db.drafts[existingIndex];
     saved.manualEmailHtml=authoritativeHtml;
     saved.manualEmailEditedAt=editedAt;
-    saved.bodyEdited=false;
+    saved.bodyEdited=bodyEdited;
     const savedOverrides=draftUserOverrides(saved);
     savedOverrides.fullHtmlLocked=true;
     savedOverrides.fullHtml=authoritativeHtml;
@@ -3254,7 +3274,7 @@ function saveDraft(render=true){
   db.selected=[...selected];
   if(!persistWorkspaceSafe())return;
   if(render){renderEmailSelection();renderBrandAdvisor();renderBriefSummary();renderSubmissionWarnings();renderDraftScope();}
-  setStatus(existingIndex>=0?'Draft updated. Preview forcibly overwritten from the current builder.':'Draft saved. Preview forcibly set from the current builder.')
+  setStatus(existingIndex>=0?'Draft updated with your current preview.':'Draft saved with your current preview.')
 }
 function loadDraft(id){
   const d=db.drafts.find(x=>x.id===id);if(!d)return;db.activeDraftId=id;db.draft={...structuredClone(seed.draft),...structuredClone(d),html:''};
@@ -3266,7 +3286,7 @@ async function copyEmail(){
   const activeRecord=db.activeDraftId?(db.drafts||[]).find(d=>d.id===db.activeDraftId):null;
   const hasLockedPreview=!!String(db.draft?.manualEmailHtml||db.draft?.userOverrides?.fullHtml||activeRecord?.manualEmailHtml||activeRecord?.userOverrides?.fullHtml||'').trim();
   if(!selected.length&&purpose!=='followup'&&!hasLockedPreview)return setStatus('Select at least one model first.');
-  let html=stripCanvaLinksText(emailHtml());if(window.CLMMediaStore?.resolveHtml)html=await window.CLMMediaStore.resolveHtml(html);const tmp=document.createElement('div');tmp.innerHTML=html;const plain=(tmp.innerText||tmp.textContent||'').trim();
+  let html=currentEmailPreviewHtml();if(window.CLMMediaStore?.resolveHtml)html=await window.CLMMediaStore.resolveHtml(html);const tmp=document.createElement('div');tmp.innerHTML=html;const plain=(tmp.innerText||tmp.textContent||'').trim();
   try{if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([plain],{type:'text/plain'})})]);setStatus('Formatted email copied.');return}}catch(err){console.warn('Rich clipboard unavailable',err)}
   try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(plain);setStatus('Email copied as plain text.');return}}catch(err){console.warn('Clipboard API unavailable',err)}
   const area=document.createElement('textarea');area.value=plain;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();try{if(document.execCommand('copy'))setStatus('Email copied as plain text.');else setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}catch(err){console.error(err);setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}finally{area.remove()}
@@ -3810,7 +3830,7 @@ async function bootstrapWorkspace(){
   db=await restoreSavedDraftImages20260929(db);
   try{if(window.CLMMediaStore?.migrateWorkspace){const migrated=await window.CLMMediaStore.migrateWorkspace(db);db=migrated.data;dedupePhotoLibrary20260929(db)}}catch(err){console.warn('Legacy photo migration skipped',err)}
   try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Recovered workspace save skipped',err)}
-  db=addBridalFollowups20261002(db);
+  db=clearBridalFollowupDefaultOverrides20261002(addBridalFollowups20261002(db));
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
@@ -4064,7 +4084,7 @@ $('#suggestLookBtn')?.closest('.field')?.remove();
     try{
       setRuntimeStatus('Loading Gmail sync and open-tracking tools…');
       await loadScript('clm-gmail-throttle-runtime','assets/crm-gmail-throttle.js?v=20260929-timeout-20260925-1','__clmGmailThrottleLoaded');
-      await loadScript('clm-email-sync-runtime','assets/crm-email-sync.js?v=20261001-canonical-template-2','__clmEmailSyncLoaded');
+      await loadScript('clm-email-sync-runtime','assets/crm-email-sync.js?v=20261002-preserve-preview-1','__clmEmailSyncLoaded');
       await loadScript('clm-open-tracking-runtime','assets/crm-open-tracking.js?v=20260929-timeout-20260925-16','__clmOpenTrackingLoaded');
       await loadScript('clm-response-time-runtime','assets/crm-response-time.js?v=20260925-2','__clmResponseTimeLoaded');
       await loadScript('clm-model-responses-runtime','assets/crm-model-responses.js?v=20260925-2','__clmModelResponsesLoaded');

@@ -755,6 +755,7 @@
 
   function cleanRecord(record){
     if(!record||typeof record!=='object')return false;
+    if(record.bodyEdited||record.userOverrides?.fullHtmlLocked)return false;
     let changed=false;
     if(typeof record.subject==='string'){
       const next=cleanSubject(record.subject);
@@ -781,6 +782,7 @@
   }
 
   function cleanUi(){
+    if(typeof db!=='undefined'&&(db.draft?.bodyEdited||db.draft?.userOverrides?.fullHtmlLocked))return false;
     let changed=false;
     const subject=document.getElementById('emailSubject');
     if(subject){
@@ -818,7 +820,8 @@
   if(typeof emailHtml==='function'&&!emailHtml.__clmNoDash){
     const original=emailHtml;
     const wrapped=function(){
-      return cleanHtml(original.apply(this,arguments));
+      const html=original.apply(this,arguments);
+      return typeof db!=='undefined'&&(db.draft?.bodyEdited||db.draft?.userOverrides?.fullHtmlLocked)?html:cleanHtml(html);
     };
     wrapped.__clmNoDash=true;
     emailHtml=wrapped;
