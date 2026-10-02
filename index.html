@@ -3064,6 +3064,64 @@ function clearBridalFollowupDefaultOverrides20261002(data){
 }
 /* End requested Bridal Week follow-ups. */
 
+/* LM Fashion size match draft, 2026 10 02.
+   Adds one CRM draft only and leaves the email body blank for agent editing. */
+function addLmFashionSizeMatchDraft20261002(data){
+  if(data.recovery?.lmFashionSizeMatchDraft20261002===1)return data;
+  const modelIds=[
+    'new-york-women-sophia-pippen',
+    'site-development-ainoa',
+    'germany-women-bianca-eigenfeld-own',
+    'paris-women-legacy-raquel-pelissier'
+  ];
+  if(modelIds.some(id=>!(data.models||[]).some(m=>m.id===id)))return data;
+  data.drafts=Array.isArray(data.drafts)?data.drafts:[];
+  const id='lm_fashion_size_match_20261002';
+  if(!data.drafts.some(d=>d.id===id)){
+    const photoSelections={};
+    for(const mid of modelIds){
+      const model=data.models.find(m=>m.id===mid);
+      const photo=(data.customPhotos||{})[mid]||model?.photo||model?.photoUrl||'';
+      if(photo)photoSelections[mid]=[photo];
+    }
+    const email='info@lmfashion.it';
+    const contact=(data.contacts||[]).find(c=>String(c.email||'').trim().toLowerCase()===email);
+    data.drafts.push({
+      id,
+      date:'2026-10-02',
+      eventName:'New York Bridal Week',
+      packageName:'New York Bridal Week | Michela Ferriero',
+      purpose:'followup',
+      contactId:contact?.id||'',
+      contactName:'LM Fashion',
+      company:'Michela Ferriero',
+      recipientEmail:email,
+      brandProject:'Michela Ferriero',
+      packageLink:'',
+      brief:'LM Fashion requested models near 88 65 90 cm and at least 177 cm tall.',
+      customBody:'',
+      subject:'New York Bridal Week | Michela Ferriero',
+      includeStats:true,
+      includePhotos:true,
+      includeSources:true,
+      models:['Sophia Pippen','Ainoa','Bianca Eigenfeld Own','Raquel Pélissier'],
+      modelIds:[...modelIds],
+      photoSelections,
+      packagePhotos:structuredClone(photoSelections),
+      bodyEdited:false,
+      manualEmailHtml:'',
+      html:'',
+      castingBriefRaw:'',
+      parsedBrief:{project:'Michela Ferriero',location:'New York',measurementRequest:'88 65 90 cm',minimumHeight:'177 cm'},
+      source:'LM Fashion email October 2 2026',
+      notes:'Size match follow up requested by LM Fashion.'
+    });
+  }
+  data.recovery={...(data.recovery||{}),lmFashionSizeMatchDraft20261002:1};
+  return data;
+}
+
+
 
 function emailHtml(options={}){
   const ignoreFullPreviewOverride=options?.ignoreFullPreviewOverride===true;
@@ -3831,6 +3889,7 @@ async function bootstrapWorkspace(){
   try{if(window.CLMMediaStore?.migrateWorkspace){const migrated=await window.CLMMediaStore.migrateWorkspace(db);db=migrated.data;dedupePhotoLibrary20260929(db)}}catch(err){console.warn('Legacy photo migration skipped',err)}
   try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Recovered workspace save skipped',err)}
   db=clearBridalFollowupDefaultOverrides20261002(addBridalFollowups20261002(db));
+  db=addLmFashionSizeMatchDraft20261002(db);
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
