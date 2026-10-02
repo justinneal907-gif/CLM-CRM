@@ -3002,6 +3002,54 @@ function syncManualPackageModels(html){
 }
 /* END LIVE PACKAGE MODEL PHOTO SYNC */
 
+/* Requested Bridal Week follow-ups, 2026-10-02.
+   Append this finite batch once. Never replace a draft, change the active
+   package, or recreate drafts the user subsequently deletes. */
+function addBridalFollowups20261002(data){
+  if(data.recovery?.bridalFollowups20261002===1)return data;
+  const entries=[["lihi-hod","Lihi Hod","Lihi Hod Team","lihihodnyc@lihihod.com",["Callie"]],["valentini-spose","Valentini Spose","Valentini Spose Team","valentini@valentinispose.it",["Callie"]],["ricca-sposa","Ricca Sposa","Ricca Sposa Team","info@riccasposa.com",["Agang"]],["vionnette-vintage","Vionnette Vintage","Vionnette Bridal Team","hello@vionnettebridal.com",["Agang"]],["renee-cafaro","Renee Cafaro Atelier","Renee Cafaro Atelier Team","contact@reneecafaroatelier.com",["Agang"]],["michela-ferriero","Michela Ferriero","","info@lmfashion.it",["Agang"]],["netta-benshabu","Netta BenShabu","Netta BenShabu Team","marketing@nettabenshabu.com",["Agang"]],["amsale","Amsale","Fallon","fallon@amsale.com",["Agang"]],["heli-kalkstein","Heli Kalkstein","Heli Kalkstein Team","contact@helikalkstein.com",["Agang"]],["marrow","Marrow","Marrow Team","hello@lohobride.com",["Callie","Agang"]],["zuhair-murad","Zuhair Murad","Coco","cococasting@yahoo.fr",["Callie","Agang"]]];
+  const modelIds={Callie:'new-york-women-callie-steg',Agang:'new-york-women-agang'};
+  const bridalMedia={
+    Callie:'https://drive.google.com/file/d/1WIQPS6fpnu5Pad-OVSLKDVDy5fLwvqMp/view?usp=drive_link',
+    Agang:'https://drive.google.com/file/d/1qy27pHM8ScnzaX-0pPHn5p8lxqhJBGpc/view?usp=sharing'
+  };
+  // Do not mark the batch complete until both canonical models are available.
+  if(Object.values(modelIds).some(id=>!(data.models||[]).some(m=>m.id===id)))return data;
+  data.drafts=Array.isArray(data.drafts)?data.drafts:[];
+  for(const [slug,brand,contactName,email,names] of entries){
+    const id='nybfw-followup-20261002-'+slug;
+    if(data.drafts.some(d=>d.id===id))continue;
+    const ids=names.map(name=>modelIds[name]);
+    const contact=(data.contacts||[]).find(c=>String(c.email||'').trim().toLowerCase()===email);
+    const photoSelections={},modelExtras={};
+    for(const name of names){
+      const mid=modelIds[name],model=data.models.find(m=>m.id===mid);
+      const photo=(data.customPhotos||{})[mid]||model.photo||model.photoUrl||'';
+      if(photo)photoSelections[mid]=[photo];
+      modelExtras[mid]={enabled:false,text:'',textOptionId:'',mediaEnabled:true,mediaUrl:bridalMedia[name],mediaLabel:name+' in Bridal Wear'};
+    }
+    const customBody='Wanted to send over '+names.join(' and ')+' for '+brand+' for New York Bridal Week as '+(names.length===1?'an additional option':'additional options')+'. '+(names.length===1?'Her materials are':'Their materials are')+' below. Please let me know what you think!';
+    const subject='New York Bridal Week | '+brand;
+    data.drafts.push({
+      id,date:'2026-10-02',eventName:'New York Bridal Week',packageName:subject,
+      purpose:'followup',followupBatch:'bridal-20261002',
+      followupGreeting:contactName?'Hi '+contactName+',':'Hi,',
+      contactId:contact?.id||'',contactName,company:brand,recipientEmail:email,
+      brandProject:brand,packageLink:'',brief:'',customBody,subject,
+      includeStats:true,includePhotos:true,includeSources:true,
+      models:[...names],modelIds:ids,photoSelections,
+      packagePhotos:structuredClone(photoSelections),modelExtras,
+      bodyEdited:false,manualEmailHtml:'',html:'',castingBriefRaw:'',parsedBrief:null,
+      signatureClose:'Thank you,',source:'Bridal follow-up • Callie / Agang • October 2',
+      notes:'Additional model suggestions for New York Bridal Week.'
+    });
+  }
+  data.recovery={...(data.recovery||{}),bridalFollowups20261002:1};
+  return data;
+}
+/* End requested Bridal Week follow-ups. */
+
+
 function emailHtml(options={}){
   const ignoreFullPreviewOverride=options?.ignoreFullPreviewOverride===true;
   const activeRecord=activeDraftRecord();
@@ -3030,19 +3078,20 @@ function emailHtml(options={}){
   const toneDraft={...(activeRecord||working),id:activeRecord?.id||db.activeDraftId||working?.id||'',contactName:d.contactName,recipientEmail:d.recipientEmail,brandProject:d.brand||activeRecord?.brandProject||working?.brandProject||''};
   const tone=parisDraftRelationshipTone(toneDraft);
   const names=draftGreetingNames(toneDraft);
-  const greeting=names.length?`Hi ${esc(naturalNameList(names))},`:'Hi,';
+  const isBridalFollowup=working.followupBatch==='bridal-20261002'&&d.purpose==='followup';
+  const greeting=isBridalFollowup?esc(working.followupGreeting||'Hi,'):(names.length?`Hi ${esc(naturalNameList(names))},`:'Hi,');
   const picked=selectedModels();
   const identity=packageIdentity({...working,brandProject:d.brand,eventName:$('#emailEvent').value.trim()});
   const customBodyOverride=false;
   const customBodyHasGreeting=false;
-  const lead=`Below are our recommendations${identity.brand?' for '+esc(identity.brand):''}${identity.event?' for '+esc(identity.event):''}. <a href="https://canva.link/vhk73x4zncw11o7">HERE</a> are additional suggestions. Please also feel free to inquire about anyone on <a href="https://www.chezlesmannequins.com/">our website</a> as many of our models travel and may be in town.`;
+  const lead=isBridalFollowup?esc(d.customBody).replace(/\r?\n/g,'<br>'):`Below are our recommendations${identity.brand?' for '+esc(identity.brand):''}${identity.event?' for '+esc(identity.event):''}. <a href="https://canva.link/vhk73x4zncw11o7">HERE</a> are additional suggestions. Please also feel free to inquire about anyone on <a href="https://www.chezlesmannequins.com/">our website</a> as many of our models travel and may be in town.`;
   const blocks=picked.map(m=>{
     const forcedStats=m.id==='site-women-anhelina'?ANHELINA_CANONICAL_STATS_2026_09_25:((activeRecord?.modelStats||working?.modelStats||{})[m.id]||m.stats||m.measurements||'');
     const modelLink=draftModelLinkForModel(m);
     return `<div style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&forcedStats?' | '+formatStats(forcedStats):''}</div>${d.sources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftExtraHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`;
   }).join('');
   const extra='';
-  const more='Again, you can see more models <a href="https://canva.link/vhk73x4zncw11o7">HERE</a>.';
+  const more=isBridalFollowup?'':'Again, you can see more models <a href="https://canva.link/vhk73x4zncw11o7">HERE</a>.';
   const modelSection=blocks||(d.purpose==='followup'?'':'<div>[Select one or more models]</div>');
   const close=String(activeRecord?.signatureClose||working?.signatureClose||'').trim()||(tone.tone==='personal'?'Best,':'Thank you,');
   const greetingHtml=customBodyHasGreeting?'':`<div>${greeting}</div><br>`;
@@ -3761,6 +3810,7 @@ async function bootstrapWorkspace(){
   db=await restoreSavedDraftImages20260929(db);
   try{if(window.CLMMediaStore?.migrateWorkspace){const migrated=await window.CLMMediaStore.migrateWorkspace(db);db=migrated.data;dedupePhotoLibrary20260929(db)}}catch(err){console.warn('Legacy photo migration skipped',err)}
   try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Recovered workspace save skipped',err)}
+  db=addBridalFollowups20261002(db);
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
