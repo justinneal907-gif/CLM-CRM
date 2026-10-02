@@ -3266,6 +3266,30 @@ function addMarrowNewFacesFollowup20261002(data){
   return data;
 }
 
+
+/* Apply the user's exact follow up template to the requested Sophia packages once. */
+function applySophiaFollowupTemplate20261002(data){
+  if(data.recovery?.sophiaFollowupTemplate20261002===1)return data;
+  for(const d of data.drafts||[]){
+    if(!/^nybfw_followup_20261002_.*_sophia_iyanu_erin$/.test(d.id||''))continue;
+    const brand=d.brandProject||d.company;
+    const names=(d.modelIds||[]).map(id=>(data.models||[]).find(m=>m.id===id)?.name).filter(Boolean);
+    const models=names.length?names:(d.models||[]);
+    if(!brand||!models.length)continue;
+    const list=models.length===1?models[0]:models.length===2?models.join(' and '):models.slice(0,-1).join(', ')+', and '+models.at(-1);
+    const pronoun=models.length>1?'Their':'Her';
+    d.customBody='Hi '+brand+' Team,\n\nI wanted to follow up and send '+list+' as an additional option for '+brand+'. '+pronoun+'  materials are below.';
+    d.followupTemplateIncludesGreeting=true;
+    if(d.userOverrides?.fields) d.userOverrides.fields.customBody=d.customBody;
+    if(data.activeDraftId===d.id&&data.draft){
+      data.draft.customBody=d.customBody;
+      data.draft.followupTemplateIncludesGreeting=true;
+    }
+  }
+  data.recovery={...(data.recovery||{}),sophiaFollowupTemplate20261002:1};
+  return data;
+}
+
 function emailHtml(options={}){
   const ignoreFullPreviewOverride=options?.ignoreFullPreviewOverride===true;
   const activeRecord=activeDraftRecord();
@@ -3300,7 +3324,7 @@ function emailHtml(options={}){
   const picked=selectedModels();
   const identity=packageIdentity({...working,brandProject:d.brand,eventName:$('#emailEvent').value.trim()});
   const customBodyOverride=String(d.customBody||'').trim().length>0;
-  const customBodyHasGreeting=false;
+  const customBodyHasGreeting=customBodyOverride&&!!(activeRecord?.followupTemplateIncludesGreeting||working.followupTemplateIncludesGreeting);
   const generatedLead=isBridalFollowup?bridalFollowupDefaultBody({...working,models:picked.map(m=>m.name),brandProject:d.brand}):`Below are our recommendations${identity.brand?' for '+esc(identity.brand):''}${identity.event?' for '+esc(identity.event):''}. <a href="https://canva.link/vhk73x4zncw11o7">HERE</a> are additional suggestions. Please also feel free to inquire about anyone on <a href="https://www.chezlesmannequins.com/">our website</a> as many of our models travel and may be in town.`;
   const lead=customBodyOverride?esc(d.customBody).replace(/\r?\n/g,'<br>'):(isBridalFollowup?esc(generatedLead).replace(/\r?\n/g,'<br>'):generatedLead);
   const blocks=picked.map(m=>{
@@ -4042,7 +4066,7 @@ async function bootstrapWorkspace(){
   try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Recovered workspace save skipped',err)}
   db=clearBridalFollowupDefaultOverrides20261002(addBridalFollowups20261002(db));
   db=addLmFashionSizeMatchDraft20261002(db);
-  db=addSophiaBridalFollowups20261002(addMarrowNewFacesFollowup20261002(db));
+  db=applySophiaFollowupTemplate20261002(addSophiaBridalFollowups20261002(addMarrowNewFacesFollowup20261002(db)));
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
