@@ -3169,6 +3169,62 @@ function addLmFashionSizeMatchDraft20261002(data){
 
 
 
+/* Bridal Week supplemental follow up for Marrow, October 2 2026.
+   Adds the requested models only and leaves body copy blank for agent editing. */
+function addMarrowNewFacesFollowup20261002(data){
+  if(data.recovery?.marrowNewFacesFollowup20261002===1)return data;
+  const modelIds=[
+    'new-york-women-sophia-pippen',
+    'site-women-81-iyanu',
+    'new-york-women-erin-connors'
+  ];
+  if(modelIds.some(id=>!(data.models||[]).some(m=>m.id===id)))return data;
+  data.drafts=Array.isArray(data.drafts)?data.drafts:[];
+  const id='nybfw_followup_20261002_marrow_sophia_iyanu_erin';
+  if(!data.drafts.some(d=>d.id===id)){
+    const photoSelections={};
+    for(const mid of modelIds){
+      const model=data.models.find(m=>m.id===mid);
+      const photo=(data.customPhotos||{})[mid]||model?.photo||model?.photoUrl||'';
+      if(photo)photoSelections[mid]=[photo];
+    }
+    const email='hello@lohobride.com';
+    const contact=(data.contacts||[]).find(c=>String(c.email||'').trim().toLowerCase()===email);
+    data.drafts.push({
+      id,
+      date:'2026-10-02',
+      eventName:'New York Bridal Week',
+      packageName:'New York Bridal Week | Marrow',
+      purpose:'followup',
+      contactId:contact?.id||'',
+      contactName:'Marrow Team',
+      company:'Marrow',
+      recipientEmail:email,
+      brandProject:'Marrow',
+      packageLink:'',
+      brief:'',
+      customBody:'',
+      subject:'New York Bridal Week | Marrow',
+      includeStats:true,
+      includePhotos:true,
+      includeSources:true,
+      models:['Sophia Pippen','Iyanu','Erin Connors'],
+      modelIds:[...modelIds],
+      photoSelections,
+      packagePhotos:structuredClone(photoSelections),
+      bodyEdited:false,
+      manualEmailHtml:'',
+      html:'',
+      castingBriefRaw:'',
+      parsedBrief:{project:'Marrow',location:'New York'},
+      source:'Work Gmail sent mail review October 2 2026',
+      notes:'Supplemental Bridal Week follow up with Sophia Pippen, Iyanu, and Erin Connors.'
+    });
+  }
+  data.recovery={...(data.recovery||{}),marrowNewFacesFollowup20261002:1};
+  return data;
+}
+
 function emailHtml(options={}){
   const ignoreFullPreviewOverride=options?.ignoreFullPreviewOverride===true;
   const activeRecord=activeDraftRecord();
@@ -3940,6 +3996,7 @@ async function bootstrapWorkspace(){
   try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Recovered workspace save skipped',err)}
   db=clearBridalFollowupDefaultOverrides20261002(addBridalFollowups20261002(db));
   db=addLmFashionSizeMatchDraft20261002(db);
+  db=addMarrowNewFacesFollowup20261002(db);
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
