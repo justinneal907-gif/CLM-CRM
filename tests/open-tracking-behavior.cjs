@@ -62,7 +62,14 @@ function setup(){
     assert.equal(sends,1);assert.equal(first.gmailMessageId,'sent-first');assert.equal(second.gmailMessageId,undefined);
     assert.equal(db.draft.gmailDraftId,'gmail-second');assert.equal(db.submissions[0].draftId,'first');
     assert.equal(db.submissions[0].models[0],'First model');
-    second.openTrackingState='send-uncertain';await assert.rejects(api.sendTrackedCurrentDraft(),/Check Sent Mail/);assert.equal(sends,1);
+    second.openTrackingState='send-uncertain';
+    const priorFetch=ctx.fetch;
+    ctx.fetch=async(url,opts={})=>{
+      if(String(url).includes('/drafts/gmail-second')&&String(url).includes('format=minimal'))return {ok:false,status:404,json:async()=>({})};
+      return priorFetch(url,opts);
+    };
+    ctx.window.confirm=()=>false;
+    await assert.rejects(api.sendTrackedCurrentDraft(),/Check Work Gmail Sent Mail/);assert.equal(sends,1);
   }
   {
     const {ctx,db}=setup();
