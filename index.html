@@ -3330,7 +3330,7 @@ function saveDraft(render=true){
   clearTimeout(emailDraftPersistTimer);emailDraftPersistTimer=0;
   captureDraft();
 
-  // Save the visible preview. Only explicit Refresh/Reset rebuilds its body.
+  // Save the visible preview. Pending builder edits are applied before the snapshot is committed.
   syncPackageIdentity();
   const authoritativeHtml=currentEmailPreviewHtml();
   const bodyEdited=db.draft.bodyEdited===true;
