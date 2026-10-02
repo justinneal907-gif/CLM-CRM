@@ -3171,6 +3171,47 @@ function addLmFashionSizeMatchDraft20261002(data){
 
 /* Bridal Week supplemental follow up for Marrow, October 2 2026.
    Adds the requested models only and leaves body copy blank for agent editing. */
+/* Requested Sophia Bridal Week follow ups. One-time import; never overwrite saved drafts. */
+function addSophiaBridalFollowups20261002(data){
+  if(data.recovery?.sophiaBridalFollowups20261002===1)return data;
+  const modelIds=['new-york-women-sophia-pippen','site-women-81-iyanu','new-york-women-erin-connors'];
+  if(modelIds.some(id=>!(data.models||[]).some(m=>m.id===id)))return data;
+  data.drafts=Array.isArray(data.drafts)?data.drafts:[];
+  const entries=[{"brand":"Zuhair Murad","email":"cococasting@yahoo.fr","sourceMessageIds":["1a0fd2c263cf87f3","1a0eeed33200793e"],"cc":[]},{"brand":"Renee Cafaro Atelier","email":"contact@reneecafaroatelier.com","sourceMessageIds":["1a0fd2a3c2fea5e3","1a0fa8b2e0974fe3"],"cc":[]},{"brand":"Valentini Spose","email":"valentini@valentinispose.it","sourceMessageIds":["1a0fd28f33f248a5","1a0fa850cc6a1125"],"cc":[]},{"brand":"Netta BenShabu","email":"marketing@nettabenshabu.com","sourceMessageIds":["1a0fd18a034d419c","1a0f8142e046b5da","1a0f801a6195342e"],"cc":[]},{"brand":"Ricca Sposa","email":"info@riccasposa.com","sourceMessageIds":["1a0fd15a7f3cfb3f","1a0fa96ac7d8b045"],"cc":[]},{"brand":"Vionnette Vintage","email":"hello@vionnettebridal.com","sourceMessageIds":["1a0fd13612351791","1a0fa91ebfdfe36c"],"cc":[]},{"brand":"Lihi Hod","email":"lihihodnyc@lihihod.com","sourceMessageIds":["1a0fd09de899b115","1a0fa98f8a083b99"],"cc":[]},{"brand":"Amsale","email":"fallon@amsale.com","sourceMessageIds":["1a0fcfa2a368cb3d","1a0f7d94066a22d7"],"cc":[]},{"brand":"Heli Kalkstein","email":"contact@helikalkstein.com","sourceMessageIds":["1a0fceb986ad70b9","1a0f3de7ca5b97be"],"cc":[]},{"brand":"Justin Alexander Signature","email":"press@justinalexander.com","sourceMessageIds":["1a0fa956867921f5"],"cc":[]},{"brand":"Blanche Bridal","email":"info@blanchebridal.com","sourceMessageIds":["1a0fa8fd17374066","1a0fa8cfca4673c4"],"cc":[]},{"brand":"Débh Herrera","email":"contacto@debhherrera.com","sourceMessageIds":["1a0fa86fa3b993e9"],"cc":[]},{"brand":"Arava Polak","email":"info@odapr.com","sourceMessageIds":["1a0f82f94aef4535"],"cc":[]},{"brand":"Renhue Bridal","email":"info@houseofrenhue.com","sourceMessageIds":["1a0f452612f6c7fd"],"cc":[]},{"brand":"Yellow by Sahar","email":"info@odapr.com","sourceMessageIds":["1a0f44ad8207e6e9"],"cc":[]},{"brand":"Caroline Castigliano","email":"marketing@carolinecastigliano.com","sourceMessageIds":["1a0f414a6aa52c3d"],"cc":[]},{"brand":"Rebecca Schoneveld","email":"connect@rebeccaschoneveld.com","sourceMessageIds":["1a0f407958bb79cb"],"cc":[]},{"brand":"Watters Designs","email":"Media@watters.com","sourceMessageIds":["1a0f3ffae3f10b9f"],"cc":[]},{"brand":"Hera Couture","email":"hello@heracouture.co.nz","sourceMessageIds":["1a0f3f10f64df4bf"],"cc":[]},{"brand":"Jenny Yoo","email":"angelo.r@jennyyoo.com","sourceMessageIds":["1a0ef4f871a22f07"],"cc":["dina@jennyyoo.com","marcy@jennyyoo.com"]},{"brand":"Vivienne Westwood Bridal","email":"studio@hollycullen.com","sourceMessageIds":["1a0ee538b4431e19"],"cc":[]}];
+  for(const entry of entries){
+    const slug=entry.brand.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+    const id='nybfw_followup_20261002_'+slug+'_sophia_iyanu_erin';
+    if(data.drafts.some(d=>d.id===id))continue;
+    const photoSelections={};
+    for(const mid of modelIds){
+      const model=data.models.find(m=>m.id===mid);
+      const photo=(data.customPhotos||{})[mid]||model?.photo||model?.photoUrl||'';
+      if(photo)photoSelections[mid]=[photo];
+    }
+    const contact=(data.contacts||[]).find(c=>String(c.email||'').trim().toLowerCase()===entry.email.toLowerCase());
+    const subject='New York Bridal Week | '+entry.brand;
+    data.drafts.push({
+      id,date:'2026-10-02',eventName:'New York Bridal Week',packageName:subject,purpose:'followup',
+      contactId:contact?.id||'',contactName:contact?.name||'',company:entry.brand,recipientEmail:entry.email,
+      brandProject:entry.brand,packageLink:'',brief:'',customBody:'',subject,
+      includeStats:true,includePhotos:true,includeSources:true,
+      models:['Sophia Pippen','Iyanu','Erin Connors'],modelIds:[...modelIds],
+      photoSelections,packagePhotos:structuredClone(photoSelections),
+      bodyEdited:false,manualEmailHtml:'',html:'',castingBriefRaw:'',
+      parsedBrief:{project:entry.brand,location:'New York'},
+      blankBodyCopy:true,followupBatch:'sophia-bridal-20261002',
+      sourceMessageIds:entry.sourceMessageIds,
+      source:'Work Gmail sent mail review October 2 2026',
+      notes:'Bridal Week follow up with Sophia Pippen, Iyanu, and Erin Connors.'
+    });
+  }
+  // Preserve the previously requested Marrow draft and its edits.
+  const marrow=data.drafts.find(d=>d.id==='nybfw_followup_20261002_marrow_sophia_iyanu_erin');
+  if(marrow)marrow.blankBodyCopy=true;
+  data.recovery={...(data.recovery||{}),sophiaBridalFollowups20261002:1};
+  return data;
+}
+
 function addMarrowNewFacesFollowup20261002(data){
   if(data.recovery?.marrowNewFacesFollowup20261002===1)return data;
   const modelIds=[
@@ -3271,9 +3312,10 @@ function emailHtml(options={}){
   const more=(isBridalFollowup||customBodyOverride)?'':'Again, you can see more models <a href="https://canva.link/vhk73x4zncw11o7">HERE</a>.';
   const modelSection=blocks||(d.purpose==='followup'?'':'<div>[Select one or more models]</div>');
   const close=String(activeRecord?.signatureClose||working?.signatureClose||'').trim()||(tone.tone==='personal'?'Best,':'Thank you,');
-  const greetingHtml=customBodyHasGreeting?'':`<div>${greeting}</div><br>`;
-  const leadHtml=lead?`<div>${lead}</div><br>`:'';
-  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${more?`<div style="margin:0 0 24px">${more}</div>`:''}<div>${close}</div><div>Justin</div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
+  const blankBodyCopy=!!(activeRecord?.blankBodyCopy||working.blankBodyCopy)&&!customBodyOverride;
+  const greetingHtml=(customBodyHasGreeting||blankBodyCopy)?'':`<div>${greeting}</div><br>`;
+  const leadHtml=(!blankBodyCopy&&lead)?`<div>${lead}</div><br>`:'';
+  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${(!blankBodyCopy&&more)?`<div style="margin:0 0 24px">${more}</div>`:''}<div>${close}</div><div>Justin</div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
 }
 
 /* EMAIL DRAFT BUILDER STABILITY FIX 2026-09-17 */
@@ -4000,7 +4042,7 @@ async function bootstrapWorkspace(){
   try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Recovered workspace save skipped',err)}
   db=clearBridalFollowupDefaultOverrides20261002(addBridalFollowups20261002(db));
   db=addLmFashionSizeMatchDraft20261002(db);
-  db=addMarrowNewFacesFollowup20261002(db);
+  db=addSophiaBridalFollowups20261002(addMarrowNewFacesFollowup20261002(db));
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
