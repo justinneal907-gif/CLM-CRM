@@ -734,6 +734,7 @@
     try{
     const linkedDraftId=d.gmailDraftId;
     if(typeof setStatus==='function')setStatus('Loading the linked Gmail draft…');
+    await verifyStoredGmailPackage(linkedDraftId);
     let encoded=await loadGmailDraftRaw(linkedDraftId);
     let mime=base64UrlToUtf8(encoded);
     const to=topHeader(mime,'To')||d.recipientEmail||'';
@@ -769,6 +770,7 @@
       if(typeof setStatus==='function')setStatus('Preparing the linked Gmail draft…');
       await counterValue(sendTrackingId);
       await updateGmailDraft(linkedDraftId,encoded);
+      await verifyStoredGmailPackage(linkedDraftId,true);
       if(currentDraft()?.previewNeedsGmailUpdate||target.id!==draftTarget().id||(sendPreview!==null&&currentEmailPreviewHtml()!==sendPreview))
         throw new Error('The preview changed during send preparation. Review it and send again.');
       phase='send';
@@ -830,12 +832,7 @@
         const resolution=await resolveUncertainRecord(uncertain);
         const current=currentDraft()||uncertain;
         if(resolution==='draft-present'){
-          if(typeof saveDraft==='function')saveDraft(false);
-          return {
-            id:current.gmailDraftId||uncertain.gmailDraftId||'',
-            message:{id:current.gmailDraftMessageId||uncertain.gmailDraftMessageId||''},
-            clmRecoveredExistingDraft:true
-          };
+          patchTarget(draftTarget(),{previewNeedsGmailUpdate:true,openTrackingState:'editing'});
         }
         if(resolution==='sent')throw new Error('This email is already in Work Gmail Sent Mail. A duplicate draft was not created.');
         if(resolution==='blocked')throw new Error('Previous tracked send is still unresolved. Check Work Gmail Sent Mail before creating another draft.');

@@ -3,10 +3,6 @@
   'use strict';
   const DB_NAME='jn-agency-crm', DB_VERSION=2, STORE='media', PREFIX='clm-media:';
   const objectUrls=new Map(), metadata=new Map(), contentKeys=new Map();
-  const remoteCache=new Map();
-  const inflightRemote=new Set();
-  const REMOTE_KEY='clm.crm.optimizedRemoteMedia.v1';
-  const heavyRemote=/\/assets\/models\/(?:clara\.png|amelie\.png|sophia-pippen-[12]\.jpg)(?:[?#]|$)/i;
 
   function openDb(){
     return new Promise((resolve,reject)=>{
@@ -37,12 +33,11 @@
   function makeId(){return (crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2))}
   async function contentHash(blob){const bytes=new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer()));return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('')}
   function contentKey(value){const raw=String(value||''),id=idFromRef(raw),hash=id?contentKeys.get(id):'';return hash?'sha256:'+hash:raw}
-  function remember(id,record){
+  async function remember(id,record){
     if(record.contentHash)contentKeys.set(id,record.contentHash);
     metadata.set(id,{type:record.type||record.blob?.type||'',name:record.name||'',size:record.size||record.blob?.size||0,sourceUrl:record.sourceUrl||'',contentHash:record.contentHash||''});
     if(record.blob instanceof Blob){
-      const old=objectUrls.get(id);if(old)try{URL.revokeObjectURL(old)}catch{}
-      objectUrls.set(id,URL.createObjectURL(record.blob));
+      objectUrls.set(id,await blobToDataUrl(record.blob));
     }
   }
   function dataUrlToBlob(dataUrl){
@@ -74,7 +69,7 @@
     const hash=await contentHash(optimized);
     const record={contentHash:hash,blob:optimized,name:meta.name||'Uploaded image',type:optimized.type||blob.type||'',size:optimized.size,createdAt:Date.now(),sourceUrl:meta.sourceUrl||''};
     await tx('readwrite',store=>store.put(record,id));
-    remember(id,record);
+    await remember(id,record);
     return makeRef(id);
   }
   async function getRecord(ref){
@@ -87,8 +82,6 @@
   }
   async function init(){
     try{
-      let saved={};try{saved=JSON.parse(localStorage.getItem(REMOTE_KEY)||'{}')}catch{}
-      for(const [url,ref] of Object.entries(saved||{}))remoteCache.set(url,ref);
       const rows=[];
       const db=await openDb();
       await new Promise((resolve,reject)=>{
@@ -98,7 +91,7 @@
       });
       for(const [id,record] of rows){
         if(record.blob instanceof Blob&&!record.contentHash){record.contentHash=await contentHash(record.blob);await tx('readwrite',store=>store.put(record,id))}
-        remember(id,record);
+        await remember(id,record);
       }
     }catch(err){console.info('CLM media store unavailable',err)}
   }
@@ -106,13 +99,6 @@
     const raw=String(value||'');
     const id=idFromRef(raw);
     if(id)return objectUrls.get(id)||'';
-    const cached=remoteCache.get(raw), cachedId=idFromRef(cached);
-    if(cachedId&&objectUrls.get(cachedId))return objectUrls.get(cachedId);
-    if(heavyRemote.test(raw)&&!inflightRemote.has(raw)){
-      inflightRemote.add(raw);
-      const start=()=>primeRemote(raw).finally(()=>inflightRemote.delete(raw));
-      if('requestIdleCallback' in window)requestIdleCallback(start,{timeout:2500});else setTimeout(start,600);
-    }
     return raw;
   }
   function isGif(value){
@@ -125,30 +111,6 @@
   async function toDataUrl(value){
     const raw=String(value||''),id=idFromRef(raw);if(!id)return raw;
     const record=await getRecord(raw);return record?.blob?blobToDataUrl(record.blob):'';
-  }
-  async function resolveHtml(html){
-    const t=document.createElement('template');t.innerHTML=String(html||'');
-    const imgs=[...t.content.querySelectorAll('img')];
-    for(const img of imgs){
-      const ref=img.getAttribute('data-media-ref')||img.getAttribute('src')||'';
-      if(idFromRef(ref)){
-        const data=await toDataUrl(ref);
-        if(data)img.setAttribute('src',data);
-        img.removeAttribute('data-media-ref');
-        continue;
-      }
-      if(/^https:\/\/raw\.githubusercontent\.com\/justinneal907-gif\/CLM-CRM\//i.test(ref)){
-        try{
-          const response=await fetch(ref,{cache:'force-cache'});
-          if(!response.ok)continue;
-          const blob=await response.blob();
-          if(!/^image\//i.test(blob.type||'')||blob.size>6*1024*1024)continue;
-          const data=await blobToDataUrl(blob);
-          if(data)img.setAttribute('src',data);
-        }catch(err){console.info('GitHub model image inline conversion skipped',err)}
-      }
-    }
-    return t.innerHTML;
   }
   async function migrateWorkspace(data){
     let changed=false;
@@ -186,21 +148,11 @@
     }
     return {data,changed};
   }
-  async function primeRemote(url){
-    if(!heavyRemote.test(url)||remoteCache.has(url))return;
-    try{
-      const response=await fetch(url,{cache:'force-cache'});if(!response.ok)return;
-      const blob=await response.blob(),ref=await putBlob(blob,{name:'Optimized display cache',sourceUrl:url});
-      remoteCache.set(url,ref);
-      try{localStorage.setItem(REMOTE_KEY,JSON.stringify(Object.fromEntries(remoteCache)))}catch{}
-      window.dispatchEvent(new CustomEvent('clm:media-cache-updated',{detail:{url,ref}}));
-    }catch(err){console.info('Remote image optimization skipped',err)}
-  }
   async function remove(value){
     const id=idFromRef(value);if(!id)return;
-    const old=objectUrls.get(id);if(old)try{URL.revokeObjectURL(old)}catch{}
     objectUrls.delete(id);metadata.delete(id);contentKeys.delete(id);
     await tx('readwrite',store=>store.delete(id));
   }
-  window.CLMMediaStore={init,storeFile,putBlob,displayUrl,toDataUrl,resolveHtml,migrateWorkspace,isGif,contentKey,isMediaRef:v=>!!idFromRef(v),remove};
+  window.CLMMediaStore={init,storeFile,putBlob,displayUrl,toDataUrl,migrateWorkspace,isGif,contentKey,isMediaRef:v=>!!idFromRef(v),remove};
 })();
+

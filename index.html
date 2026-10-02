@@ -7,7 +7,7 @@
 <style>
 :root{--bg:#f5f4ef;--panel:#fff;--ink:#171b18;--muted:#68706a;--line:#d9ded9;--accent:#214a37;--soft:#edf3ef;--danger:#8a2c2c}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Arial,Helvetica,sans-serif}
-button,input,select,textarea{font:inherit}button{cursor:pointer}.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}.sidebar{background:#17241d;color:white;padding:24px 18px;position:sticky;top:0;height:100vh}.brand{font-weight:800;letter-spacing:.08em}.subbrand{font-size:12px;opacity:.75;margin:5px 0 26px}.nav button{display:block;width:100%;text-align:left;border:0;background:transparent;color:#dce6df;padding:10px 12px;border-radius:7px;margin:3px 0}.nav button.active,.nav button:hover{background:#294638;color:white}.main{padding:26px;min-width:0}.topbar{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:24px}.eyebrow{font-size:11px;letter-spacing:.12em;font-weight:700;color:var(--muted)}h1{font-size:26px;margin:5px 0 3px}h2{margin-top:0}.muted{color:var(--muted)}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #b8c2ba;background:white;padding:8px 11px;border-radius:7px}.btn.primary{background:var(--accent);border-color:var(--accent);color:white}.btn.danger{color:var(--danger)}.stats{display:grid;grid-template-columns:repeat(6,minmax(100px,1fr));gap:10px;margin-bottom:20px}.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}.stat b{font-size:22px;display:block}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:18px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.toolbar input,.toolbar select,.field input,.field select,.field textarea{border:1px solid #bdc6bf;border-radius:7px;padding:9px;background:white}.toolbar input{min-width:220px;flex:1}.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.card{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}.model-photo{height:245px;background:#eceeea;display:flex;align-items:center;justify-content:center;overflow:hidden}.model-photo img{width:100%;height:100%;object-fit:cover}.placeholder{font-size:34px;font-weight:800;color:#8d968f}.card-body{padding:13px}.pill{display:inline-block;padding:3px 7px;border-radius:999px;background:var(--soft);font-size:11px;margin:0 4px 4px 0}.statsline{font-size:12px;color:#343b36;margin:8px 0;min-height:36px}.view{display:none}.view.active{display:block}.split{display:grid;grid-template-columns:minmax(320px,.85fr) minmax(380px,1.15fr);gap:18px}.field{margin-bottom:11px}.field label{display:block;font-weight:700;font-size:12px;margin-bottom:5px}.field input,.field select,.field textarea{width:100%}.checkrow{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0}.checkrow label{font-weight:400}.selected-model{border-top:1px solid var(--line);padding:10px 0}.selected-model:first-child{border-top:0}.preview{border:1px solid var(--line);border-radius:8px;padding:18px;min-height:360px;background:#fff;outline:none}.preview[contenteditable="true"]{cursor:text}.preview[contenteditable="true"]:focus{border-color:#7b8f83;box-shadow:0 0 0 3px #dfe8e2}.preview-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.preview-title-row h2{margin:0}.preview-edit-note{margin:7px 0 12px}.preview img{max-width:560px;width:100%;height:auto;margin:8px 0 18px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.pipeline{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.metric-grid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px}.metric{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff}.metric b{display:block;font-size:20px}.mini-bar{height:7px;background:#e7ebe8;border-radius:999px;overflow:hidden;margin-top:5px}.mini-bar span{display:block;height:100%;background:#68706a}.status-warn{font-weight:700}.tiny{font-size:11px}.pipeline .panel{margin:0}.empty{padding:14px;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}.draft-card{border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px}
+button,input,select,textarea{font:inherit}button{cursor:pointer}.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}.sidebar{background:#17241d;color:white;padding:24px 18px;position:sticky;top:0;height:100vh}.brand{font-weight:800;letter-spacing:.08em}.subbrand{font-size:12px;opacity:.75;margin:5px 0 26px}.nav button{display:block;width:100%;text-align:left;border:0;background:transparent;color:#dce6df;padding:10px 12px;border-radius:7px;margin:3px 0}.nav button.active,.nav button:hover{background:#294638;color:white}.main{padding:26px;min-width:0}.topbar{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:24px}.eyebrow{font-size:11px;letter-spacing:.12em;font-weight:700;color:var(--muted)}h1{font-size:26px;margin:5px 0 3px}h2{margin-top:0}.muted{color:var(--muted)}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #b8c2ba;background:white;padding:8px 11px;border-radius:7px}.btn.primary{background:var(--accent);border-color:var(--accent);color:white}.btn.danger{color:var(--danger)}.stats{display:grid;grid-template-columns:repeat(6,minmax(100px,1fr));gap:10px;margin-bottom:20px}.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}.stat b{font-size:22px;display:block}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:18px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.toolbar input,.toolbar select,.field input,.field select,.field textarea{border:1px solid #bdc6bf;border-radius:7px;padding:9px;background:white}.toolbar input{min-width:220px;flex:1}.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.card{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}.model-photo{height:245px;background:#eceeea;display:flex;align-items:center;justify-content:center;overflow:hidden}.model-photo img{width:100%;height:100%;object-fit:cover}.placeholder{font-size:34px;font-weight:800;color:#8d968f}.card-body{padding:13px}.pill{display:inline-block;padding:3px 7px;border-radius:999px;background:var(--soft);font-size:11px;margin:0 4px 4px 0}.statsline{font-size:12px;color:#343b36;margin:8px 0;min-height:36px}.view{display:none}.view.active{display:block}.split{display:grid;grid-template-columns:minmax(320px,.85fr) minmax(380px,1.15fr);gap:18px}.field{margin-bottom:11px}.field label{display:block;font-weight:700;font-size:12px;margin-bottom:5px}.field input,.field select,.field textarea{width:100%}.checkrow{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0}.checkrow label{font-weight:400}.selected-model{border-top:1px solid var(--line);padding:10px 0}.selected-model:first-child{border-top:0}.preview{border:1px solid var(--line);border-radius:8px;padding:18px;min-height:360px;background:#fff;outline:none}.preview[contenteditable="true"]{cursor:text}.preview[contenteditable="true"]:focus{border-color:#7b8f83;box-shadow:0 0 0 3px #dfe8e2}.preview-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.preview-title-row h2{margin:0}.preview-edit-note{margin:7px 0 12px}.preview img{max-width:100%;height:auto}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.pipeline{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.metric-grid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px}.metric{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff}.metric b{display:block;font-size:20px}.mini-bar{height:7px;background:#e7ebe8;border-radius:999px;overflow:hidden;margin-top:5px}.mini-bar span{display:block;height:100%;background:#68706a}.status-warn{font-weight:700}.tiny{font-size:11px}.pipeline .panel{margin:0}.empty{padding:14px;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}.draft-card{border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px}
 .repeat-caster-flag{display:inline-block;margin-left:6px;padding:3px 7px;border-radius:999px;background:#fff3cd;border:1px solid #e4c76b;color:#5f4a00;font-size:10px;font-weight:800;letter-spacing:.04em;vertical-align:middle}
 .repeat-caster-box{margin-top:9px;padding:9px 10px;border:1px solid #e4c76b;border-radius:8px;background:#fffaf0;font-size:12px;line-height:1.45}
 .repeat-caster-box b{color:#5f4a00}
@@ -52,7 +52,7 @@ dialog{border:0;border-radius:12px;max-width:680px;width:calc(100% - 30px);paddi
   .pill{font-size:11px;padding:4px 8px}
   .split,.pipeline{grid-template-columns:1fr;gap:10px}
   .preview{padding:12px;min-height:220px;overflow-wrap:anywhere}
-  .preview img{max-width:100%;margin-bottom:12px}
+  .preview img{max-width:100%}
   .selected-model{padding:10px 0}
   .checkrow{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
   .checkrow label{display:flex;align-items:center;gap:7px;min-height:36px}
@@ -260,7 +260,7 @@ th,td{padding:8px}
 <script src="assets/models/sophia-extra-photo-1.js"></script>
 <script src="assets/models/sophia-extra-photo-2.js"></script>
 <script src="assets/data/core-roster.js?v=20261002-iyanu-active-1"></script>
-<script src="assets/crm-media-store.js?v=20261002-inline-github-model-photos-1"></script>
+<script src="assets/crm-media-store.js?v=20261002-reviewed-image-bytes-2"></script>
 <script>
 const SOURCE_DATE='2026-09-14';
 const BASE_ROSTER=window.CLM_CORE_ROSTER?.BASE_ROSTER||[];
@@ -295,7 +295,7 @@ let gmailRestorePromise=null;
 let gmailRefreshTimer=null;
 let gmailAuthState='idle';
 let milanArchivePromise=null,castingArchivePromise=null;
-function packageThumbnailUrl(value){return isAnimatedGifSource(value)?DRAFT_GIF_PAUSED_PREVIEW:photoDisplayUrl(value)}
+function packageThumbnailUrl(value){return photoDisplayUrl(value)}
 function photoDisplayUrl(value){return window.CLMMediaStore?.displayUrl?.(value)||String(value||'')}
 async function ensureMilanArchiveLoaded(){
   if(MILAN_REST_DRAFTS.length||MILAN_FIRST_DAY_DRAFTS.length)return true;
@@ -2010,42 +2010,6 @@ function measurementStatsForUnits(s,units='imperial'){
 }
 function formatStats(s,units='imperial'){return measurementStatsForUnits(s,units).split('|').map(part=>{const i=part.indexOf(':');return i>0?`<b>${esc(part.slice(0,i).trim())}:</b> ${esc(part.slice(i+1).trim())}`:esc(part.trim())}).join(' | ')}
 
-async function copyRichEmailForGmail(html){
-  const tmp=document.createElement('div');
-  tmp.innerHTML=html;
-  const plain=(tmp.innerText||tmp.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
-  try{
-    if(navigator.clipboard&&window.ClipboardItem){
-      await navigator.clipboard.write([new ClipboardItem({
-        'text/html':new Blob([html],{type:'text/html'}),
-        'text/plain':new Blob([plain],{type:'text/plain'})
-      })]);
-      return true;
-    }
-  }catch(err){console.warn('Rich clipboard write failed',err)}
-  try{
-    const holder=document.createElement('div');
-    holder.contentEditable='true';
-    holder.style.position='fixed';
-    holder.style.left='-9999px';
-    holder.style.top='0';
-    holder.innerHTML=html;
-    document.body.appendChild(holder);
-    const range=document.createRange();
-    range.selectNodeContents(holder);
-    const selection=window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-    const ok=document.execCommand('copy');
-    selection.removeAllRanges();
-    holder.remove();
-    if(ok)return true;
-  }catch(err){console.warn('Rich copy fallback failed',err)}
-  try{
-    await navigator.clipboard.writeText(plain);
-  }catch(err){console.warn('Plain clipboard fallback failed',err)}
-  return false;
-}
 function gmailOAuthClientId(){
   try{return String(localStorage.getItem(GMAIL_OAUTH_CLIENT_ID_KEY)||'').trim()}catch{return''}
 }
@@ -2251,16 +2215,94 @@ function gmailPlainText(html){
   const tmp=document.createElement('div');tmp.innerHTML=html;
   return (tmp.innerText||tmp.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
 }
+let lastGmailPackage=null;
+const verifiedGmailPackages=new Map();
+async function freezePreviewImagesForReview(){
+  const preview=$('#emailPreview');
+  const original=currentEmailPreviewHtml(),draftId=db.activeDraftId;
+  const t=document.createElement('template');t.innerHTML=original;
+  let changed=false;
+  for(const img of t.content.querySelectorAll('img')){
+    const src=img.getAttribute('src')||'';
+    if(/^data:image\//i.test(src))continue;
+    // A CID or Gmail attachment URL belongs to another MIME document. Never reuse it.
+    if(!/^(https?:|blob:)/i.test(src)||/https?:\/\/(?:mail\.google\.com|(?:ci\d+\.)?googleusercontent\.com)\//i.test(src))
+      throw new Error('This preview contains an image linked to another Gmail message or unavailable media. Replace that image with an uploaded photo; no Gmail draft was created.');
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
+    try{
+      const response=await fetch(src,{signal:controller.signal,cache:'no-store'});
+      if(!response.ok)throw new Error('Image download failed ('+response.status+').');
+      const blob=await response.blob();
+      if(!/^image\/(?:jpeg|png|gif|webp)$/i.test(blob.type)||!blob.size||blob.size>20*1024*1024)throw new Error('Image format or size is unsupported.');
+      const data=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(new Error('Could not read image bytes.'));r.readAsDataURL(blob)});
+      img.setAttribute('src',data);changed=true;
+    }catch(err){throw new Error('Could not freeze '+(img.getAttribute('alt')||'a preview image')+'. Upload that photo directly. '+err.message)}
+    finally{clearTimeout(timer)}
+  }
+  if(!changed)return;
+  if(db.activeDraftId!==draftId||currentEmailPreviewHtml()!==original)throw new Error('The preview changed while preparing images. Review it and try again.');
+  const html=sanitizeEditableEmailHtml(t.innerHTML);
+  storeDraftPreview(html);preview.innerHTML=html;preview.dataset.manualRefreshInitialized='1';
+  persistWorkspaceSafe(true);
+  throw new Error('Images are now fixed in the preview. Review every photograph, then click Create Gmail draft again. No email was sent.');
+}
+function normalizedPackageHtml(html,allowPixel=false){
+  const t=document.createElement('template');t.innerHTML=String(html||'').replace(/\r\n/g,'\n').trim();
+  if(allowPixel){
+    const pixels=[...t.content.querySelectorAll('img[data-clm-open-track="1"]')];
+    if(pixels.length!==1)throw new Error('Gmail tracking image verification failed.');
+    pixels[0].remove();
+  }
+  return t.innerHTML;
+}
+async function verifyStoredGmailPackage(draftId,allowPixel=false){
+  const expected=verifiedGmailPackages.get(draftId);
+  if(!expected)throw new Error('This Gmail draft has not been verified against the current preview. Create it again.');
+  const token=await gmailToken();
+  const get=async path=>{
+    const r=await gmailDraftRequest('https://gmail.googleapis.com/gmail/v1/users/me/'+path,{headers:{Authorization:'Bearer '+token}});
+    const value=await r.json();if(!r.ok)throw new Error(value?.error?.message||'Gmail read-back failed.');return value;
+  };
+  const stored=await get('drafts/'+encodeURIComponent(draftId)+'?format=full');
+  const root=stored.message?.payload,htmlParts=[],images=new Map();
+  const header=(p,name)=>(p?.headers||[]).find(h=>h.name.toLowerCase()===name.toLowerCase())?.value||'';
+  const walk=p=>{
+    if(!p)return;
+    if(p.mimeType==='text/html')htmlParts.push(p);
+    const cid=header(p,'Content-ID').replace(/^<|>$/g,'');
+    if(cid){if(images.has(cid))throw new Error('Duplicate Gmail image identifier.');images.set(cid,p)}
+    (p.parts||[]).forEach(walk);
+  };walk(root);
+  const body=async p=>{
+    if(p.body?.data)return p.body.data;
+    if(p.body?.attachmentId)return (await get('messages/'+encodeURIComponent(stored.message.id)+'/attachments/'+encodeURIComponent(p.body.attachmentId))).data||'';
+    return '';
+  };
+  const binary=value=>atob(String(value||'').replace(/-/g,'+').replace(/_/g,'/').replace(/\s/g,''));
+  if(htmlParts.length!==1)throw new Error('Gmail must contain exactly one HTML body. Sending is blocked.');
+  const decoded=new TextDecoder().decode(Uint8Array.from(binary(await body(htmlParts[0])),c=>c.charCodeAt(0)));
+  if(normalizedPackageHtml(decoded,allowPixel)!==normalizedPackageHtml(expected.html))throw new Error('Gmail HTML differs from the reviewed preview. Sending is blocked.');
+  if(![expected.subject,gmailMimeHeader(expected.subject)].includes(header(root,'Subject').replace(/\r?\n[ \t]+/g,' ').trim()))throw new Error('Gmail subject differs from the preview. Sending is blocked.');
+  if(header(root,'To').trim()!==expected.to.trim())throw new Error('Gmail recipient differs from the preview. Sending is blocked.');
+  if(images.size!==expected.parts.length)throw new Error('Gmail contains missing or extra image attachments. Sending is blocked.');
+  for(const part of expected.parts){
+    const actual=images.get(part.cid);
+    if(!actual||actual.mimeType!==part.mime||binary(await body(actual))!==atob(part.payload))throw new Error('Gmail photo bytes differ from the reviewed preview. Sending is blocked.');
+  }
+  return true;
+}
+
 function gmailInlineDataImages(html){
   const holder=document.createElement('div');holder.innerHTML=html;
   const parts=[];
+  for(const img of holder.querySelectorAll('img'))if(!/^data:image\//i.test(img.getAttribute('src')||''))throw new Error('Images must be frozen and reviewed in the preview before Gmail upload.');
   [...holder.querySelectorAll('img[src^="data:"]')].forEach((img,index)=>{
     const src=img.getAttribute('src')||'';
     const match=src.match(/^data:([^;,]+)?(;base64)?,([\s\S]*)$/);
-    if(!match)return;
+    if(!match)throw new Error('Invalid preview image data. Replace the image before creating a Gmail draft.');
     const mime=match[1]||'image/jpeg';
     let payload='';
-    try{payload=match[2]?match[3].replace(/\s/g,''):gmailBase64Utf8(decodeURIComponent(match[3]))}catch{return}
+    try{payload=match[2]?match[3].replace(/\s/g,''):gmailBase64Utf8(decodeURIComponent(match[3]))}catch{throw new Error('Could not encode the preview image.')}
     const cid='clm-'+Date.now()+'-'+index+'@chezlesmannequins';
     const ext=mime.includes('png')?'png':mime.includes('gif')?'gif':mime.includes('webp')?'webp':'jpg';
     img.setAttribute('src','cid:'+cid);
@@ -2293,8 +2335,8 @@ function buildGmailDraftRaw(to,subject,html,signalId='',asBlob=false){
     headers.push('Content-Type: multipart/alternative; boundary="'+alt+'"');
     mime=headers.join('\r\n')+'\r\n\r\n';
   }
-  mime+='--'+alt+'\r\nContent-Type: text/plain; charset="UTF-8"\r\nContent-Transfer-Encoding: 8bit\r\n\r\n'+plain+'\r\n';
-  mime+='--'+alt+'\r\nContent-Type: text/html; charset="UTF-8"\r\nContent-Transfer-Encoding: 8bit\r\n\r\n'+cleanHtml+'\r\n';
+  mime+='--'+alt+'\r\nContent-Type: text/plain; charset="UTF-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n'+gmailWrapBase64(gmailBase64Utf8(plain))+'\r\n';
+  mime+='--'+alt+'\r\nContent-Type: text/html; charset="UTF-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n'+gmailWrapBase64(gmailBase64Utf8(cleanHtml))+'\r\n';
   mime+='--'+alt+'--\r\n';
   if(transformed.parts.length){
     for(const part of transformed.parts){
@@ -2307,6 +2349,7 @@ function buildGmailDraftRaw(to,subject,html,signalId='',asBlob=false){
     }
     mime+='--'+rel+'--\r\n';
   }
+  lastGmailPackage={html:cleanHtml,parts:transformed.parts,to,subject};
   return asBlob?new Blob([mime],{type:'message/rfc822'}):gmailBase64UrlUtf8(mime);
 }
 async function gmailDraftRequest(url,options){
@@ -2332,6 +2375,8 @@ async function createFormattedWorkGmailDraft(){
   const activeRecord=db.activeDraftId?(db.drafts||[]).find(d=>d.id===db.activeDraftId):null;
   const hasPreview=typeof db.draft?.previewHtml==='string';
   if(!selected.length&&purpose!=='followup'&&!hasPreview)throw new Error('Select at least one model first.');
+  if(!$('#emailRecipient').value.trim())throw new Error('Add a recipient email first.');
+  await freezePreviewImagesForReview();
   const to=$('#emailRecipient').value.trim();
   const subject=$('#emailSubject').value.trim();
   if(!to)throw new Error('Add a recipient email first.');
@@ -2340,10 +2385,9 @@ async function createFormattedWorkGmailDraft(){
   const previewSnapshot=plainHtml;
   const snapshotDraftId=db.activeDraftId;
   const snapshotRecord=db.draft;
-  const signalContext={id:db.activeDraftId,record:db.draft,models:typeof selectedModels==='function'?selectedModels():[]};
-  let html=typeof window.clmPrepareModelSignals==='function'?window.clmPrepareModelSignals(plainHtml,false,signalContext):plainHtml;
-  if(window.CLMMediaStore?.resolveHtml)html=await window.CLMMediaStore.resolveHtml(html);
-  let raw=buildGmailDraftRaw(to,subject,html,db.settings?.modelSignalsEnabled?signalContext.record.modelSignalSubmissionId:'',true);
+  let html=plainHtml;
+  let raw=buildGmailDraftRaw(to,subject,html,'',true);
+  const expectedPackage=lastGmailPackage;
   const active=db.activeDraftId?(db.drafts||[]).find(x=>x.id===db.activeDraftId):null;
   const linkedDraftId=String(active?.gmailDraftId||db.draft?.gmailDraftId||'').trim();
 
@@ -2377,11 +2421,6 @@ async function createFormattedWorkGmailDraft(){
   if(linkedDraftId){
     response=await writeDraft('PUT','https://gmail.googleapis.com/gmail/v1/users/me/drafts/'+encodeURIComponent(linkedDraftId));
     if(response.status===404){
-      if(typeof window.clmPrepareModelSignals==='function'){
-        html=window.clmPrepareModelSignals(plainHtml,true,signalContext);
-        if(window.CLMMediaStore?.resolveHtml)html=await window.CLMMediaStore.resolveHtml(html);
-        raw=buildGmailDraftRaw(to,subject,html,db.settings?.modelSignalsEnabled?signalContext.record.modelSignalSubmissionId:'',true);
-      }
       response=await writeDraft('POST','https://gmail.googleapis.com/gmail/v1/users/me/drafts');
     }
   }else{
@@ -2391,6 +2430,14 @@ async function createFormattedWorkGmailDraft(){
   const result=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(result?.error?.message||'Gmail could not create or update the draft.');
   if(!result.id||!result.message?.id)throw new Error('Gmail returned no draft confirmation. Check Work Gmail Drafts before retrying.');
+  // Remember the ID even on verification failure so retry updates, never duplicates, this draft.
+  snapshotRecord.gmailDraftId=result.id;
+  const linkedRecord=snapshotDraftId?(db.drafts||[]).find(d=>d.id===snapshotDraftId):null;
+  if(linkedRecord)linkedRecord.gmailDraftId=result.id;
+  snapshotRecord.previewNeedsGmailUpdate=true;if(linkedRecord)linkedRecord.previewNeedsGmailUpdate=true;
+  persistWorkspaceSafe(true);
+  verifiedGmailPackages.set(result.id,expectedPackage);
+  await verifyStoredGmailPackage(result.id);
   const sameDraft=db.activeDraftId===snapshotDraftId&&db.draft===snapshotRecord;
   const changed=sameDraft?(currentEmailPreviewHtml()!==previewSnapshot||$('#emailRecipient').value.trim()!==to||$('#emailSubject').value.trim()!==subject):snapshotRecord.previewHtml!==previewSnapshot;
   snapshotRecord.previewNeedsGmailUpdate=changed;
@@ -3354,11 +3401,16 @@ function persistWorkspaceSafe(showError=true){
   catch(err){console.error('CRM storage write failed',err);if(showError)setStatus('Could not save this change because browser storage is full. Existing CRM data is still intact; remove large uploaded draft photos or export a backup.');return false}
 }
 function save(){db.selected=[...selected];if(!persistWorkspaceSafe())return false;renderAll();return true}
-const DRAFT_GIF_PAUSED_PREVIEW='data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="880" height="560" viewBox="0 0 880 560"><rect width="880" height="560" fill="#f3f4f3"/><rect x="24" y="24" width="832" height="512" rx="18" fill="#ffffff" stroke="#d7dbd8" stroke-width="2"/><text x="440" y="250" text-anchor="middle" font-family="Arial,sans-serif" font-size="30" font-weight="700" fill="#1f2923">GIF paused in draft preview</text><text x="440" y="305" text-anchor="middle" font-family="Arial,sans-serif" font-size="22" fill="#66736b">Click to play</text></svg>');
 function isAnimatedGifSource(src){return window.CLMMediaStore?.isGif?.(src)||/^data:image\/gif/i.test(String(src||''))||/\.gif(?:[?#]|$)/i.test(String(src||''))}
-function draftPreviewHtml(html){const t=document.createElement('template');t.innerHTML=String(html||'');t.content.querySelectorAll('img').forEach(img=>{let src=img.getAttribute('src')||'';if(window.CLMMediaStore?.isMediaRef?.(src)){img.setAttribute('data-media-ref',src);img.setAttribute('src',photoDisplayUrl(src))}const logical=img.getAttribute('data-media-ref')||src;if(!isAnimatedGifSource(logical))return;img.setAttribute('data-gif-src',logical);img.setAttribute('data-gif-playing','0');img.setAttribute('src',DRAFT_GIF_PAUSED_PREVIEW);img.setAttribute('title','GIF paused in draft preview. Click to play.');img.setAttribute('role','button');img.setAttribute('tabindex','0')});return t.innerHTML}
-function bindDraftPreviewGifs(){const preview=$('#emailPreview');if(!preview)return;preview.querySelectorAll('img[data-gif-src]').forEach(img=>{if(img.dataset.gifBound==='1')return;img.dataset.gifBound='1';img.style.cursor='pointer';const toggle=()=>{const playing=img.dataset.gifPlaying==='1',logical=img.dataset.gifSrc||'';img.src=playing?DRAFT_GIF_PAUSED_PREVIEW:photoDisplayUrl(logical);img.dataset.gifPlaying=playing?'0':'1';img.title=playing?'GIF paused in draft preview. Click to play.':'GIF playing in preview. Click to pause.'};img.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggle()});img.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();toggle()}})})}
-let emailPreviewRefreshPending=false;
+function draftPreviewHtml(html){
+  const t=document.createElement('template');t.innerHTML=String(html||'');
+  t.content.querySelectorAll('img').forEach(img=>{
+    const src=img.getAttribute('src')||'';
+    if(window.CLMMediaStore?.isMediaRef?.(src))img.setAttribute('src',photoDisplayUrl(src));
+    ['data-media-ref','data-gif-src','data-gif-playing','data-gif-bound'].forEach(k=>img.removeAttribute(k));
+  });return t.innerHTML;
+}
+function bindDraftPreviewGifs(){}
 function setEmailPreviewRefreshPending(pending=true){
   emailPreviewRefreshPending=!!pending;
   const button=$('#refreshEmailPreviewBtn');
@@ -3430,10 +3482,10 @@ async function copyEmail(){
   const activeRecord=db.activeDraftId?(db.drafts||[]).find(d=>d.id===db.activeDraftId):null;
   const hasPreview=typeof db.draft?.previewHtml==='string';
   if(!selected.length&&purpose!=='followup'&&!hasPreview)return setStatus('Select at least one model first.');
-  let html=currentEmailPreviewHtml();if(window.CLMMediaStore?.resolveHtml)html=await window.CLMMediaStore.resolveHtml(html);const tmp=document.createElement('div');tmp.innerHTML=html;const plain=(tmp.innerText||tmp.textContent||'').trim();
+  await freezePreviewImagesForReview();
+  let html=currentEmailPreviewHtml();const tmp=document.createElement('div');tmp.innerHTML=html;const plain=(tmp.innerText||tmp.textContent||'').trim();
   try{if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([plain],{type:'text/plain'})})]);setStatus('Formatted email copied.');return}}catch(err){console.warn('Rich clipboard unavailable',err)}
-  try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(plain);setStatus('Email copied as plain text.');return}}catch(err){console.warn('Clipboard API unavailable',err)}
-  const area=document.createElement('textarea');area.value=plain;area.setAttribute('readonly','');area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();try{if(document.execCommand('copy'))setStatus('Email copied as plain text.');else setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}catch(err){console.error(err);setStatus('Copy was blocked by the browser. Select the preview and copy it manually.')}finally{area.remove()}
+  setStatus('Formatted copying is unavailable. Use Create Gmail draft to preserve the preview and images.');
 }
 
 /* DIRECT EMAIL PREVIEW EDITING · 2026-09-24 */
@@ -3441,7 +3493,8 @@ let emailPreviewEditTimer=0;
 function sanitizeEditableEmailHtml(html){
   const template=document.createElement('template');
   template.innerHTML=String(html||'');
-  template.content.querySelectorAll('img[data-gif-src]').forEach(img=>{const src=img.getAttribute('data-gif-src');if(src)img.setAttribute('src',src)});template.content.querySelectorAll('img[data-media-ref]').forEach(img=>{const ref=img.getAttribute('data-media-ref');if(ref)img.setAttribute('src',ref)});template.content.querySelectorAll('img').forEach(img=>{['data-gif-src','data-gif-playing','data-gif-bound','data-media-ref','title','role','tabindex'].forEach(name=>img.removeAttribute(name));img.style.removeProperty('cursor')});
+  // The visible src is authoritative. Hidden attributes must never substitute another image.
+  template.content.querySelectorAll('img').forEach(img=>{['data-gif-src','data-gif-playing','data-gif-bound','data-media-ref','title','role','tabindex'].forEach(name=>img.removeAttribute(name));img.style.removeProperty('cursor')});
   template.content.querySelectorAll('script,style,iframe,object,embed,form,input,textarea,button,meta,link').forEach(el=>el.remove());
   template.content.querySelectorAll('*').forEach(el=>{
     [...el.attributes].forEach(attr=>{
@@ -3910,7 +3963,6 @@ async function bootstrapWorkspace(){
   db=removeCanvaLinksFromWorkspace(db);
   db.recovery={...(db.recovery||{}),safeGallerySnapshot20260929:true};
   db=await restoreOldPhotoLibrary20260929(db);
-  db=await restoreSavedDraftImages20260929(db);
   try{if(window.CLMMediaStore?.migrateWorkspace){const migrated=await window.CLMMediaStore.migrateWorkspace(db);db=migrated.data;dedupePhotoLibrary20260929(db)}}catch(err){console.warn('Legacy photo migration skipped',err)}
   try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Recovered workspace save skipped',err)}
   db=addBridalFollowups20261002(db);
@@ -3981,72 +4033,6 @@ async function restoreOldPhotoLibrary20260929(data){
   data.recovery={...(data.recovery||{}),oldPhotoLibraryRestoreVersion:2,oldPhotoLibraryRestoreOn:'2026-09-29',oldPhotoLibraryRestoredCount:restored};
   return data;
 }
-async function restoreSavedDraftImages20260929(data){
-  if(data.recovery?.savedDraftImageRestoreVersion>=1)return data;
-  let restored=0;
-  const sources=[];
-  const push=list=>Array.isArray(list)&&sources.push(...list.filter(Boolean));
-  push(typeof BRIDAL_WEEK_DRAFTS_2026_09_28!=='undefined'?BRIDAL_WEEK_DRAFTS_2026_09_28:[]);
-  push(typeof CALLIE_EUROPE_GOSEE_DRAFTS_2026_09_25!=='undefined'?CALLIE_EUROPE_GOSEE_DRAFTS_2026_09_25:[]);
-  push(typeof ADDITIONAL_CRM_DRAFTS_2026_09_25!=='undefined'?ADDITIONAL_CRM_DRAFTS_2026_09_25:[]);
-  push(typeof ADDITIONAL_CRM_DRAFTS_2026_09_24!=='undefined'?ADDITIONAL_CRM_DRAFTS_2026_09_24:[]);
-  push(typeof RECOVERED_DRAFTS!=='undefined'?RECOVERED_DRAFTS:[]);
-  push(typeof MILAN_FIRST_DAY_DRAFTS!=='undefined'?MILAN_FIRST_DAY_DRAFTS:[]);
-  push(typeof MILAN_REST_DRAFTS!=='undefined'?MILAN_REST_DRAFTS:[]);
-  try{push(parisPostDiorDrafts(data.models||[]))}catch{}
-  let backup=null;
-  try{
-    backup=await idbReadWorkspaceAtKey('backup-before-gallery-repair-20260929');
-    if(backup){
-      push(backup.drafts||[]);
-      if(backup.draft){
-        const backupActiveId=backup.activeDraftId||backup.draft.id||'';
-        if(backupActiveId) sources.push({...backup.draft,id:backupActiveId});
-      }
-    }
-  }catch(err){console.info('Pre-repair draft image backup unavailable',err)}
-  const sourceById=new Map();
-  for(const source of sources){
-    if(!source?.id)continue;
-    const existing=sourceById.get(source.id);
-    if(!existing){sourceById.set(source.id,source);continue}
-    const merged={...existing,...source,photoSelections:{...(existing.photoSelections||{})},packagePhotos:{...(existing.packagePhotos||{})}};
-    for(const key of new Set([...Object.keys(existing.photoSelections||{}),...Object.keys(source.photoSelections||{}),...Object.keys(existing.packagePhotos||{}),...Object.keys(source.packagePhotos||{})])){
-      const a=Array.isArray(existing.photoSelections?.[key])?existing.photoSelections[key]:[existing.photoSelections?.[key]].filter(Boolean);
-      const b=Array.isArray(existing.packagePhotos?.[key])?existing.packagePhotos[key]:[];
-      const d=Array.isArray(source.photoSelections?.[key])?source.photoSelections[key]:[source.photoSelections?.[key]].filter(Boolean);
-      const e=Array.isArray(source.packagePhotos?.[key])?source.packagePhotos[key]:[];
-      const list=uniqueGalleryPhotoUrls([...a,...b,...d,...e].filter(Boolean));
-      if(list.length){merged.photoSelections[key]=list;merged.packagePhotos[key]=[...list]}
-    }
-    sourceById.set(source.id,merged);
-  }
-  const mergeInto=(target,source)=>{
-    if(!target||!source)return;
-    target.photoSelections=target.photoSelections||{};
-    target.packagePhotos=target.packagePhotos||{};
-    const keys=new Set([...Object.keys(source.photoSelections||{}),...Object.keys(source.packagePhotos||{})]);
-    for(const id of keys){
-      const currentA=Array.isArray(target.photoSelections[id])?target.photoSelections[id]:[target.photoSelections[id]].filter(Boolean);
-      const currentB=Array.isArray(target.packagePhotos[id])?target.packagePhotos[id]:[];
-      const sourceA=Array.isArray(source.photoSelections?.[id])?source.photoSelections[id]:[source.photoSelections?.[id]].filter(Boolean);
-      const sourceB=Array.isArray(source.packagePhotos?.[id])?source.packagePhotos[id]:[];
-      const before=uniqueGalleryPhotoUrls([...currentA,...currentB].filter(Boolean));
-      const merged=uniqueGalleryPhotoUrls([...before,...sourceA,...sourceB].filter(Boolean));
-      if(!merged.length)continue;
-      restored+=Math.max(0,merged.length-before.length);
-      target.photoSelections[id]=merged;
-      target.packagePhotos[id]=[...merged];
-    }
-  };
-  for(const draft of data.drafts||[])mergeInto(draft,sourceById.get(draft.id));
-  const activeId=data.activeDraftId||data.draft?.id||'';
-  if(activeId)mergeInto(data.draft,sourceById.get(activeId));
-  if(backup?.draft&&(!backup.activeDraftId||!activeId||backup.activeDraftId===activeId))mergeInto(data.draft,backup.draft);
-  data.recovery={...(data.recovery||{}),savedDraftImageRestoreVersion:1,savedDraftImageRestoreOn:'2026-09-29',savedDraftImagesRestored:restored};
-  return data;
-}
-
 function dedupePhotoLibrary20260929(data){
   for(const [id,list] of Object.entries(data.photoLibrary||{})){
     const seen=new Set(),out=[];
@@ -4060,70 +4046,6 @@ function dedupePhotoLibrary20260929(data){
   return data;
 }
 
-/* SAFE PHOTO/DRAFT RECOVERY 2026-09-29
-   Restores missing photo selections from seeded package records, rebuilds the
-   gallery as a unique library, and never replaces user-edited draft fields. */
-function repairPhotoState20260929(data){
-  if(data.recovery?.safePhotoRecoveryVersion>=2)return {data,changed:false,recoveredSelections:0,recoveredLibrary:0};
-  let recoveredSelections=0,recoveredLibrary=0,changed=false;
-  data.deletedPhotoKeys={
-    'los-angeles-women-elle-pickens':['120:58305e6f:e9c6bc35','120:f26dfe95:17f75549','120:68a86ebf:94539e39']
-  };
-  const sources=[];
-  const push=x=>Array.isArray(x)&&sources.push(...x);
-  push(typeof BRIDAL_WEEK_DRAFTS_2026_09_28!=='undefined'?BRIDAL_WEEK_DRAFTS_2026_09_28:[]);
-  push(typeof CALLIE_EUROPE_GOSEE_DRAFTS_2026_09_25!=='undefined'?CALLIE_EUROPE_GOSEE_DRAFTS_2026_09_25:[]);
-  push(typeof ADDITIONAL_CRM_DRAFTS_2026_09_25!=='undefined'?ADDITIONAL_CRM_DRAFTS_2026_09_25:[]);
-  push(typeof ADDITIONAL_CRM_DRAFTS_2026_09_24!=='undefined'?ADDITIONAL_CRM_DRAFTS_2026_09_24:[]);
-  push(typeof RECOVERED_DRAFTS!=='undefined'?RECOVERED_DRAFTS:[]);
-  push(typeof MILAN_FIRST_DAY_DRAFTS!=='undefined'?MILAN_FIRST_DAY_DRAFTS:[]);
-  push(typeof MILAN_REST_DRAFTS!=='undefined'?MILAN_REST_DRAFTS:[]);
-  try{push(parisPostDiorDrafts(data.models||[]))}catch{}
-  const templates=new Map(sources.filter(d=>d?.id).map(d=>[d.id,d]));
-  const hasValue=value=>Array.isArray(value)?value.some(Boolean):!!value;
-  const recoverDraft=d=>{
-    if(!d?.id)return;
-    const t=templates.get(d.id);
-    d.photoSelections=d.photoSelections||{};
-    d.packagePhotos=d.packagePhotos||{};
-    if(t?.photoSelections){
-      for(const [id,value] of Object.entries(t.photoSelections)){
-        if(hasValue(d.photoSelections[id]))continue;
-        d.photoSelections[id]=structuredClone(value);
-        const list=Array.isArray(value)?value:[value];
-        d.packagePhotos[id]=uniqueGalleryPhotoUrls(list.filter(Boolean));
-        recoveredSelections++;changed=true;
-      }
-    }
-    for(const [id,list] of Object.entries(d.packagePhotos||{})){
-      if(!hasValue(d.photoSelections[id])&&Array.isArray(list)&&list.some(Boolean)){
-        d.photoSelections[id]=uniqueGalleryPhotoUrls(list.filter(Boolean));
-        recoveredSelections++;changed=true;
-      }
-    }
-  };
-  for(const d of data.drafts||[])recoverDraft(d);
-  recoverDraft(data.draft);
-
-  data.photoLibrary=data.photoLibrary||{};
-  const add=(id,url,label='Recovered draft photo')=>{
-    url=upgradedPhotoURL(String(url||'').trim());if(!id||!url)return;
-    const list=data.photoLibrary[id]||(data.photoLibrary[id]=[]);
-    const key=galleryPhotoKey(url);
-    if(list.some(x=>galleryPhotoKey(photoURL(x))===key))return;
-    list.push({url,label});recoveredLibrary++;changed=true;
-  };
-  for(const d of [data.draft,...(data.drafts||[])].filter(Boolean)){
-    for(const [id,value] of Object.entries(d.photoSelections||{})){
-      for(const url of (Array.isArray(value)?value:[value]))add(id,url,'Recovered package photo');
-    }
-    for(const [id,list] of Object.entries(d.packagePhotos||{})){
-      for(const url of (Array.isArray(list)?list:[]))add(id,url,'Recovered package photo');
-    }
-  }
-  data.recovery={...(data.recovery||{}),safePhotoRecoveryVersion:2,safePhotoRecoveryOn:'2026-09-29',recoveredPhotoSelections20260929:recoveredSelections,recoveredGalleryEntries20260929:recoveredLibrary};
-  return {data,changed:true,recoveredSelections,recoveredLibrary};
-}
 /* END INDEXEDDB RUNTIME OVERRIDES */
 $('#modelSearch').oninput=renderModels;$('#locationFilter').onchange=renderModels;$('#divisionFilter').onchange=renderModels;$('#nicheFilter').onchange=renderModels;
 $('#availabilityFilter').onchange=renderModels;$('#focusRosterFilter').onchange=renderModels;$('#selectNicheBtn').onclick=selectNicheFromModels;$('#clearFilters').onclick=()=>{$('#modelSearch').value='';$('#locationFilter').value='';$('#divisionFilter').value='';$('#nicheFilter').value='';$('#availabilityFilter').value='';$('#focusRosterFilter').value='';renderModels()};
@@ -4172,7 +4094,7 @@ $('#suggestLookBtn')?.closest('.field')?.remove();
       setRuntimeStatus('Loading Gmail sync and open-tracking tools…');
       await loadScript('clm-gmail-throttle-runtime','assets/crm-gmail-throttle.js?v=20260929-timeout-20260925-1','__clmGmailThrottleLoaded');
       await loadScript('clm-email-sync-runtime','assets/crm-email-sync.js?v=20261002-preserve-preview-1','__clmEmailSyncLoaded');
-      await loadScript('clm-open-tracking-runtime','assets/crm-open-tracking.js?v=20261002-preview-authority-1','__clmOpenTrackingLoaded');
+      await loadScript('clm-open-tracking-runtime','assets/crm-open-tracking.js?v=integrity-2-20261002-preview-authority-1','__clmOpenTrackingLoaded');
       await loadScript('clm-response-time-runtime','assets/crm-response-time.js?v=20260925-2','__clmResponseTimeLoaded');
       await loadScript('clm-model-responses-runtime','assets/crm-model-responses.js?v=20260925-2','__clmModelResponsesLoaded');
       await loadScript('clm-model-signals-core','assets/model-signals-core.js?v=20260923-1','CLMModelSignals');

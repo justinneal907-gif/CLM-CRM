@@ -10,7 +10,7 @@ const ctx={console,structuredClone,Blob,AbortController,setTimeout,clearTimeout,
  recoverWorkspaceDefaults:data=>({...data,drafts:[{id:'injected',previewHtml:'SEED'}],draft:{previewHtml:'SEED'}}),
  activeDraftRecord:()=>ctx.db.drafts.find(d=>d.id===ctx.db.activeDraftId)||null,
  generateInitialEmailHtml:()=>{throw Error('Existing preview must never regenerate');},
- gmailToken:async()=> 'mock-token'};
+ freezePreviewImagesForReview:async()=>{},verifyStoredGmailPackage:async()=>{},verifiedGmailPackages:new Map(),lastGmailPackage:{},gmailToken:async()=> 'mock-token'};
 vm.createContext(ctx);
 for(const name of ['migrateDraftPreviewDocuments','applyRecovered','activeSavedDraftRecord','markPreviewNeedsGmailUpdate','storeDraftPreview','sanitizeEditableEmailHtml','emailHtml','currentEmailPreviewHtml','refreshEmailPreview','saveDraft','loadDraft','renderEmail','renderEmailPreviewOnly'])vm.runInContext(fn(name),ctx);
 // Body editor and destructive rebuild paths are absent.
