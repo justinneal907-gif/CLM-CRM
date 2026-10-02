@@ -63,7 +63,7 @@ async function createDrafts(){const keys=[...document.querySelectorAll('[name="m
 }
 const actions={
  close:closeModal,
- signup:async()=>{check(await db.auth.signUp({email:$('#email').value.trim(),password:$('#password').value,options:{emailRedirectTo:location.origin+location.pathname}}));notice('Account created. Confirm using the email link, then return here and sign in.');},
+ signup:async()=>{const email=$('#email').value.trim(),password=$('#password').value;if(!email||!password){$('#auth-form').reportValidity();throw Error('Enter your email and a password of at least 8 characters, then choose Create account.');}if(!$('#auth-form').reportValidity())return;const result=check(await db.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname}}));if(result.session){state.user=result.user;await loadWorkspaces();}else notice('Account created. Confirm using the email link, then return here and sign in.');},
  logout:async()=>{if(!canLeave())return;check(await db.auth.signOut());disconnectMail();state.current=null;state.workspace=null;state.models=[];state.packages=[];state.templates=[];state.dirty=false;closeModal();auth();},
  'create-workspace':async()=>{const id=check(await db.rpc('clm_create_workspace',{n:$('#workspace-name').value}));state.workspace={id};await loadWorkspaces();},
  'join-workspace':async()=>{const id=check(await db.rpc('clm_join_workspace',{t:$('#invite-code').value.trim()}));state.workspace={id};await loadWorkspaces();},
