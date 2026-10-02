@@ -131,7 +131,22 @@
     const imgs=[...t.content.querySelectorAll('img')];
     for(const img of imgs){
       const ref=img.getAttribute('data-media-ref')||img.getAttribute('src')||'';
-      if(idFromRef(ref)){const data=await toDataUrl(ref);if(data)img.setAttribute('src',data);img.removeAttribute('data-media-ref')}
+      if(idFromRef(ref)){
+        const data=await toDataUrl(ref);
+        if(data)img.setAttribute('src',data);
+        img.removeAttribute('data-media-ref');
+        continue;
+      }
+      if(/^https:\/\/raw\.githubusercontent\.com\/justinneal907-gif\/CLM-CRM\//i.test(ref)){
+        try{
+          const response=await fetch(ref,{cache:'force-cache'});
+          if(!response.ok)continue;
+          const blob=await response.blob();
+          if(!/^image\//i.test(blob.type||'')||blob.size>6*1024*1024)continue;
+          const data=await blobToDataUrl(blob);
+          if(data)img.setAttribute('src',data);
+        }catch(err){console.info('GitHub model image inline conversion skipped',err)}
+      }
     }
     return t.innerHTML;
   }
