@@ -7,7 +7,7 @@
   if(window.__clmOpenTrackingLoaded)return;
   window.__clmOpenTrackingLoaded=true;
 
-  const TRACK_VERSION='2026-09-25-v14';
+  const TRACK_VERSION='2026-10-02-v15';
   const TRACK_BASE='https://countapi.mileshilliard.com/api/v1';
   const TRACK_POLL_MS=60*1000;
   let trackTimer=null;
@@ -390,7 +390,17 @@
         }else if(d.openTrackingState==='armed'){
           row.innerHTML='<b>Open tracking active.</b> No image-load signal detected yet.';
         }else if(d.openTrackingState==='send-uncertain'){
-          row.innerHTML='<b>Send result uncertain.</b> Check Work Gmail Sent Mail before retrying. If it is not there, confirm that in the tracking history below before retrying.';
+          const sentHref='https://mail.google.com/mail/u/?authuser='+encodeURIComponent(typeof WORK_EMAIL==='undefined'?'':WORK_EMAIL)+'#sent';
+          row.innerHTML='<b>Send result uncertain.</b> Check Work Gmail Sent Mail before retrying.'+
+            '<div class="actions" style="margin-top:7px"><a class="btn" target="_blank" rel="noopener" href="'+safe(sentHref)+'">Check Sent Mail</a>'+
+            '<button class="btn" type="button" id="resolveCurrentUncertainBtn">Resolve send status</button></div>';
+          const resolveButton=row.querySelector('#resolveCurrentUncertainBtn');
+          if(resolveButton)resolveButton.onclick=async function(){
+            resolveButton.disabled=true;
+            resolveButton.textContent='Checking…';
+            try{await resolveUncertainRecord(d)}
+            finally{renderTrackerStatus()}
+          };
         }else if(d.openTrackingState==='ready'&&d.submittedAt&&!d.gmailDraftId){
           row.innerHTML='<b>No open tracking for this sent email.</b> Only messages sent using <b>Send tracked draft</b> can be checked here.';
         }else if(d.openTrackingState==='ready'&&d.gmailDraftId){
@@ -516,6 +526,75 @@
     if(!data.message||!data.message.raw)throw new Error('Gmail returned the draft without a message body.');
     return data.message.raw;
   }
+  async function gmailDraftExists(id){
+    if(!id)return false;
+    const u=new URL('https://gmail.googleapis.com/gmail/v1/users/me/drafts/'+encodeURIComponent(id));
+    u.searchParams.set('format','minimal');
+    const r=await gmailTrackedFetch(u.toString(),{});
+    if(r.status===404)return false;
+    const data=await r.json().catch(function(){return {}});
+    if(!r.ok)throw new Error((data.error&&data.error.message)||'Could not verify the linked Gmail draft.');
+    return true;
+  }
+  function markUncertainNotSent(record){
+    if(!record)return;
+    patchTracker(record,{
+      openTrackingState:'ready',
+      openTrackingError:'',
+      openTrackingId:'',
+      gmailDraftId:'',
+      gmailDraftMessageId:'',
+      openTrackingResolvedAt:nowIso()
+    });
+    if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+  }
+  async function recoverUncertainIfDraftExists(record){
+    if(!record||record.openTrackingState!=='send-uncertain'||!record.gmailDraftId)return false;
+    try{
+      const exists=await gmailDraftExists(record.gmailDraftId);
+      if(!exists)return false;
+      patchTracker(record,{openTrackingState:'ready',openTrackingError:'',openTrackingResolvedAt:nowIso()});
+      if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+      if(typeof setStatus==='function')setStatus('The linked Gmail draft is still present, so the previous send did not complete. It is safe to retry.');
+      renderTrackerStatus();
+      return true;
+    }catch(err){
+      console.warn('Could not automatically verify the uncertain Gmail send.',err);
+      return false;
+    }
+  }
+  async function syncUncertainSentState(record){
+    if(!record||record.openTrackingState!=='send-uncertain'||typeof window.clmSyncSentMail!=='function')return false;
+    try{
+      await window.clmSyncSentMail();
+      if(record.openTrackingState!=='send-uncertain')return true;
+      const id=record.openTrackingId;
+      if(!id)return false;
+      const refreshed=[].concat(db.submissions||[],db.drafts||[],db.draft||[]).find(function(item){
+        return item&&item.openTrackingId===id&&item.openTrackingState!=='send-uncertain';
+      });
+      return !!refreshed;
+    }catch(err){
+      console.warn('Sent-mail sync could not resolve the uncertain Gmail send.',err);
+      return false;
+    }
+  }
+  async function resolveUncertainRecord(record){
+    if(!record||record.openTrackingState!=='send-uncertain')return 'ready';
+    if(await recoverUncertainIfDraftExists(record))return 'draft-present';
+    if(await syncUncertainSentState(record)){
+      if(typeof setStatus==='function')setStatus('Work Gmail Sent Mail already contains this email. The CRM will not send it again.');
+      renderTrackerStatus();
+      return 'sent';
+    }
+    const confirmed=window.confirm('Gmail did not confirm the previous send.\n\nCheck Work Gmail Sent Mail first. Continue only if you confirmed this email is NOT in Sent Mail.\n\nClear the uncertain state and create a fresh Gmail draft?');
+    if(!confirmed)return 'blocked';
+    markUncertainNotSent(record);
+    if(typeof setStatus==='function')setStatus('Uncertain send cleared. Create the formatted Gmail draft again before sending.');
+    renderTrackerStatus();
+    return 'not-sent';
+  }
+
   async function updateGmailDraft(id,raw){
     const r=await gmailTrackedFetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts/'+encodeURIComponent(id),{
       method:'PUT',
@@ -633,8 +712,14 @@
   async function sendTrackedCurrentDraft(){
     if(sendBusy)throw new Error('A tracked send is already in progress.');
     const target=draftTarget();
-    const d=currentDraft();
-    if(d?.openTrackingState==='send-uncertain')throw new Error('Check Sent Mail before retrying this uncertain send.');
+    let d=currentDraft();
+    if(d?.openTrackingState==='send-uncertain'){
+      const resolution=await resolveUncertainRecord(d);
+      d=currentDraft();
+      if(resolution==='sent')throw new Error('This email is already in Work Gmail Sent Mail. It was not sent again.');
+      if(resolution==='not-sent')throw new Error('The uncertain send was cleared. Create the formatted Gmail draft again before sending.');
+      if(resolution==='blocked'||d?.openTrackingState==='send-uncertain')throw new Error('Check Work Gmail Sent Mail before retrying this uncertain send.');
+    }
     if(!d||!d.gmailDraftId||!d.openTrackingId)throw new Error('Create or update this email as a Work Gmail draft first.');
     sendBusy=true;renderTrackerStatus();
     try{
@@ -727,7 +812,21 @@
     if(typeof createFormattedWorkGmailDraft!=='function'||createFormattedWorkGmailDraft.__clmOpenTracking)return;
     const original=createFormattedWorkGmailDraft;
     const wrapped=async function(){
-      if(currentDraft()?.openTrackingState==='send-uncertain')throw new Error('Check Sent Mail and resolve the uncertain send before creating another draft.');
+      const uncertain=currentDraft();
+      if(uncertain?.openTrackingState==='send-uncertain'){
+        const resolution=await resolveUncertainRecord(uncertain);
+        const current=currentDraft()||uncertain;
+        if(resolution==='draft-present'){
+          if(typeof saveDraft==='function')saveDraft(false);
+          return {
+            id:current.gmailDraftId||uncertain.gmailDraftId||'',
+            message:{id:current.gmailDraftMessageId||uncertain.gmailDraftMessageId||''},
+            clmRecoveredExistingDraft:true
+          };
+        }
+        if(resolution==='sent')throw new Error('This email is already in Work Gmail Sent Mail. A duplicate draft was not created.');
+        if(resolution==='blocked')throw new Error('Previous tracked send is still unresolved. Check Work Gmail Sent Mail before creating another draft.');
+      }
       if(sendBusy)throw new Error('Wait for the current send to finish.');
       if(typeof saveDraft==='function')saveDraft(false);
       const target=draftTarget();
@@ -814,16 +913,17 @@
     });
     q('#trackingSearch').addEventListener('input',renderTrackingHistory);
     q('#trackingFilter').addEventListener('change',renderTrackingHistory);
-    panel.addEventListener('click',event=>{
+    panel.addEventListener('click',async event=>{
       const button=event.target.closest('button[data-track-action]');if(!button)return;
       const record=trackingRecords(true,true).find(r=>r.openTrackingId===button.dataset.trackId);if(!record)return;
       const draftId=record.draftId||record.id;
       if(button.dataset.trackAction==='package'&&typeof loadDraft==='function')loadDraft(draftId);
       if(button.dataset.trackAction==='resolve'){
-        if(!window.confirm('Have you checked Work Gmail Sent Mail and confirmed this email was NOT sent?\n\nContinue only if it is absent. The existing Gmail draft will be relinked when you create the formatted draft again.'))return;
-        patchTracker(record,{openTrackingState:'ready',openTrackingError:''});
-        if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
-        renderTrackerStatus();
+        button.disabled=true;
+        const oldText=button.textContent;
+        button.textContent='Checking…';
+        try{await resolveUncertainRecord(record)}
+        finally{button.textContent=oldText;renderTrackerStatus()}
       }
     });
   }
