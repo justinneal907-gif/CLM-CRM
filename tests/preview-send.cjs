@@ -20,6 +20,7 @@ vm.createContext(ctx);vm.runInContext(source.slice(start,end),ctx);
  record.previewNeedsGmailUpdate=false;ctx.createFormattedWorkGmailDraft=async()=>{};
  ctx.updateGmailDraft=async()=>{preview+='<p>Changed while preparing send.</p>'};
  await assert.rejects(ctx.sendTrackedCurrentDraft(),/preview changed/i);assert.equal(sent,1);
- record.previewNeedsGmailUpdate=false;ctx.updateGmailDraft=async()=>{};ctx.verifyStoredGmailPackage=async()=>{throw Error('Photo verification failed')};await assert.rejects(ctx.sendTrackedCurrentDraft(),/verification failed/);assert.equal(sent,1);
+ record.previewNeedsGmailUpdate=false;ctx.updateGmailDraft=async()=>{};ctx.idbWriteQueue={then(resolve){preview+='<p>Edit during persistence</p>';resolve()}};await assert.rejects(ctx.sendTrackedCurrentDraft(),/final send/);assert.equal(sent,1);delete ctx.idbWriteQueue;
+ record.previewNeedsGmailUpdate=false;ctx.verifyStoredGmailPackage=async()=>{throw Error('Photo verification failed')};await assert.rejects(ctx.sendTrackedCurrentDraft(),/verification failed/);assert.equal(sent,1);
  console.log('Passed: tracked send uploads preview first and blocks sending if preview changes during upload or preparation.');
 })().catch(e=>{console.error(e);process.exitCode=1});

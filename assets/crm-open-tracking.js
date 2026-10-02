@@ -730,7 +730,8 @@
     if(d?.previewNeedsGmailUpdate||target.id!==draftTarget().id||
        (sendPreview!==null&&currentEmailPreviewHtml()!==sendPreview))
       throw new Error('The preview changed while Gmail was updating. Review it and send again.');
-    sendBusy=true;renderTrackerStatus();
+    sendBusy=true;
+    if(typeof setPackageSendLock==='function')setPackageSendLock(true);renderTrackerStatus();
     try{
     const linkedDraftId=d.gmailDraftId;
     if(typeof setStatus==='function')setStatus('Loading the linked Gmail draft…');
@@ -773,11 +774,12 @@
       await verifyStoredGmailPackage(linkedDraftId,true);
       if(currentDraft()?.previewNeedsGmailUpdate||target.id!==draftTarget().id||(sendPreview!==null&&currentEmailPreviewHtml()!==sendPreview))
         throw new Error('The preview changed during send preparation. Review it and send again.');
-      phase='send';
       patchTarget(target,{openTrackingState:'send-uncertain'});
       if(typeof setStatus==='function')setStatus('Sending through Work Gmail…');
       if(typeof persistWorkspaceSafe==='function')await persistWorkspaceSafe(false);
       if(typeof idbWriteQueue!=='undefined')await idbWriteQueue;
+      if(currentDraft()?.previewNeedsGmailUpdate||target.id!==draftTarget().id||(sendPreview!==null&&currentEmailPreviewHtml()!==sendPreview))throw new Error('The preview changed before the final send. Sending is blocked.');
+      phase='send';
       const sent=await sendGmailDraft(linkedDraftId);
       const messageId=(sent&&sent.id)||(sent&&sent.message&&sent.message.id)||'';
       if(!messageId)throw new Error('Gmail returned no sent message ID. Check Sent Mail.');
@@ -820,7 +822,7 @@
       renderTrackerStatus();
       throw err;
     }
-    }finally{sendBusy=false;renderTrackerStatus()}
+    }finally{sendBusy=false;if(typeof setPackageSendLock==='function')setPackageSendLock(false);renderTrackerStatus()}
   }
 
   function installDraftCreationHook(){
