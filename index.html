@@ -101,7 +101,7 @@ dialog{border:0;border-radius:12px;max-width:680px;width:calc(100% - 30px);paddi
 @media(max-width:520px){.draft-model-head{grid-template-columns:72px 1fr}.draft-model-thumb{width:72px;height:96px}.draft-photo-controls{grid-template-columns:1fr}.draft-model-controls .btn{flex:1 1 auto}}
 
 /* Model submission credentials */
-.credential-note{margin-top:6px;padding:7px 9px;border-left:3px solid var(--accent);background:var(--soft);border-radius:4px;font-size:12px;line-height:1.4}.credential-note a{color:#236440;font-weight:700}.credential-note a.media-cta-link{color:#b00020!important;font-weight:800}
+.credential-note{margin-top:6px;padding:7px 9px;border-left:3px solid var(--accent);background:var(--soft);border-radius:4px;font-size:12px;line-height:1.4}.credential-note a{color:#236440;font-weight:700}.credential-note .saved-model-text,.credential-note .saved-model-text a{color:#b00020!important;font-weight:800!important}
 .photo-library-panel{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fafbf9}.photo-library-tools{display:grid;grid-template-columns:minmax(160px,.8fr) minmax(200px,1.5fr) auto auto;gap:7px;margin-top:8px}.photo-library-tools select,.photo-library-tools input{width:100%;min-width:0;border:1px solid #bdc6bf;border-radius:7px;padding:9px;background:white}.photo-library-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:10px}.photo-library-card{border:1px solid var(--line);border-radius:8px;padding:7px;background:#fff}.photo-library-card.active{outline:2px solid var(--accent);outline-offset:1px}.photo-library-card img{width:100%;height:160px;object-fit:cover;border-radius:6px;display:block;margin-bottom:6px}.photo-library-card .btn{width:100%;margin-top:4px}.photo-library-empty{padding:12px;border:1px dashed var(--line);border-radius:8px;color:var(--muted);margin-top:10px}@media(max-width:760px){.photo-library-tools{grid-template-columns:1fr}.photo-library-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* PRIVATE NOTES VISIBILITY + DRAFT OPEN POSITION 2026-09-17 */
 .private-notes-field{border:2px solid var(--accent);background:var(--soft);border-radius:11px;padding:12px;box-shadow:0 1px 0 rgba(0,0,0,.04)}
@@ -1798,9 +1798,6 @@ function openModelTexts(id){
 function modelTextLinkUrl(value){
   try{const url=new URL(String(value||'').trim());return ['https:','http:'].includes(url.protocol)?url.href:''}catch(e){return''}
 }
-function isHighlightedMediaCta(label){
-  return /^\s*click\s+here\s+to\s+see\b/i.test(String(label||''));
-}
 function renderLinkedModelText(value){
   const text=String(value||'');
   const pattern=/\[((?:\\.|[^\]\\])+)\]\(([^\s]*)\)/g;
@@ -1808,8 +1805,7 @@ function renderLinkedModelText(value){
   for(const match of text.matchAll(pattern)){
     html+=esc(text.slice(offset,match.index));
     const url=modelTextLinkUrl(match[2]),label=match[1].replace(/\\([\\\[\]])/g,'$1');
-    const ctaClass=isHighlightedMediaCta(label)?' class="media-cta-link" style="color:#b00020;font-weight:800"':'';
-    html+=url?`<a${ctaClass} href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`:esc(match[0]);
+    html+=url?`<a style="color:inherit;font-weight:inherit" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`:esc(match[0]);
     offset=match.index+match[0].length;
   }
   return (html+esc(text.slice(offset))).replace(/\r?\n/g,'<br>');
@@ -1829,7 +1825,7 @@ function insertModelTextLink(index){
 }
 function updateModelTextLinkPreview(index){
   const preview=$('#modelTextPreview'+index);
-  if(preview)preview.innerHTML=renderLinkedModelText(modelTextEditor?.options[index]?.text||'');
+  if(preview)preview.innerHTML=`<span class="saved-model-text" style="color:#b00020;font-weight:800">${renderLinkedModelText(modelTextEditor?.options[index]?.text||'')}</span>`;
 }
 function renderModelTextEditor(){
   const m=db.models.find(x=>x.id===modelTextEditor?.id);if(!m)return;
@@ -1866,13 +1862,11 @@ function modelDraftExtraHtml(m,ui=false){
   const parts=[];
   if(extra.enabled&&String(extra.text||'').trim()){
     const linked=renderLinkedModelText(extra.text);
-    const text=extra.bold?`<b>${linked}</b>`:linked;
-    parts.push(text.replace(/\r?\n/g,'<br>'));
+    parts.push(`<span class="saved-model-text" style="color:#b00020;font-weight:800">${linked}</span>`);
   }
   if(extra.mediaEnabled&&String(extra.mediaUrl||'').trim()){
     const label=String(extra.mediaLabel||'Media');
-    const ctaAttrs=isHighlightedMediaCta(label)?' class="media-cta-link" style="color:#b00020;font-weight:800"':'';
-    parts.push(`<a${ctaAttrs} href="${esc(extra.mediaUrl)}"${ui?' target="_blank" rel="noopener"':''}>${esc(label)}</a>`);
+    parts.push(`<a href="${esc(extra.mediaUrl)}"${ui?' target="_blank" rel="noopener"':''}>${esc(label)}</a>`);
   }
   if(!parts.length)return'';
   return ui?`<div class="credential-note">${parts.join(' ')}</div>`:`<div style="margin:6px 0 0">${parts.join(' ')}</div>`;
