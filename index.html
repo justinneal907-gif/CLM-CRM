@@ -3902,6 +3902,7 @@ async function clipboardImageFilesFromNavigator(){
   return out;
 }
 async function addClipboardImagesToModel(id,files,{addToPackage=true}={}){
+  const packageId=db.activeDraftId||'';
   if(!id)return setStatus('Choose a model first.');
   const model=db.models.find(x=>x.id===id);
   if(!model)return setStatus('Could not find that model in the CRM.');
@@ -3914,10 +3915,11 @@ async function addClipboardImagesToModel(id,files,{addToPackage=true}={}){
     added.push(data);
   }
   if(!added.length)return setStatus('No image was found on the clipboard.');
+  if((db.activeDraftId||'')!==packageId){persistWorkspaceSafe(true);return setStatus('Photos saved to the model library. The open package changed during upload; add them to the intended package.');}
   if(addToPackage){
     const current=draftPhotosForModel(model);
     setDraftPhotosForModel(id,[...current,...added]);
-    persistDraftPresentation();
+    persistDraftPresentation(id);
     renderEmail();
     setStatus(added.length===1?'Copied image saved to the CRM and added to this package.':`${added.length} copied images saved to the CRM and added to this package.`);
   }else{
@@ -3962,6 +3964,7 @@ async function handlePhotoLibraryImagePaste(event){
 }
 
 async function setDraftPhotoFile(id,input){
+  const packageId=db.activeDraftId||'';
   const files=[...(input?.files||[])];if(!files.length)return;
   const added=[];
   for(const f of files){
@@ -3970,6 +3973,7 @@ async function setDraftPhotoFile(id,input){
   }
   input.value='';
   if(!added.length)return setStatus('Could not read those images.');
+  if((db.activeDraftId||'')!==packageId){persistWorkspaceSafe(true);return setStatus('Photos saved to the model library. The open package changed during upload; add them to the intended package.');}
   const m=db.models.find(x=>x.id===id),current=m?draftPhotosForModel(m):[];
   setDraftPhotosForModel(id,[...current,...added]);
   persistDraftPresentation(id);renderEmail();persistWorkspaceSafe(false);
@@ -4083,7 +4087,7 @@ function persistDraftPresentation(photoModelId=''){
     active.models=selectedModels().map(m=>m.name);
   }
   if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
-  persistWorkspaceSafe(false);
+  persistWorkspaceSafe(true);
 }
 async function bootstrapWorkspace(){
   try{await window.CLMMediaStore?.init?.()}catch(err){console.info('Media store init skipped',err)}
