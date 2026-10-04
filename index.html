@@ -1876,7 +1876,7 @@ function modelDraftExtraHtml(m,ui=false){
     parts.push(`<a href="${esc(extra.mediaUrl)}"${ui?' target="_blank" rel="noopener"':''}>${esc(label)}</a>`);
   }
   if(!parts.length)return'';
-  return ui?`<div class="credential-note">${parts.join(' ')}</div>`:`<div style="margin:6px 0 0">${parts.join(' ')}</div>`;
+  return ui?`<div class="credential-note">${parts.join(' ')}</div>`:`<div data-clm-model-extra="${esc(m.id)}" style="margin:6px 0 0">${parts.join(' ')}</div>`;
 }
 function modelDraftExtraControlsHtml(m){
   const extra=draftModelExtra(m);
@@ -1943,8 +1943,12 @@ function setDraftModelExtraField(id,field,value){
     o.modelExtras[id]=userNext;
   }
   if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
+  editPreviewModelExtra(id);
   persistWorkspaceSafe(false);
   markEmailPreviewRefreshPending();
+  const card=document.getElementById('draftExtraText-'+id)?.closest('details');
+  const badge=card?.querySelector('summary .pill');
+  if(badge)badge.textContent=draftModelExtra(db.models.find(m=>m.id===id)).enabled?'Text on':'Text off';
 }
 function resetDraftModelExtra(id){
   for(const target of activeDraftOverrideTargets()){
@@ -1952,10 +1956,11 @@ function resetDraftModelExtra(id){
     if(target.userOverrides?.modelExtras)delete target.userOverrides.modelExtras[id];
   }
   if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
+  editPreviewModelExtra(id);
   persistWorkspaceSafe(false);
   markEmailPreviewRefreshPending();
   renderEmailSelection();
-  setStatus('Extra text and media settings reset for this model. Click Refresh preview when ready.');
+  setStatus('Extra text and media settings reset for this model.');
 }
 function renderEmailSelection(){if(!$('#selectedModels'))return;const date=briefPrimaryDate(),picked=selectedModels();$('#selectedModels').innerHTML=(picked.length?'<div class="drag-hint">Email order follows this list. Drag models on desktop or use Move up / Move down. Each photo selection is draft-specific.</div>':'')+picked.map((m,index)=>{const pick=draftPhotoForModel(m),override=draftPhotoSelections()[m.id]||'',urlValue=override&&!override.startsWith('data:')?override:'',options=draftPhotoOptions(m);return `<div class="draft-model-card${m.focusRoster?' focus-roster':''}" draggable="true" ondragstart="dragSelectedModel(event,'${m.id}')" ondragover="event.preventDefault()" ondrop="dropSelectedModel(event,'${m.id}')"><div class="draft-model-head">${pick?`<img class="draft-model-thumb" loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(pick))}" alt="${esc(m.name)} draft photo">`:`<div class="draft-model-thumb placeholder" style="display:flex;align-items:center;justify-content:center">${esc(initials(m.name))}</div>`}<div><div><b>${index+1}. ${esc(m.name)}</b> ${m.focusRoster?'<span class="focus-roster-badge">FOCUS</span>':''}<span class="model-info-text"> · ${esc(m.location)} / ${esc(m.division)}</span></div><div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div><div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div>${modelDraftExtraHtml(m,true)}${modelDraftExtraControlsHtml(m)}<div class="draft-model-controls"><button class="btn" type="button" onclick="moveSelectedModel('${m.id}',-1)" ${index===0?'disabled':''}>↑ Move up</button><button class="btn" type="button" onclick="moveSelectedModel('${m.id}',1)" ${index===picked.length-1?'disabled':''}>↓ Move down</button><button class="btn danger" type="button" onclick="removeFromEmail('${m.id}')">Remove</button></div></div></div>${options.length>1?`<div class="draft-photo-strip">${options.map((p,i)=>`<button class="draft-photo-choice ${pick===p.url?'active':''}" type="button" title="${esc(p.label)}" onclick="setDraftPhotoUrl('${m.id}',${JSON.stringify(p.url)})"><img loading="lazy" decoding="async" src="${esc(p.url)}" alt="${esc(m.name)} photo option ${i+1}"></button>`).join('')}</div>`:''}<div class="draft-photo-controls"><input type="url" value="${esc(urlValue)}" placeholder="Paste a photo URL for this draft" onchange="setDraftPhotoUrl('${m.id}',this.value)"><button class="btn" type="button" onclick="resetDraftPhoto('${m.id}')">Use default</button></div><div class="draft-photo-upload"><input type="file" accept="image/*" onchange="setDraftPhotoFile('${m.id}',this)"><span class="muted tiny">Upload is compressed and stored only with this working draft.</span></div></div>`}).join('')||'<div class="empty">No models selected.</div>';renderSubmissionWarnings()}
 function normalizedBrandName(){return ($('#emailBrand')?.value||$('#emailCompany')?.value||'').trim()}
@@ -2521,6 +2526,9 @@ function duplicateDraft(id){
 function setStatus(x){if($('#emailStatus'))$('#emailStatus').textContent=x}
 function saveDraft(render=true){
   captureDraft();
+  for(const id of selected){
+    if(db.draft?.modelExtras?.[id]||db.draft?.userOverrides?.modelExtras?.[id])editPreviewModelExtra(id);
+  }
   const html=currentEmailPreviewHtml();
   storeDraftPreview(html,false);
   const id=db.activeDraftId||uid();
@@ -3358,6 +3366,35 @@ function migrateDraftPreviewDocuments(data){
   }
   return data;
 }
+function editPreviewModelExtra(id){
+  const model=db.models.find(m=>m.id===id);if(!model)return;
+  const t=document.createElement('template');t.innerHTML=currentEmailPreviewHtml();
+  const root=t.content;
+  let block=[...root.querySelectorAll('[data-clm-model-id]')].find(el=>el.getAttribute('data-clm-model-id')===id);
+  if(!block){
+    const label=[...root.querySelectorAll('b,strong')].find(el=>normalizeName(el.textContent)===normalizeName(model.name));
+    block=label?.closest('div')?.parentElement;
+    if(block)block.setAttribute('data-clm-model-id',id);
+  }
+  if(!block)return;
+  // Replace only the controlled credential area; preserve surrounding copy and photos.
+  const existing=[...block.querySelectorAll('[data-clm-model-extra]')].filter(el=>el.getAttribute('data-clm-model-extra')===id);
+  if(!existing.length){
+    for(const div of block.querySelectorAll('div')){
+      if(div.getAttribute('style')==='margin:6px 0 0'&&!div.querySelector('img')&&(div.querySelector('.saved-model-text')||div.querySelector('a')))existing.push(div);
+    }
+    for(const span of block.querySelectorAll('.saved-model-text')){
+      const parent=span.parentElement;
+      if(parent&&parent!==block&&parent.tagName==='DIV')existing.push(parent);
+    }
+  }
+  const fresh=document.createElement('template');fresh.innerHTML=modelDraftExtraHtml(model);
+  const anchor=existing[0]||[...block.children].find(el=>el.querySelector('img'));
+  block.insertBefore(fresh.content,anchor||null);
+  [...new Set(existing)].forEach(el=>el.remove());
+  const html=sanitizeEditableEmailHtml(t.innerHTML);storeDraftPreview(html);
+  const preview=$('#emailPreview');if(preview){preview.innerHTML=draftPreviewHtml(html);preview.dataset.manualRefreshInitialized='1';bindDraftPreviewGifs();}
+}
 function editPreviewModels(previousIds,photoModelId=''){
   if(typeof db.draft?.previewHtml!=='string')return;
   const selectionChanged=JSON.stringify(previousIds||[])!==JSON.stringify(selected);
@@ -3525,6 +3562,9 @@ function refreshEmailPreview(){
   clearTimeout(emailDraftRenderTimer);clearTimeout(emailDraftPersistTimer);
   captureDraft();
   const preview=$('#emailPreview');if(!preview)return;
+  for(const id of selected){
+    if(db.draft?.modelExtras?.[id]||db.draft?.userOverrides?.modelExtras?.[id])editPreviewModelExtra(id);
+  }
   const html=currentEmailPreviewHtml();
   storeDraftPreview(html,false);
   preview.innerHTML=draftPreviewHtml(html);
