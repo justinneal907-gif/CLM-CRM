@@ -1857,6 +1857,10 @@ async function saveModelTexts(){
     if(old&&!next.some(o=>o.id===old.id)){extra.text=old.text;delete extra.textOptionId;}
   }
   m.textOptions=next;
+  for(const d of [db.draft,...(db.drafts||[])].filter(Boolean)){
+    const extra=d.userOverrides?.modelExtras?.[m.id]||d.modelExtras?.[m.id];
+    if(extra?.textOptionId&&next.some(o=>o.id===extra.textOptionId))d.pendingModelTextUpdates=[...new Set([...(d.pendingModelTextUpdates||[]),m.id])];
+  }
   if(!await persistWorkspaceSafe(true))return;
   modelTextEditor=null;$('#modelDialog').close();
   renderModels();renderEmailSelection();
@@ -1951,8 +1955,7 @@ function setDraftModelExtraField(id,field,value){
     o.modelExtras[id]=userNext;
   }
   if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
-  editPreviewModelExtra(id);
-  persistWorkspaceSafe(false);
+  try{editPreviewModelExtra(id)}finally{persistWorkspaceSafe(true)}
   markEmailPreviewRefreshPending();
   const card=document.getElementById('draftExtraText-'+id)?.closest('details');
   const badge=card?.querySelector('summary .pill');
@@ -1964,8 +1967,7 @@ function resetDraftModelExtra(id){
     if(target.userOverrides?.modelExtras)delete target.userOverrides.modelExtras[id];
   }
   if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
-  editPreviewModelExtra(id);
-  persistWorkspaceSafe(false);
+  try{editPreviewModelExtra(id)}finally{persistWorkspaceSafe(true)}
   markEmailPreviewRefreshPending();
   renderEmailSelection();
   setStatus('Extra text and media settings reset for this model.');
@@ -2537,11 +2539,8 @@ function duplicateDraft(id){
   setStatus('Draft copied. You are editing the new copy; the original is unchanged.');
 }
 function setStatus(x){if($('#emailStatus'))$('#emailStatus').textContent=x}
-function saveDraft(render=true){
+async function saveDraft(render=true){
   captureDraft();
-  for(const id of selected){
-    if(db.draft?.modelExtras?.[id]||db.draft?.userOverrides?.modelExtras?.[id])editPreviewModelExtra(id);
-  }
   const html=currentEmailPreviewHtml();
   storeDraftPreview(html,false);
   const id=db.activeDraftId||uid();
@@ -2549,7 +2548,7 @@ function saveDraft(render=true){
   const snapshot={...db.draft,id,date:db.draft.date||nyDate(),models:selectedModels().map(m=>m.name),modelIds:[...selected],previewHtml:html};
   if(existing>=0)db.drafts[existing]=snapshot;else db.drafts.push(snapshot);
   db.activeDraftId=id;db.draft=structuredClone(snapshot);
-  if(!persistWorkspaceSafe(true))return;
+  if(!await persistWorkspaceSafe(true))return;
   if(render){renderEmailSelection();renderBrandAdvisor();renderBriefSummary();renderSubmissionWarnings();renderDraftScope();}
   setStatus(existing>=0?'Draft saved with your exact preview.':'Draft created with your exact preview.');
 }
@@ -3005,6 +3004,26 @@ function draftModelLinkForModel(m){
   if(links&&Object.prototype.hasOwnProperty.call(links,m.id))return String(links[m.id]??'');
   return String(m.profile||m.profileUrl||'');
 }
+function editPreviewModelLink(id){
+  const model=db.models.find(m=>m.id===id);if(!model)return;
+  const t=document.createElement('template');t.innerHTML=currentEmailPreviewHtml();
+  let block=[...t.content.querySelectorAll('[data-clm-model-id]')].find(el=>el.getAttribute('data-clm-model-id')===id);
+  if(!block){
+    const label=[...t.content.querySelectorAll('b,strong')].find(el=>normalizeName(el.textContent)===normalizeName(model.name));
+    block=label?.closest('div')?.parentElement;
+  }
+  if(!block)return;
+  const anchor=[...block.querySelectorAll('a')].find(a=>!a.closest('[data-clm-model-extra],.saved-model-text')&&!a.querySelector('img')&&/^(Portfolio|Instagram)$/i.test(a.textContent.trim()));
+  const url=draftModelLinkForModel(model);
+  if(anchor){if(url)anchor.setAttribute('href',url);else anchor.remove();}
+  else if(url){
+    const row=document.createElement('div'),a=document.createElement('a');
+    a.href=url;a.textContent=model.profileLabel||'Portfolio';a.target='_blank';row.appendChild(a);
+    if(block.firstElementChild)block.firstElementChild.after(row);else block.appendChild(row);
+  }
+  const html=sanitizeEditableEmailHtml(t.innerHTML);storeDraftPreview(html);
+  const preview=$('#emailPreview');if(preview){preview.innerHTML=draftPreviewHtml(html);preview.dataset.manualRefreshInitialized='1';}
+}
 function setDraftModelLink(id,value){
   const v=String(value??'').trim();
   const links=draftModelLinkMap();
@@ -3016,7 +3035,7 @@ function setDraftModelLink(id,value){
     o.modelLinks[id]=v;
   }
   if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
-  persistWorkspaceSafe(false);
+  try{editPreviewModelLink(id)}finally{persistWorkspaceSafe(true)}
   markEmailPreviewRefreshPending();
   renderEmailSelection();
   setStatus(v?'Portfolio link override saved. Click Refresh preview when ready.':'Portfolio link hidden for this model. Click Refresh preview when ready.');
@@ -3028,7 +3047,7 @@ function resetDraftModelLink(id){
   if(saved?.modelLinks)delete saved.modelLinks[id];
   if(saved?.userOverrides?.modelLinks)delete saved.userOverrides.modelLinks[id];
   if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
-  persistWorkspaceSafe(false);
+  try{editPreviewModelLink(id)}finally{persistWorkspaceSafe(true)}
   markEmailPreviewRefreshPending();
   renderEmailSelection();
   setStatus('Portfolio link reset to the model default. Click Refresh preview when ready.');
@@ -3461,7 +3480,7 @@ function editPreviewModelExtra(id){
   }
   const fresh=document.createElement('template');fresh.innerHTML=modelDraftExtraHtml(model);
   const anchor=existing[0]||[...block.children].find(el=>el.querySelector('img'));
-  block.insertBefore(fresh.content,anchor||null);
+  if(anchor)anchor.before(fresh.content);else block.appendChild(fresh.content);
   [...new Set(existing)].forEach(el=>el.remove());
   const html=sanitizeEditableEmailHtml(t.innerHTML);storeDraftPreview(html);
   const preview=$('#emailPreview');if(preview){preview.innerHTML=draftPreviewHtml(html);preview.dataset.manualRefreshInitialized='1';bindDraftPreviewGifs();}
@@ -3633,9 +3652,9 @@ function refreshEmailPreview(){
   clearTimeout(emailDraftRenderTimer);clearTimeout(emailDraftPersistTimer);
   captureDraft();
   const preview=$('#emailPreview');if(!preview)return;
-  for(const id of selected){
-    if(db.draft?.modelExtras?.[id]||db.draft?.userOverrides?.modelExtras?.[id])editPreviewModelExtra(id);
-  }
+  // Refresh must not regenerate text that the user edited in the preview.
+  for(const id of db.draft.pendingModelTextUpdates||[])if(selected.includes(id))editPreviewModelExtra(id);
+  for(const target of activeDraftOverrideTargets())delete target.pendingModelTextUpdates;
   const html=currentEmailPreviewHtml();
   storeDraftPreview(html,false);
   preview.innerHTML=draftPreviewHtml(html);
@@ -3702,6 +3721,7 @@ function markPreviewNeedsGmailUpdate(){
 function storeEmailPreviewEdit(showStatus=false){
   const preview=$('#emailPreview');if(!preview)return;
   storeDraftPreview(sanitizeEditableEmailHtml(preview.innerHTML));
+  for(const target of activeDraftOverrideTargets())delete target.pendingModelTextUpdates;
   clearTimeout(emailPreviewEditTimer);
   persistWorkspaceSafe(true);
   if(showStatus)setStatus('Preview saved. This is the email used for Gmail.');
@@ -4118,7 +4138,7 @@ function save(){
   return true;
 }
 function persistDraftPresentation(photoModelId=''){
-  editPreviewModels(db.draft?.modelIds||[],photoModelId);
+  const previousIds=[...(db.draft?.modelIds||[])];
   db.selected=[...selected];
   db.draft=db.draft||structuredClone(seed.draft);
   db.draft.modelIds=[...selected];
@@ -4129,7 +4149,7 @@ function persistDraftPresentation(photoModelId=''){
     active.models=selectedModels().map(m=>m.name);
   }
   if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
-  persistWorkspaceSafe(true);
+  try{editPreviewModels(previousIds,photoModelId)}finally{persistWorkspaceSafe(true)}
 }
 
 function labelAlianaInstagramLinks20261004(data){
@@ -4320,6 +4340,5 @@ $('#suggestLookBtn')?.closest('.field')?.remove();
 })();
 </script>
 </body></html>
-
 
 
