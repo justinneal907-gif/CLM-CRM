@@ -261,6 +261,7 @@ th,td{padding:8px}
 <script src="assets/models/sophia-extra-photo-2.js"></script>
 <script src="assets/data/core-roster.js?v=20261002-iyanu-active-1"></script>
 <script src="assets/crm-media-store.js?v=20261002-reviewed-image-bytes-2"></script>
+<script src="assets/crm-bridal-materials.js?v=20261004-recovery-1"></script>
 <script>
 const SOURCE_DATE='2026-09-14';
 const BASE_ROSTER=window.CLM_CORE_ROSTER?.BASE_ROSTER||[];
@@ -1794,7 +1795,7 @@ function modelTextOptions(m){
 function draftModelExtra(m){
   const defaults=defaultModelDraftExtra(m);
   if(!m)return defaults;
-  let extra=defaults;
+  let extra={...defaults,...(bridalMaterialsExtra(m,db.draft)||{})};
   const saved=typeof activeSavedDraftRecord==='function'?activeSavedDraftRecord():null;
   for(const source of [db?.draft,saved]){
     const override=source?.userOverrides?.modelExtras?.[m.id]||source?.modelExtras?.[m.id];
@@ -3720,7 +3721,9 @@ function markPreviewNeedsGmailUpdate(){
 }
 function storeEmailPreviewEdit(showStatus=false){
   const preview=$('#emailPreview');if(!preview)return;
-  storeDraftPreview(sanitizeEditableEmailHtml(preview.innerHTML));
+  const editedHtml=sanitizeEditableEmailHtml(preview.innerHTML);
+  storeDraftPreview(editedHtml);
+  rememberEditedPreviewPhotos(editedHtml);
   for(const target of activeDraftOverrideTargets())delete target.pendingModelTextUpdates;
   clearTimeout(emailPreviewEditTimer);
   persistWorkspaceSafe(true);
@@ -3899,6 +3902,7 @@ function draftPhotosForModel(m){
   if(Array.isArray(legacy)&&legacy.length){
     return uniqueGalleryPhotoUrls(legacy.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)));
   }
+  if(isBridalMaterialsDraft(db.draft)&&Array.isArray(m.bridalMaterials?.photos))return [...m.bridalMaterials.photos];
   const fallback=getPhoto(m);
   return fallback?[fallback]:[];
 }
@@ -4191,11 +4195,13 @@ async function bootstrapWorkspace(){
   db=addLmFashionSizeMatchDraft20261002(db);
   db=applySophiaFollowupTemplate20261002(addSophiaBridalFollowups20261002(addMarrowNewFacesFollowup20261002(db)));
   db=addRemainingBridalDrafts20261003(db);
-  db=rebalanceRemainingBridalDrafts20261003(db);
+  // The finite selection update is retired: never replace saved model blocks at startup.
   db=migrateDraftPreviewDocuments(db);
   db=addRemainingBridalClosingLink20261004(db);
   db=formatSavedCanvaHereLinks20261004(db);
   db=labelAlianaInstagramLinks20261004(db);
+  db=recoverBridalMaterials20261004(db);
+  db=correctErinMaterials20261004(db);
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
@@ -4340,5 +4346,3 @@ $('#suggestLookBtn')?.closest('.field')?.remove();
 })();
 </script>
 </body></html>
-
-
