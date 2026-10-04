@@ -5,7 +5,7 @@ const source=fs.readFileSync('index.html','utf8');
 function fn(name){const m=new RegExp('^(?:async )?function '+name+'\\(','m').exec(source);if(!m)throw Error(name);const rest=source.slice(m.index);const end=/\n(?:async )?function /.exec(rest);return end?rest.slice(0,end.index):rest;}
 const preview=document.getElementById('emailPreview');preview.dataset.manualRefreshInitialized='1';
 const b64=s=>Buffer.from(s).toString('base64url');let returned;
-const ctx={console,document,window:{},Blob,TextDecoder,Uint8Array,AbortController,setTimeout,clearTimeout,atob,btoa,WORK_EMAIL:'work@example.com',AGENT_CC:'agent@example.com',db:{activeDraftId:'crm1'},$:()=>preview,
+const ctx={console,crypto:require("node:crypto").webcrypto,document,window:{},Blob,TextDecoder,Uint8Array,AbortController,setTimeout,clearTimeout,atob,btoa,WORK_EMAIL:'work@example.com',AGENT_CC:'agent@example.com',db:{activeDraftId:'crm1'},$:()=>preview,
  gmailToken:async()=> 'token',gmailDraftRequest:async()=>({ok:true,json:async()=>returned}),
  gmailMimeHeader:s=>s,gmailBase64Utf8:s=>Buffer.from(s).toString('base64'),gmailBase64UrlUtf8:b64,gmailWrapBase64:s=>s.match(/.{1,76}/g)?.join('\r\n')||'',gmailPlainText:s=>s,
  storeDraftPreview:s=>{ctx.saved=s},persistWorkspaceSafe(){},FileReader:class{readAsDataURL(blob){blob.arrayBuffer().then(b=>{this.result='data:'+blob.type+';base64,'+Buffer.from(b).toString('base64');this.onload()})}}};
@@ -40,3 +40,4 @@ function stored(){return vm.runInContext(`(()=>{const e=lastGmailPackage;verifie
  preview.innerHTML='<p>My text</p><img src="https://image.example/model.png">';ctx.fetch=async()=>{preview.innerHTML+='<p>Edit while freezing</p>';return {ok:true,blob:async()=>new Blob(['fixed'],{type:'image/png'})}};await assert.rejects(ctx.freezePreviewImagesForReview(),/preview changed/);assert.ok(preview.innerHTML.includes('Edit while freezing'));
  console.log('Passed: real DOM visible-source authority, MIME image association, Gmail byte/HTML/recipient/subject verification, pixel verification, stale Gmail image rejection, fixed-image review, concurrent edits.');
 })().catch(e=>{console.error(e);process.exitCode=1});
+

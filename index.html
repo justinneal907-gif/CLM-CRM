@@ -2303,6 +2303,7 @@ async function verifyStoredGmailPackage(draftId,allowPixel=false){
 function gmailInlineDataImages(html){
   const holder=document.createElement('div');holder.innerHTML=html;
   const parts=[];
+  const exportId=crypto.randomUUID().replace(/-/g,'');
   for(const img of holder.querySelectorAll('img'))if(!/^data:image\//i.test(img.getAttribute('src')||''))throw new Error('Images must be frozen and reviewed in the preview before Gmail upload.');
   [...holder.querySelectorAll('img[src^="data:"]')].forEach((img,index)=>{
     const src=img.getAttribute('src')||'';
@@ -2311,10 +2312,13 @@ function gmailInlineDataImages(html){
     const mime=match[1]||'image/jpeg';
     let payload='';
     try{payload=match[2]?match[3].replace(/\s/g,''):gmailBase64Utf8(decodeURIComponent(match[3]))}catch{throw new Error('Could not encode the preview image.')}
-    const cid='clm-'+Date.now()+'-'+index+'@chezlesmannequins';
+    const modelId=img.closest('[data-clm-model-id]')?.getAttribute('data-clm-model-id')||img.getAttribute('alt')||'photo';
+    const label=String(modelId).replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').slice(0,80)||'photo';
+    const identity='clm-'+exportId+'-'+label+'-'+index;
+    const cid=identity+'@chezlesmannequins';
     const ext=mime.includes('png')?'png':mime.includes('gif')?'gif':mime.includes('webp')?'webp':'jpg';
     img.setAttribute('src','cid:'+cid);
-    parts.push({mime,payload,cid,filename:'model-photo-'+(index+1)+'.'+ext});
+    parts.push({mime,payload,cid,modelId,filename:identity+'.'+ext});
   });
   return {html:holder.innerHTML,parts};
 }
@@ -2352,6 +2356,7 @@ function buildGmailDraftRaw(to,subject,html,signalId='',asBlob=false){
       mime+='Content-Type: '+part.mime+'; name="'+part.filename+'"\r\n';
       mime+='Content-Transfer-Encoding: base64\r\n';
       mime+='Content-ID: <'+part.cid+'>\r\n';
+      mime+='X-Attachment-Id: '+part.cid+'\r\n';
       mime+='Content-Disposition: inline; filename="'+part.filename+'"\r\n\r\n';
       mime+=gmailWrapBase64(part.payload)+'\r\n';
     }
