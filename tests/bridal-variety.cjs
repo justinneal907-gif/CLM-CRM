@@ -1,0 +1,20 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const source=fs.readFileSync('index.html','utf8');
+function fn(name){const m=new RegExp('^function '+name+'\\(','m').exec(source);assert.ok(m,name);const rest=source.slice(m.index),end=/\nfunction /.exec(rest);return end?rest.slice(0,end.index):rest;}
+const ctx={structuredClone};vm.createContext(ctx);
+for(const n of ['addRemainingBridalDrafts20261003','rebalanceRemainingBridalDrafts20261003','replaceBridalModelBlocks20261003'])vm.runInContext(fn(n),ctx);
+const db={drafts:[],contacts:[],draft:{id:'other',previewHtml:'My unsaved edit'},activeDraftId:'other',selected:['other'],recovery:{keep:true}};
+ctx.addRemainingBridalDrafts20261003(db);assert.equal(db.drafts.length,48);const originals=structuredClone(db.drafts);
+ctx.rebalanceRemainingBridalDrafts20261003(db);const counts={};
+for(const d of db.drafts){assert.equal(d.modelIds.length,3);assert.equal(new Set(d.modelIds).size,3);for(const id of d.modelIds)counts[id]=(counts[id]||0)+1;assert.equal((d.previewHtml.match(/data-clm-model-id=/g)||[]).length,3);assert.equal((d.previewHtml.match(/<img /g)||[]).length,3);assert.equal((d.previewHtml.match(/https:\/\/canva.link\/rl9661lp8tbsvwx/g)||[]).length,1);assert.equal(d.subject,'New York Bridal Week | '+d.brandProject);assert.ok(!d.gmailDraftId);}
+assert.equal(Object.keys(counts).length,26);assert.ok(Math.max(...Object.values(counts))<=25);assert.equal(counts['new-york-women-rachel-stone'],6);assert.equal(db.bridalWeekEligibleModels20261003.length,29);assert.equal(db.draft.previewHtml,'My unsaved edit');assert.deepEqual(db.selected,['other']);assert.equal(db.recovery.keep,true);
+// Requested model swaps preserve edited copy, retained model blocks/photos,
+// unrelated drafts, recipients, and the active package's separate unsaved text.
+const prior={...originals[0],modelIds:['london-women-ambre-prognitz','new-york-women-rachel-stone','los-angeles-women-elle-pickens'],models:['Ambre','Rachel','Elle'],previewHtml:'<p>My greeting</p><div data-clm-model-id="london-women-ambre-prognitz"><div><b>Ambre</b></div><img src="custom.jpg"></div><p>Between models</p><div data-clm-model-id="new-york-women-rachel-stone"><div>Rachel</div></div><div data-clm-model-id="los-angeles-women-elle-pickens"><div>Elle</div></div><p>My edited closing</p>',recipientEmail:'custom@example.com',photoSelections:{'london-women-ambre-prognitz':['custom.jpg']}};
+const priorHtml=prior.previewHtml;
+const existing={drafts:[prior,{id:'unrelated',previewHtml:'Keep me'}],draft:{...structuredClone(prior),previewHtml:prior.previewHtml+'<p>Unsaved active text</p>'},selected:[...prior.modelIds],activeDraftId:prior.id,recovery:{remainingBridalDrafts20261003:1},contacts:[]};
+ctx.rebalanceRemainingBridalDrafts20261003(existing);const out=existing.drafts[0];assert.equal(out.recipientEmail,'custom@example.com');assert.match(out.previewHtml,/My greeting/);assert.match(out.previewHtml,/Between models/);assert.match(out.previewHtml,/My edited closing/);assert.match(out.previewHtml,/custom.jpg/);assert.ok(!out.previewHtml.includes('<div>Rachel</div>'));assert.deepEqual(out.photoSelections['london-women-ambre-prognitz'],['custom.jpg']);assert.equal(existing.drafts[1].previewHtml,'Keep me');assert.match(existing.draft.previewHtml,/Unsaved active text/);assert.deepEqual(existing.selected,out.modelIds);assert.equal(existing.packageSelectionBackups20261003[0].previewHtml,priorHtml);
+// No repeated overwrite; deleted packages stay deleted.
+out.previewHtml='<p>My later edit</p>';existing.drafts.shift();ctx.addRemainingBridalDrafts20261003(existing);ctx.rebalanceRemainingBridalDrafts20261003(existing);assert.equal(existing.drafts.length,1);assert.equal(out.previewHtml,'<p>My later edit</p>');
+for(const [i,m] of [...source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].entries())if(m[1].trim())new vm.Script(m[1],{filename:'inline-'+i+'.js'});
+console.log('Passed: 48 three-model packages, full eligibility pool, cap, Rachel reduction, photo/text/recipient preservation, active draft sync, deletion persistence, and syntax.');
