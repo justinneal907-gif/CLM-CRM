@@ -3351,6 +3351,33 @@ function replaceBridalModelBlocks20261003(html,oldIds,newIds,blocks){
   return result+source.slice(cursor);
 }
 
+function addRemainingBridalClosingLink20261004(data){
+  data.recovery=data.recovery||{};
+  if(data.recovery.remainingBridalClosingLink20261004===1)return data;
+  const sentence='Again, you can see the rest of our models HERE.';
+  const addition='<p>Again, you can see the rest of our models <a href="https://canva.link/rl9661lp8tbsvwx">HERE</a>.</p>';
+  const patch=record=>{
+    if(!record?.id?.startsWith('nybfw-remaining-20261003-')||typeof record.previewHtml!=='string'||!record.previewHtml.trim())return;
+    const html=record.previewHtml;
+    const plain=html.replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim();
+    if(plain.includes(sentence))return;
+    const closing=/<(?:p|div)\b[^>]*>\s*(?:Thank you,|Best,|Kind regards,)/i.exec(html);
+    let updated;
+    if(closing)updated=html.slice(0,closing.index)+addition+html.slice(closing.index);
+    else{
+      const end=html.search(/<\/div>\s*$/i);
+      updated=end>=0?html.slice(0,end)+addition+html.slice(end):html+addition;
+    }
+    data.bridalClosingLinkBackups20261004=data.bridalClosingLinkBackups20261004||[];
+    data.bridalClosingLinkBackups20261004.push({id:record.id,previewHtml:html});
+    record.previewHtml=updated;
+    if(record.gmailDraftId)record.previewNeedsGmailUpdate=true;
+  };
+  for(const record of data.drafts||[])patch(record);
+  if(data.activeDraftId?.startsWith('nybfw-remaining-20261003-'))patch(data.draft);
+  data.recovery.remainingBridalClosingLink20261004=1;
+  return data;
+}
 function migrateDraftPreviewDocuments(data){
   for(const d of [data.draft,...(data.drafts||[])].filter(Boolean)){
     if(!Object.prototype.hasOwnProperty.call(d,'previewHtml')){
@@ -4079,6 +4106,7 @@ async function bootstrapWorkspace(){
   db=addRemainingBridalDrafts20261003(db);
   db=rebalanceRemainingBridalDrafts20261003(db);
   db=migrateDraftPreviewDocuments(db);
+  db=addRemainingBridalClosingLink20261004(db);
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
