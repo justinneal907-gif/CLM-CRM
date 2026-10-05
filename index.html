@@ -3070,7 +3070,7 @@ function resetDraftModelLink(id){
   setStatus('Portfolio link reset to the model default. Click Refresh preview when ready.');
 }
 function startBlankManualEmail(){
-  const html='<div><br></div>';
+  const html='<div><br></div><div><b>WhatsApp:</b></div><div><b>+1(907)317-3791</b></div>';
   storeDraftPreview(html);
   const preview=$('#emailPreview');
   if(preview){preview.innerHTML=html;preview.dataset.manualRefreshInitialized='1';preview.focus();}
@@ -3458,6 +3458,23 @@ function formatSavedCanvaHereLinks20261004(data){
   return data;
 }
 
+function addWhatsAppContactToDrafts20261005(data){
+  const contact='<div><b>WhatsApp:</b></div><div><b>+1(907)317-3791</b></div>';
+  for(const draft of [data.draft,...(data.drafts||[])].filter(Boolean)){
+    if(draft.whatsAppContactAdded20261005)continue;
+    if(typeof draft.previewHtml==='string'&&!draft.previewHtml.includes('+1(907)317-3791')){
+      const signature=/(<(?:div|p)\b[^>]*>\s*Justin\s*<\/(?:div|p)>)/i;
+      draft.previewHtml=signature.test(draft.previewHtml)
+        ?draft.previewHtml.replace(signature,'$1'+contact)
+        :draft.previewHtml+contact;
+      draft.previewNeedsGmailUpdate=true;
+      if(draft.openTrackingState==='ready')draft.openTrackingState='editing';
+    }
+    draft.whatsAppContactAdded20261005=true;
+  }
+  return data;
+}
+
 function migrateDraftPreviewDocuments(data){
   for(const d of [data.draft,...(data.drafts||[])].filter(Boolean)){
     if(!Object.prototype.hasOwnProperty.call(d,'previewHtml')){
@@ -3609,7 +3626,7 @@ function generateInitialEmailHtml(){
   const blankBodyCopy=!!(activeRecord?.blankBodyCopy||working.blankBodyCopy)&&!initialMessage;
   const greetingHtml=(messageHasGreeting||blankBodyCopy)?'':`<div>${greeting}</div><br>`;
   const leadHtml=(!blankBodyCopy&&lead)?`<div>${lead}</div><br>`:'';
-  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${(!blankBodyCopy&&more)?`<div style="margin:0 0 24px">${more}</div>`:''}<div>${close}</div><div>Justin</div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
+  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${(!blankBodyCopy&&more)?`<div style="margin:0 0 24px">${more}</div>`:''}<div>${close}</div><div>Justin</div><div><b>WhatsApp:</b></div><div><b>+1(907)317-3791</b></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
 }
 
 /* EMAIL DRAFT BUILDER STABILITY FIX 2026-09-17 */
@@ -4293,7 +4310,7 @@ function addSophiaBridalFollowups20261004(data){
     const subject='New York Bridal Week | '+entry.brand;
     const message='I wanted to follow up and send Sophia Pippen as an additional option for '+entry.brand+'. Her materials are below. Please let me know what you think!';
     const modelBlock='<div data-clm-model-id="'+esc(sophiaId)+'" style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>Sophia Pippen</b> | '+esc(stats)+'</div>'+(profile?'<div><a href="'+esc(profile)+'" target="_blank">'+esc(profileLabel)+'</a></div>':'')+(credential?'<div data-clm-model-extra="'+esc(sophiaId)+'" style="margin:6px 0 0"><span class="saved-model-text" style="color:#b00020;font-weight:800">'+esc(credential)+'</span></div>':'')+(photo?'<div style="text-align:left"><img src="'+esc(photo)+'" width="440" style="max-width:100%;height:auto;margin:8px 0 0" alt="Sophia Pippen"></div>':'')+'</div>';
-    const previewHtml='<div style="font-family:Arial,sans-serif;font-size:13px;color:#000"><div>Hi '+esc(entry.greeting)+',</div><br><div>'+esc(message)+'</div><br>'+modelBlock+'<div>Thank you,</div><div>Justin</div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>';
+    const previewHtml='<div style="font-family:Arial,sans-serif;font-size:13px;color:#000"><div>Hi '+esc(entry.greeting)+',</div><br><div>'+esc(message)+'</div><br>'+modelBlock+'<div>Thank you,</div><div>Justin</div><div><b>WhatsApp:</b></div><div><b>+1(907)317-3791</b></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>';
     const photoSelections={};if(photo)photoSelections[sophiaId]=[photo];
     const modelExtras={};modelExtras[sophiaId]={enabled:!!credential,text:credential,textOptionId:'',mediaEnabled:false,mediaUrl:'',mediaLabel:''};
     data.drafts.push({
@@ -4418,6 +4435,7 @@ async function bootstrapWorkspace(){
   db=removeCanvaLinksFromWorkspace(db);
   db=addSophiaBridalFollowups20261004(db);
   db=addBrandFollowups20261005(db);
+  db=addWhatsAppContactToDrafts20261005(db);
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
