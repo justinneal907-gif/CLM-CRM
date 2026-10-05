@@ -3965,24 +3965,32 @@ function applyPhotoManagement(data){
   }
   return data;
 }
+function draftHasExplicitPhotoSelection(id){
+  const manual=db.draft?.userOverrides?.photoSelections;
+  if(manual&&Object.prototype.hasOwnProperty.call(manual,id))return true;
+  if(db.draft?.photoSelections&&Object.prototype.hasOwnProperty.call(db.draft.photoSelections,id))return true;
+  if(db.draft?.packagePhotos&&Object.prototype.hasOwnProperty.call(db.draft.packagePhotos,id))return true;
+  return false;
+}
 function draftPhotosForModel(m){
   const manual=db.draft?.userOverrides?.photoSelections;
   if(manual&&Object.prototype.hasOwnProperty.call(manual,m.id)){
     const raw=Array.isArray(manual[m.id])?manual[m.id]:[manual[m.id]];
     return uniqueGalleryPhotoUrls(raw.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)));
   }
+  // Exact package selections always beat any remembered/default model photos.
   const selections=draftPhotoSelections();
-  if(!manual?.hasOwnProperty(m.id)&&db.draft?.reuseSavedModelPhotos&&savedModelPackagePhotos(db,m.id,db.draft))return savedModelPackagePhotos(db,m.id,db.draft);
   if(Object.prototype.hasOwnProperty.call(selections,m.id)){
     const raw=Array.isArray(selections[m.id])?selections[m.id]:[selections[m.id]];
     return uniqueGalleryPhotoUrls(raw.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)));
   }
   const legacy=db.draft?.packagePhotos?.[m.id];
-  if(Array.isArray(legacy)&&legacy.length){
+  if(Array.isArray(legacy)){
     return uniqueGalleryPhotoUrls(legacy.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)));
   }
-  const reusable=savedModelPackagePhotos(db,m.id,db.draft);if(reusable)return reusable;
-  if(isBridalMaterialsDraft(db.draft)&&Array.isArray(m.bridalMaterials?.photos))return [...m.bridalMaterials.photos];
+  const reusable=savedModelPackagePhotos(db,m.id,db.draft);
+  if(reusable)return uniqueGalleryPhotoUrls(reusable.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)));
+  if(isBridalMaterialsDraft(db.draft)&&Array.isArray(m.bridalMaterials?.photos))return uniqueGalleryPhotoUrls(m.bridalMaterials.photos);
   const fallback=getPhoto(m);
   return fallback?[fallback]:[];
 }
@@ -4003,7 +4011,8 @@ function setDraftPhotosForModel(id,urls){
 async function togglePackagePhoto(id,i){
   const m=db.models.find(x=>x.id===id),p=m&&draftPhotoOptions(m)[i];if(!p)return;
   if(!selected.includes(id))selected.push(id);
-  const current=draftPhotosForModel(m),key=galleryPhotoKey(p.url);
+  const explicit=draftHasExplicitPhotoSelection(id);
+  const current=explicit?draftPhotosForModel(m):[],key=galleryPhotoKey(p.url);
   const exists=current.some(url=>galleryPhotoKey(url)===key);
   setDraftPhotosForModel(id,exists?current.filter(url=>galleryPhotoKey(url)!==key):[...current,p.url]);
   persistDraftPresentation(id);renderEmail();if(!await persistWorkspaceSafe(true))return;
@@ -4022,7 +4031,7 @@ async function resetDraftPhoto(id){
 async function setDraftPhotoUrl(id,url){
   url=String(url||'').trim();if(!url)return;
   addPackagePhoto(id,url,'Saved URL');
-  const m=db.models.find(x=>x.id===id),current=m?draftPhotosForModel(m):[];
+  const m=db.models.find(x=>x.id===id),current=(m&&draftHasExplicitPhotoSelection(id))?draftPhotosForModel(m):[];
   setDraftPhotosForModel(id,[...current,url]);
   persistDraftPresentation(id);renderEmail();if(!await persistWorkspaceSafe(true))return;
   setStatus('Photo saved to the library and added to this package.');
@@ -4066,7 +4075,7 @@ async function addClipboardImagesToModel(id,files,{addToPackage=true}={}){
   if(!added.length)return setStatus('No image was found on the clipboard.');
   if((db.activeDraftId||'')!==packageId){persistWorkspaceSafe(true);return setStatus('Photos saved to the model library. The open package changed during upload; add them to the intended package.');}
   if(addToPackage){
-    const current=draftPhotosForModel(model);
+    const current=draftHasExplicitPhotoSelection(id)?draftPhotosForModel(model):[];
     setDraftPhotosForModel(id,[...current,...added]);
     persistDraftPresentation(id);
     renderEmail();
@@ -4124,7 +4133,7 @@ async function setDraftPhotoFile(id,input){
   input.value='';
   if(!added.length)return setStatus('Could not read those images.');
   if((db.activeDraftId||'')!==packageId){persistWorkspaceSafe(true);return setStatus('Photos saved to the model library. The open package changed during upload; add them to the intended package.');}
-  const m=db.models.find(x=>x.id===id),current=m?draftPhotosForModel(m):[];
+  const m=db.models.find(x=>x.id===id),current=(m&&draftHasExplicitPhotoSelection(id))?draftPhotosForModel(m):[];
   setDraftPhotosForModel(id,[...current,...added]);
   persistDraftPresentation(id);renderEmail();if(!await persistWorkspaceSafe(true))return;
   setStatus(added.length===1?'Uploaded photo added to this package.':`${added.length} uploaded photos added to this package.`);
@@ -4265,6 +4274,31 @@ function persistDraftPresentation(photoModelId=''){
   }
   if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
   try{editPreviewModels(previousIds,photoModelId)}finally{persistWorkspaceSafe(true)}
+}
+
+function isolatePackagePhotoMemory20261005(data){
+  if(Number(data.recovery?.packagePhotoIsolationVersion||0)>=1)return data;
+  const old=data.savedModelPackagePhotos||{};
+  // Keep already package-scoped entries, discard event-wide/global caches that
+  // caused one Bridal package's images to appear in another package.
+  data.savedModelPackagePhotos=Object.fromEntries(Object.entries(old).filter(([scope])=>scope.startsWith('package:')||scope.startsWith('package-name:')));
+  for(const record of [data.draft,...(data.drafts||[])].filter(Boolean)){
+    // Preserve exact draft choices as explicit user-owned package selections.
+    record.userOverrides=record.userOverrides||{};
+    record.userOverrides.photoSelections=record.userOverrides.photoSelections||{};
+    for(const id of record.modelIds||[]){
+      if(Object.prototype.hasOwnProperty.call(record.userOverrides.photoSelections,id))continue;
+      const local=record.photoSelections?.[id]??record.packagePhotos?.[id];
+      if(local!==undefined){
+        const list=uniqueGalleryPhotoUrls((Array.isArray(local)?local:[local]).filter(Boolean));
+        record.userOverrides.photoSelections[id]=[...list];
+        record.photoSelections={...(record.photoSelections||{}),[id]:[...list]};
+        record.packagePhotos={...(record.packagePhotos||{}),[id]:[...list]};
+      }
+    }
+  }
+  data.recovery={...(data.recovery||{}),packagePhotoIsolationVersion:1};
+  return data;
 }
 
 function labelAlianaInstagramLinks20261004(data){
@@ -4631,12 +4665,12 @@ function addAlonLivneFollowup20261005(data){
   else data.drafts.push(record);
 
   // Open the package once after this repair so it is immediately visible.
-  if(Number(data.recovery?.alonLivneFollowupVisibleVersion||0)<2){
+  if(Number(data.recovery?.alonLivneFollowupVisibleVersion||0)<3){
     data.activeDraftId=id;
     data.draft=structuredClone(record);
     data.selected=[...modelIds];
   }
-  data.recovery={...(data.recovery||{}),alonLivneFollowup20261005:1,alonLivneFollowupVisibleVersion:2};
+  data.recovery={...(data.recovery||{}),alonLivneFollowup20261005:1,alonLivneFollowupVisibleVersion:3};
   return data;
 }
 
@@ -4784,6 +4818,7 @@ async function bootstrapWorkspace(){
   db=addRemainingBridalClosingLink20261004(db);
   db=formatSavedCanvaHereLinks20261004(db);
   db=labelAlianaInstagramLinks20261004(db);
+  db=isolatePackagePhotoMemory20261005(db);
   db=stackModelPhotosVertically20261005(db);
   db=recoverBridalMaterials20261004(db);
   db=correctErinMaterials20261004(db);
