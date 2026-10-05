@@ -4251,7 +4251,7 @@ function labelAlianaInstagramLinks20261004(data){
 
 /* MODEL PHOTO STACK NORMALIZATION 2026-10-05
    Layout-only repair. It does not regenerate or replace any draft text. */
-// Fixed portrait frames keep photos equal without cropping their contents.
+// Equal image widths with natural heights: no letterboxing, cropping or distortion.
 function applyTrioFollowupWording20261005(data){
   if(data.recovery?.trioFollowupWording20261005===1)return data;
   const body='I wanted to follow up and send Sophia Pippen, Iyanu, and Erin as additional options. Their materials are below.';
@@ -4276,12 +4276,11 @@ function uniformEmailPhotoSizes(html){
   for(const img of t.content.querySelectorAll('img')){
     // Tracking pixels keep their original invisible dimensions.
     if(img.getAttribute('width')==='1'&&img.getAttribute('height')==='1')continue;
-    img.setAttribute('width','440');img.setAttribute('height','600');
-    img.style.width='440px';img.style.height='600px';
-    img.style.maxWidth='100%';img.style.maxHeight='none';
-    img.style.objectFit='contain';img.style.objectPosition='left center';
-    img.style.display='block';
-    img.style.removeProperty('aspect-ratio');
+    img.setAttribute('width','440');img.removeAttribute('height');
+    img.style.width='440px';img.style.height='auto';
+    img.style.maxWidth='100%';
+    for(const property of ['object-fit','object-position','aspect-ratio','min-width','min-height','max-height'])img.style.removeProperty(property);
+    img.style.padding='0';img.style.border='0';img.style.display='block';
   }
   return t.innerHTML;
 }
