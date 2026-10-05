@@ -3461,7 +3461,8 @@ function formatSavedCanvaHereLinks20261004(data){
 function addWhatsAppContactToDrafts20261005(data){
   const contact='<div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div>';
   for(const draft of [data.draft,...(data.drafts||[])].filter(Boolean)){
-    if(draft.whatsAppContactAdded20261005)continue;
+    if(draft.whatsAppContactAdded20261005===2)continue;
+    if(draft.whatsAppContactAdded20261005&&typeof draft.previewHtml==='string')draft.previewHtml=draft.previewHtml.replace('<div><b>WhatsApp:</b></div><div><b>+1(907)317-3791</b></div>',contact);
     if(typeof draft.previewHtml==='string'&&!draft.previewHtml.includes('+1(907)317-3791')){
       const signature=/(<(?:div|p)\b[^>]*>\s*Justin\s*<\/(?:div|p)>)/i;
       draft.previewHtml=signature.test(draft.previewHtml)
@@ -3470,7 +3471,7 @@ function addWhatsAppContactToDrafts20261005(data){
       draft.previewNeedsGmailUpdate=true;
       if(draft.openTrackingState==='ready')draft.openTrackingState='editing';
     }
-    draft.whatsAppContactAdded20261005=true;
+    draft.whatsAppContactAdded20261005=2;
   }
   return data;
 }
