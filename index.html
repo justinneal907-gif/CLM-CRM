@@ -3578,12 +3578,31 @@ function storeDraftPreview(html,changed=true){
   if(changed)markPreviewNeedsGmailUpdate();
   return db.draft.previewHtml;
 }
+function ensureFollowupCtaInHtml(html,cta){
+  if(typeof html!=='string'||!cta)return html;
+  const t=document.createElement('template');t.innerHTML=html;
+  t.content.querySelectorAll('[data-clm-bridal-followup-cta="20261005"]').forEach(el=>el.remove());
+  const fresh=document.createElement('template');fresh.innerHTML=cta;
+  const signature=[...t.content.querySelectorAll('div,p')].find(el=>/^(Thank you,|Best,)$/.test(el.textContent.trim())&&!el.querySelector('div,p'));
+  if(signature)signature.before(fresh.content);else (t.content.firstElementChild||t.content).appendChild(fresh.content);
+  return t.innerHTML;
+}
 function emailHtml(){
   const working=db.draft||{};
-  if(Object.prototype.hasOwnProperty.call(working,'previewHtml'))return working.previewHtml;
+  if(Object.prototype.hasOwnProperty.call(working,'previewHtml')){
+    if(typeof working.previewHtml==='string'&&working.followupCtaHtml){
+      working.previewHtml=ensureFollowupCtaInHtml(working.previewHtml,working.followupCtaHtml);
+      const active=activeDraftRecord();if(active)active.previewHtml=working.previewHtml;
+    }
+    return working.previewHtml;
+  }
   const activeRecord=activeDraftRecord();
   const saved=activeRecord?.previewHtml;
-  if(typeof saved==='string'){working.previewHtml=saved;return saved;}
+  if(typeof saved==='string'){
+    working.previewHtml=activeRecord?.followupCtaHtml?ensureFollowupCtaInHtml(saved,activeRecord.followupCtaHtml):saved;
+    activeRecord.previewHtml=working.previewHtml;
+    return working.previewHtml;
+  }
   const html=generateInitialEmailHtml();
   storeDraftPreview(html,false);
   return html;
@@ -3721,6 +3740,10 @@ function loadDraft(id){
   const d=db.drafts.find(x=>x.id===id);if(!d)return;
   if($('#emailPreview')?.dataset.manualRefreshInitialized==='1'){storeDraftPreview(currentEmailPreviewHtml(),false);persistWorkspaceSafe(true);}
   db.activeDraftId=id;db.draft={...structuredClone(seed.draft),...structuredClone(d),html:''};
+  if(typeof db.draft.previewHtml==='string'&&db.draft.followupCtaHtml){
+    db.draft.previewHtml=ensureFollowupCtaInHtml(db.draft.previewHtml,db.draft.followupCtaHtml);
+    d.previewHtml=db.draft.previewHtml;
+  }
   selected=(d.modelIds||[]).filter(modelId=>db.models.some(m=>m.id===modelId));if(!selected.length&&Array.isArray(d.models))for(const name of d.models){const m=db.models.find(x=>normalizeName(x.name)===normalizeName(name)||(normalizeName(name)==='anhelina'&&x.id==='site-women-anhelina'));if(m&&!selected.includes(m.id))selected.push(m.id)}
   db.selected=[...selected];const draftSearch=$('#draftSearch');if(draftSearch)draftSearch.value='';resetDraftUtilityControls();persistWorkspaceSafe(false);const preview=$('#emailPreview');if(preview)preview.dataset.manualRefreshInitialized='';go('email');setStatus(`Loaded ${d.brandProject||d.company||d.subject||'saved package'}.`)
 }
@@ -4170,7 +4193,7 @@ function compactPackageActions(){
 const CANVA_DRAFT_LINK='https://canva.link/vhk73x4zncw11o7';
 function activeApprovedCanvaViewLink(){
   const active=(typeof activeSavedDraftRecord==='function')?activeSavedDraftRecord():null;
-  return String(active?.brandCanvaViewLink||db?.draft?.brandCanvaViewLink||CANVA_DRAFT_LINK);
+  return String(active?.brandCanvaPublicViewLink||db?.draft?.brandCanvaPublicViewLink||CANVA_DRAFT_LINK);
 }
 function stripCanvaLinksText(value,approvedLink=''){
   // Canva links are normalized to the approved destination for the current
@@ -4183,7 +4206,7 @@ function stripCanvaLinksText(value,approvedLink=''){
 }
 function normalizeCanvaLinksInDraftRecord(record){
   if(!record||typeof record!=='object')return record;
-  const approved=String(record.brandCanvaViewLink||CANVA_DRAFT_LINK);
+  const approved=String(record.brandCanvaPublicViewLink||CANVA_DRAFT_LINK);
   let changed=false;
   const walk=obj=>{
     if(!obj||typeof obj!=='object')return;
@@ -4472,33 +4495,32 @@ function addUnsentBridalFollowupCta20261005(data){
 
 /* Brand-specific public-view Bridal Week package links, 2026-10-05. */
 function applyBrandSpecificBridalCanvaLinks20261005(data){
-  const links={"nybfw_followup_20261002_zuhair_murad_sophia_iyanu_erin":"https://www.canva.com/d/eEw8OsrVGpnN3sc","nybfw_followup_20261002_valentini_spose_sophia_iyanu_erin":"https://www.canva.com/d/-_3GP2LMC-0zFKZ","nybfw_followup_20261002_ricca_sposa_sophia_iyanu_erin":"https://www.canva.com/d/mC4WWB3zia7XH83","nybfw_followup_20261002_vionnette_vintage_sophia_iyanu_erin":"https://www.canva.com/d/MxqZ0BTR94x_ELL","nybfw_followup_20261002_heli_kalkstein_sophia_iyanu_erin":"https://www.canva.com/d/lbsw3Q9tVl5XXP2","nybfw_followup_20261002_justin_alexander_signature_sophia_iyanu_erin":"https://www.canva.com/d/ZxtilHV3Gf03YTq","nybfw_followup_20261002_caroline_castigliano_sophia_iyanu_erin":"https://www.canva.com/d/aM1Z0s2svzOXhpC","nybfw_followup_20261002_rebecca_schoneveld_sophia_iyanu_erin":"https://www.canva.com/d/-nP9upglX74UPUM","nybfw_followup_20261002_watters_designs_sophia_iyanu_erin":"https://www.canva.com/d/OJOeivg-XaXYYSc","nybfw_followup_20261002_hera_couture_sophia_iyanu_erin":"https://www.canva.com/d/1Lg6qBaT3GxKpQt","nybfw_followup_20261002_jenny_yoo_sophia_iyanu_erin":"https://www.canva.com/d/KM1uvn3KaoRQODW","nybfw_followup_20261002_vivienne_westwood_bridal_sophia_iyanu_erin":"https://www.canva.com/d/LBWFu3JLLB7TknR","nybfw_followup_20261002_marrow_sophia_iyanu_erin":"https://www.canva.com/d/jbmATQB8mffeAlS"};
+  const designs={"nybfw_followup_20261002_zuhair_murad_sophia_iyanu_erin":"DAHXK0_edX0","nybfw_followup_20261002_valentini_spose_sophia_iyanu_erin":"DAHXK7mrdLI","nybfw_followup_20261002_ricca_sposa_sophia_iyanu_erin":"DAHXK7H8610","nybfw_followup_20261002_vionnette_vintage_sophia_iyanu_erin":"DAHXK-GqFL8","nybfw_followup_20261002_heli_kalkstein_sophia_iyanu_erin":"DAHXK1tvXAY","nybfw_followup_20261002_justin_alexander_signature_sophia_iyanu_erin":"DAHXKz05FfY","nybfw_followup_20261002_caroline_castigliano_sophia_iyanu_erin":"DAHXK4PBNCw","nybfw_followup_20261002_rebecca_schoneveld_sophia_iyanu_erin":"DAHXK1I1GKY","nybfw_followup_20261002_watters_designs_sophia_iyanu_erin":"DAHXK3DVZvE","nybfw_followup_20261002_hera_couture_sophia_iyanu_erin":"DAHXK2s6TMg","nybfw_followup_20261002_jenny_yoo_sophia_iyanu_erin":"DAHXK_l6tWA","nybfw_followup_20261002_vivienne_westwood_bridal_sophia_iyanu_erin":"DAHXK_xk40Y","nybfw_followup_20261002_marrow_sophia_iyanu_erin":"DAHXK-oIBzw"};
   const patch=record=>{
-    if(!record||!links[record.id])return record;
-    const url=links[record.id];
-    record.brandCanvaViewLink=url;
-    record.packageLink=url;
+    if(!record||!designs[record.id])return record;
+    record.brandCanvaDesignId=designs[record.id];
+    // Canva Connect API view_url values are private/temporary. Never put them
+    // in client email. Use only a verified public share URL here.
+    delete record.brandCanvaViewLink;
+    record.packageLink=String(record.brandCanvaPublicViewLink||CANVA_DRAFT_LINK);
+    const url=record.packageLink;
     const cta='<div data-clm-bridal-followup-cta="20261005" style="margin:0 0 18px"><div>All three are currently available for Bridal Week.</div><br><div>Would you like to see any of them for a casting or fitting, or have us place anyone on hold?</div><br><div>You can also view the rest of our Bridal Week package <a href="'+url+'" target="_blank"><strong><em>HERE</em></strong></a>.</div></div>';
     record.followupCtaHtml=cta;
     if(typeof record.previewHtml==='string'&&record.previewHtml.trim()){
-      const t=document.createElement('template');
-      t.innerHTML=record.previewHtml;
+      const t=document.createElement('template');t.innerHTML=record.previewHtml;
       t.content.querySelectorAll('[data-clm-bridal-followup-cta="20261005"]').forEach(el=>el.remove());
       const signature=[...t.content.querySelectorAll('div,p')].find(el=>/^(Thank you,|Best,)$/.test(el.textContent.trim())&&!el.querySelector('div,p'));
       const fresh=document.createElement('template');fresh.innerHTML=cta;
-      if(signature)signature.before(fresh.content);
-      else (t.content.firstElementChild||t.content).appendChild(fresh.content);
+      if(signature)signature.before(fresh.content);else (t.content.firstElementChild||t.content).appendChild(fresh.content);
       record.previewHtml=stripCanvaLinksText(t.innerHTML,url);
-    }else{
-      delete record.previewHtml;
-    }
+    }else delete record.previewHtml;
     record.html='';
     if(record.gmailDraftId)record.previewNeedsGmailUpdate=true;
     return record;
   };
   data.drafts=(data.drafts||[]).map(patch);
   data.draft=patch(data.draft||{});
-  data.recovery={...(data.recovery||{}),brandSpecificBridalCanvaLinks20261005:1};
+  data.recovery={...(data.recovery||{}),brandSpecificBridalCanvaLinks20261005:2};
   return data;
 }
 
