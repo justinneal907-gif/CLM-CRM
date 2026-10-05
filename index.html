@@ -4606,17 +4606,17 @@ function addAlonLivneFollowup20261005(data){
   const id='nybfw_followup_20261005_alon_livne';
   const modelIds=[
     'new-york-women-callie-steg',
-    'new-york-women-seven-wright',
     'new-york-women-claudia-lucchini',
     'new-york-women-maja-stockwell',
+    'new-york-women-seven-wright',
     'user-women-aliana',
     'new-york-women-molly-gardiner',
     'new-york-women-sophia-pippen'
   ];
-  const modelNames=['Callie','Seven','Claudia','Maja','Aliana','Molly','Sophia Pippen'];
+  const modelNames=['Callie','Claudia','Maja','Seven','Aliana','Molly','Sophia Pippen'];
   const publicLink=CANVA_DRAFT_LINK;
-  const initialMessage='Hi Moran,\n\nI wanted to follow up and send Callie, Seven, Claudia, Maja, Aliana, Molly, and Sophia Pippen as additional options. Their materials are below.';
-  const followupCtaHtml='<div style="margin:0 0 18px">You can also view the rest of our Bridal Week package <a href="'+publicLink+'" target="_blank"><strong><em>HERE</em></strong></a>.</div>';
+  const initialMessage='Hi Moran,\n\nI wanted to follow up and send Callie, Claudia, Maja, Seven, Aliana, Molly, and Sophia Pippen as additional options. Their materials are below.';
+  const followupCtaHtml='<div data-clm-bridal-followup-cta="alon-20261005" style="margin:0 0 18px"><div>All seven are currently available for Bridal Week.</div><br><div>Would you like to see any of them for a casting or fitting, or have us place anyone on hold?</div><br><div>You can also view the rest of our Bridal Week package <a href="'+publicLink+'" target="_blank"><strong><em>HERE</em></strong></a>.</div></div>';
   const existing=data.drafts.find(d=>d.id===id)||null;
   const photoSelections=structuredClone(existing?.photoSelections||existing?.packagePhotos||{});
   for(const modelId of modelIds){
