@@ -4168,30 +4168,43 @@ function compactPackageActions(){
 }
 /* CANVA LINK NORMALIZATION 2026-09-30 */
 const CANVA_DRAFT_LINK='https://canva.link/vhk73x4zncw11o7';
-function stripCanvaLinksText(value){
-  // Compatibility name retained. Canva links are no longer removed: every
-  // Canva destination is forced to the single agency-approved package link.
+function activeApprovedCanvaViewLink(){
+  const active=(typeof activeSavedDraftRecord==='function')?activeSavedDraftRecord():null;
+  return String(active?.brandCanvaViewLink||db?.draft?.brandCanvaViewLink||CANVA_DRAFT_LINK);
+}
+function stripCanvaLinksText(value,approvedLink=''){
+  // Canva links are normalized to the approved destination for the current
+  // package. Brand-specific filtered packages use Canva's view URL only.
+  const destination=String(approvedLink||activeApprovedCanvaViewLink()||CANVA_DRAFT_LINK);
   return String(value??'').replace(
     /(?:https?:\/\/)?(?:www\.)?(?:canva\.com|canva\.link)\/[^\s"'<>\\)]*/gi,
-    CANVA_DRAFT_LINK
+    destination
   );
 }
-// Verified 2026-10-04: opens the 29-page bridal package in guest view-only mode.
-// Only this verified destination may be inserted. A replacement requires a new guest-access check.
 function normalizeCanvaLinksInDraftRecord(record){
   if(!record||typeof record!=='object')return record;
+  const approved=String(record.brandCanvaViewLink||CANVA_DRAFT_LINK);
   let changed=false;
-  for(const key of Object.keys(record)){
-    const value=record[key];
-    if(typeof value==='string'){
-      const clean=stripCanvaLinksText(value);
-      if(clean!==value){record[key]=clean;changed=true;}
-    }else if(value&&typeof value==='object')normalizeCanvaLinksInDraftRecord(value);
-  }
+  const walk=obj=>{
+    if(!obj||typeof obj!=='object')return;
+    for(const key of Object.keys(obj)){
+      const value=obj[key];
+      if(typeof value==='string'){
+        const clean=stripCanvaLinksText(value,approved);
+        if(clean!==value){obj[key]=clean;changed=true;}
+      }else if(value&&typeof value==='object')walk(value);
+    }
+  };
+  walk(record);
   if(changed&&record.gmailDraftId)record.previewNeedsGmailUpdate=true;
   return record;
 }
-function removeCanvaLinksFromWorkspace(data){return normalizeCanvaLinksInDraftRecord(data);}
+function removeCanvaLinksFromWorkspace(data){
+  if(!data||typeof data!=='object')return data;
+  if(data.draft)normalizeCanvaLinksInDraftRecord(data.draft);
+  for(const draft of data.drafts||[])normalizeCanvaLinksInDraftRecord(draft);
+  return data;
+}
 /* END CANVA LINK NORMALIZATION */
 
 /* INDEXEDDB RUNTIME OVERRIDES */
@@ -4457,6 +4470,38 @@ function addUnsentBridalFollowupCta20261005(data){
   return data;
 }
 
+/* Brand-specific public-view Bridal Week package links, 2026-10-05. */
+function applyBrandSpecificBridalCanvaLinks20261005(data){
+  const links={"nybfw_followup_20261002_zuhair_murad_sophia_iyanu_erin":"https://www.canva.com/d/eEw8OsrVGpnN3sc","nybfw_followup_20261002_valentini_spose_sophia_iyanu_erin":"https://www.canva.com/d/-_3GP2LMC-0zFKZ","nybfw_followup_20261002_ricca_sposa_sophia_iyanu_erin":"https://www.canva.com/d/mC4WWB3zia7XH83","nybfw_followup_20261002_vionnette_vintage_sophia_iyanu_erin":"https://www.canva.com/d/MxqZ0BTR94x_ELL","nybfw_followup_20261002_heli_kalkstein_sophia_iyanu_erin":"https://www.canva.com/d/lbsw3Q9tVl5XXP2","nybfw_followup_20261002_justin_alexander_signature_sophia_iyanu_erin":"https://www.canva.com/d/ZxtilHV3Gf03YTq","nybfw_followup_20261002_caroline_castigliano_sophia_iyanu_erin":"https://www.canva.com/d/aM1Z0s2svzOXhpC","nybfw_followup_20261002_rebecca_schoneveld_sophia_iyanu_erin":"https://www.canva.com/d/-nP9upglX74UPUM","nybfw_followup_20261002_watters_designs_sophia_iyanu_erin":"https://www.canva.com/d/OJOeivg-XaXYYSc","nybfw_followup_20261002_hera_couture_sophia_iyanu_erin":"https://www.canva.com/d/1Lg6qBaT3GxKpQt","nybfw_followup_20261002_jenny_yoo_sophia_iyanu_erin":"https://www.canva.com/d/KM1uvn3KaoRQODW","nybfw_followup_20261002_vivienne_westwood_bridal_sophia_iyanu_erin":"https://www.canva.com/d/LBWFu3JLLB7TknR","nybfw_followup_20261002_marrow_sophia_iyanu_erin":"https://www.canva.com/d/jbmATQB8mffeAlS"};
+  const patch=record=>{
+    if(!record||!links[record.id])return record;
+    const url=links[record.id];
+    record.brandCanvaViewLink=url;
+    record.packageLink=url;
+    const cta='<div data-clm-bridal-followup-cta="20261005" style="margin:0 0 18px"><div>All three are currently available for Bridal Week.</div><br><div>Would you like to see any of them for a casting or fitting, or have us place anyone on hold?</div><br><div>You can also view the rest of our Bridal Week package <a href="'+url+'" target="_blank"><strong><em>HERE</em></strong></a>.</div></div>';
+    record.followupCtaHtml=cta;
+    if(typeof record.previewHtml==='string'&&record.previewHtml.trim()){
+      const t=document.createElement('template');
+      t.innerHTML=record.previewHtml;
+      t.content.querySelectorAll('[data-clm-bridal-followup-cta="20261005"]').forEach(el=>el.remove());
+      const signature=[...t.content.querySelectorAll('div,p')].find(el=>/^(Thank you,|Best,)$/.test(el.textContent.trim())&&!el.querySelector('div,p'));
+      const fresh=document.createElement('template');fresh.innerHTML=cta;
+      if(signature)signature.before(fresh.content);
+      else (t.content.firstElementChild||t.content).appendChild(fresh.content);
+      record.previewHtml=stripCanvaLinksText(t.innerHTML,url);
+    }else{
+      delete record.previewHtml;
+    }
+    record.html='';
+    if(record.gmailDraftId)record.previewNeedsGmailUpdate=true;
+    return record;
+  };
+  data.drafts=(data.drafts||[]).map(patch);
+  data.draft=patch(data.draft||{});
+  data.recovery={...(data.recovery||{}),brandSpecificBridalCanvaLinks20261005:1};
+  return data;
+}
+
 /* Sophia Pippen follow-ups for October 4 Bridal Week sends.
    CRM drafts only: no Gmail draft creation and no send action. */
 function addSophiaBridalFollowups20261004(data){
@@ -4635,6 +4680,7 @@ async function bootstrapWorkspace(){
   db=addLmFashionSizeMatchDraft20261002(db);
   db=applySophiaFollowupTemplate20261002(addSophiaBridalFollowups20261002(addMarrowNewFacesFollowup20261002(db)));
   db=addUnsentBridalFollowupCta20261005(db);
+  db=applyBrandSpecificBridalCanvaLinks20261005(db);
   db=addRemainingBridalDrafts20261003(db);
   // The finite selection update is retired: never replace saved model blocks at startup.
   db=migrateDraftPreviewDocuments(db);
