@@ -4349,7 +4349,10 @@ function removeIyanuCountryAndEnableSophiaText20261005(data){
       }
       if(end<0||end<=start.index)continue;
       if(/Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian/i.test(html.slice(start.index,end)))continue;
-      const insert='<div data-clm-model-extra="'+sophiaId+'" style="margin:6px 0 0"><span class="saved-model-text" style="color:#b00020;font-weight:800">'+credential+'</span></div>';
+      const savedExtra=record.userOverrides?.modelExtras?.[sophiaId]||record.modelExtras?.[sophiaId]||{};
+      const extraText=String(savedExtra.text||credential);
+      const renderedText=typeof renderLinkedModelText==='function'?renderLinkedModelText(extraText):esc(extraText);
+      const insert='<div data-clm-model-extra="'+sophiaId+'" style="margin:6px 0 0"><span class="saved-model-text" style="color:#b00020;font-weight:800">'+renderedText+'</span></div>';
       const closeAt=end-tag.length-3;
       record[field]=html.slice(0,closeAt)+insert+html.slice(closeAt);
       if(record.gmailDraftId)record.previewNeedsGmailUpdate=true;
