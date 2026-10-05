@@ -195,8 +195,15 @@ function correctErinMaterials20261004(data){
 }
 
 
-// Reusable photo choices are scoped to the event, and exact package edits win.
-function packagePhotoScope(d){return isBridalMaterialsDraft(d)?'bridal':String(d?.eventName||'general').trim().toLowerCase()}
+// Reusable photo choices are scoped to one package only. A model photo chosen
+// in one Bridal Week draft must never bleed into another Bridal Week draft.
+function packagePhotoScope(d){
+  const id=String(d?.id||'').trim();
+  if(id)return 'package:'+id;
+  const name=String(d?.packageName||d?.subject||d?.brandProject||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+  if(name)return 'package-name:'+name;
+  return 'working-draft';
+}
 function savedModelPackagePhotos(data,id,d){return data.savedModelPackagePhotos?.[packagePhotoScope(d)]?.[id]||null}
 function rememberModelPackagePhotos(id,photos){
   const scope=packagePhotoScope(db.draft);
@@ -206,7 +213,7 @@ function rememberModelPackagePhotos(id,photos){
 }
 function repairSavedPackagePhotos20261005(data){
   for(const record of [data.draft,...(data.drafts||[])].filter(Boolean))if(!Object.prototype.hasOwnProperty.call(record,'previewHtml'))record.reuseSavedModelPhotos=true;
-  if(data.recovery?.savedPackagePhotos20261005===2)return data;
+  if(data.recovery?.savedPackagePhotos20261005===3)return data;
   data.savedModelPackagePhotos=data.savedModelPackagePhotos||{};
   const records=[...(data.drafts||[]),data.draft].filter(Boolean);
   const list=v=>(Array.isArray(v)?v:[v]).filter(x=>typeof x==='string'&&x&&!/^(blob:|cid:|file:)/i.test(x));
@@ -251,5 +258,5 @@ function repairSavedPackagePhotos20261005(data){
     // A new generated preview uses the saved model choices instead of seed photos.
     if(!Object.prototype.hasOwnProperty.call(record,'previewHtml'))record.reuseSavedModelPhotos=true;
   }
-  data.recovery={...(data.recovery||{}),savedPackagePhotos20261005:2};return data;
+  data.recovery={...(data.recovery||{}),savedPackagePhotos20261005:3};return data;
 }
