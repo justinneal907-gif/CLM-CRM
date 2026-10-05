@@ -4263,6 +4263,83 @@ function addSophiaBridalFollowups20261004(data){
   data.recovery={...(data.recovery||{}),sophiaBridalFollowups20261004:1};
   return data;
 }
+/* Garnier and ON Running follow ups requested October 5 2026.
+   CRM drafts only. Body copy stays blank for agent editing. */
+function addBrandFollowups20261005(data){
+  if(data.recovery?.brandFollowups20261005===1)return data;
+  const raquelId='miami-women-raquel';
+  const raquel=(data.models||[]).find(m=>m.id===raquelId);
+  if(!raquel)return data;
+  data.drafts=Array.isArray(data.drafts)?data.drafts:[];
+  const entries=[
+    {
+      id:'brand_followup_20261005_garnier_nutrisse_raquel',
+      eventName:'Garnier Nutrisse Ultra Color',
+      packageName:'Garnier Nutrisse Follow Up',
+      contactName:'Samantha',
+      company:'Garnier Nutrisse',
+      recipientEmail:'samantha@primecontent.com',
+      brandProject:'Garnier Nutrisse Ultra Color',
+      subject:'S/S 2027 Model Package (Garnier Nutrisse)',
+      sourceMessageIds:['1a0a63441424ac32'],
+      notes:'Garnier follow up requested October 5 2026. Raquel included.'
+    },
+    {
+      id:'brand_followup_20261005_on_running_raquel',
+      eventName:'ON Running',
+      packageName:'ON Running Follow Up',
+      contactName:'Miro',
+      company:'ON Running',
+      recipientEmail:'miro@miroraynov.com',
+      brandProject:'ON Running',
+      subject:'ON Running Submission',
+      sourceMessageIds:['1a0a6bd6bfbd3480'],
+      notes:'ON Running follow up requested October 5 2026. Raquel included.'
+    }
+  ];
+  for(const entry of entries){
+    if(data.drafts.some(d=>d.id===entry.id))continue;
+    const photoSelections={};
+    const photo=(data.customPhotos||{})[raquelId]||raquel.photo||raquel.photoUrl||'';
+    if(photo)photoSelections[raquelId]=[photo];
+    const contact=(data.contacts||[]).find(c=>String(c.email||'').trim().toLowerCase()===entry.recipientEmail.toLowerCase());
+    data.drafts.push({
+      id:entry.id,
+      date:'2026-10-05',
+      eventName:entry.eventName,
+      packageName:entry.packageName,
+      purpose:'followup',
+      contactId:contact?.id||'',
+      contactName:contact?.name||entry.contactName,
+      company:entry.company,
+      recipientEmail:entry.recipientEmail,
+      cc:'agent@chezlesmannequins.com',
+      brandProject:entry.brandProject,
+      packageLink:'',
+      brief:'',
+      initialMessage:'',
+      subject:entry.subject,
+      includeStats:true,
+      includePhotos:true,
+      includeSources:true,
+      models:['Raquel'],
+      modelIds:[raquelId],
+      photoSelections,
+      packagePhotos:structuredClone(photoSelections),
+      html:'',
+      castingBriefRaw:'',
+      parsedBrief:{project:entry.brandProject},
+      blankBodyCopy:true,
+      followupBatch:'brand-followups-20261005',
+      sourceMessageIds:entry.sourceMessageIds,
+      source:'Work Gmail sent mail review October 5 2026',
+      notes:entry.notes
+    });
+  }
+  data.recovery={...(data.recovery||{}),brandFollowups20261005:1};
+  return data;
+}
+
 async function bootstrapWorkspace(){
   try{await window.CLMMediaStore?.init?.()}catch(err){console.info('Media store init skipped',err)}
   await ensureMilanArchiveLoaded();
@@ -4291,6 +4368,7 @@ async function bootstrapWorkspace(){
   db=correctErinMaterials20261004(db);
   db=removeCanvaLinksFromWorkspace(db);
   db=addSophiaBridalFollowups20261004(db);
+  db=addBrandFollowups20261005(db);
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
