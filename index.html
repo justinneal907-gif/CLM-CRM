@@ -3581,7 +3581,7 @@ function storeDraftPreview(html,changed=true){
 function ensureFollowupCtaInHtml(html,cta){
   if(typeof html!=='string'||!cta)return html;
   const t=document.createElement('template');t.innerHTML=html;
-  t.content.querySelectorAll('[data-clm-bridal-followup-cta="20261005"]').forEach(el=>el.remove());
+  t.content.querySelectorAll('[data-clm-bridal-followup-cta]').forEach(el=>el.remove());
   const fresh=document.createElement('template');fresh.innerHTML=cta;
   const signature=[...t.content.querySelectorAll('div,p')].find(el=>/^(Thank you,|Best,)$/.test(el.textContent.trim())&&!el.querySelector('div,p'));
   if(signature)signature.before(fresh.content);else (t.content.firstElementChild||t.content).appendChild(fresh.content);
@@ -4508,7 +4508,7 @@ function addUnsentBridalFollowupCta20261005(data){
     if(typeof record.previewHtml==='string'){
       const t=document.createElement('template');
       t.innerHTML=record.previewHtml;
-      t.content.querySelectorAll('[data-clm-bridal-followup-cta="20261005"]').forEach(el=>el.remove());
+      t.content.querySelectorAll('[data-clm-bridal-followup-cta]').forEach(el=>el.remove());
       const root=t.content.firstElementChild||t.content;
       const children=[...root.children];
       const signature=children.find(el=>/^(Thank you,|Best,)$/.test(el.textContent.trim()));
@@ -4542,7 +4542,7 @@ function applyBrandSpecificBridalCanvaLinks20261005(data){
     record.followupCtaHtml=cta;
     if(typeof record.previewHtml==='string'&&record.previewHtml.trim()){
       const t=document.createElement('template');t.innerHTML=record.previewHtml;
-      t.content.querySelectorAll('[data-clm-bridal-followup-cta="20261005"]').forEach(el=>el.remove());
+      t.content.querySelectorAll('[data-clm-bridal-followup-cta]').forEach(el=>el.remove());
       const signature=[...t.content.querySelectorAll('div,p')].find(el=>/^(Thank you,|Best,)$/.test(el.textContent.trim())&&!el.querySelector('div,p'));
       const fresh=document.createElement('template');fresh.innerHTML=cta;
       if(signature)signature.before(fresh.content);else (t.content.firstElementChild||t.content).appendChild(fresh.content);
