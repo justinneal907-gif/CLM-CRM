@@ -4270,6 +4270,43 @@ function applyTrioFollowupWording20261005(data){
   }
   data.recovery={...(data.recovery||{}),trioFollowupWording20261005:1};return data;
 }
+function putSophiaLastInTrioDrafts20261005(data){
+  if(data.recovery?.sophiaLastInTrio20261005===1)return data;
+  const order=['site-women-81-iyanu','new-york-women-erin-connors','new-york-women-sophia-pippen'];
+  const rewrite=html=>{
+    if(typeof html!=='string')return html;
+    html=html.replace(/Sophia Pippen, Iyanu, and Erin( Connors)?/g,(_,suffix)=>'Iyanu, Erin'+(suffix||'')+', and Sophia Pippen');
+    // Move the original HTML slices so photo sources, text and formatting stay exact.
+    const ranges=[],stack=[];
+    const tags=/<\/?([a-z][a-z0-9]*)\b[^>]*>/gi;let match;
+    while((match=tags.exec(html))){
+      const tag=match[1].toLowerCase(),closing=match[0].startsWith('</');
+      if(closing){
+        const ix=stack.findLastIndex(x=>x.tag===tag);if(ix<0)continue;
+        const opened=stack[ix];stack.length=ix;
+        if(order.includes(opened.id))ranges.push({id:opened.id,start:opened.start,end:tags.lastIndex});
+      }else if(!/^(?:area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/.test(tag)&&!match[0].endsWith('/>')){
+        const id=match[0].match(/\bdata-clm-model-id\s*=\s*(["'])(.*?)\1/i)?.[2];
+        stack.push({tag,id,start:match.index});
+      }
+    }
+    if(ranges.length!==3||!order.every(id=>ranges.filter(x=>x.id===id).length===1))return html;
+    ranges.sort((a,b)=>a.start-b.start);
+    if(ranges.some((x,i)=>i&&x.start<ranges[i-1].end))return html;
+    const blocks=new Map(ranges.map(x=>[x.id,html.slice(x.start,x.end)]));
+    for(let i=ranges.length-1;i>=0;i--)html=html.slice(0,ranges[i].start)+blocks.get(order[i])+html.slice(ranges[i].end);
+    return html;
+  };
+  for(const d of [data.draft,...(data.drafts||[])].filter(Boolean)){
+    if(d.modelIds?.length!==3||!order.every(id=>d.modelIds.includes(id)))continue;
+    const names=new Map(d.modelIds.map((id,i)=>[id,d.models?.[i]]));
+    d.modelIds=[...order];
+    if(d.models?.length===3)d.models=order.map(id=>names.get(id));
+    for(const field of ['initialMessage','previewHtml','html','brief'])if(typeof d[field]==='string')d[field]=rewrite(d[field]);
+  }
+  if(data.draft?.modelIds?.length===3&&order.every(id=>data.draft.modelIds.includes(id)))data.selected=[...order];
+  data.recovery={...(data.recovery||{}),sophiaLastInTrio20261005:1};return data;
+}
 function uniformEmailPhotoSizes(html){
   if(typeof html!=='string'||!/<img\b/i.test(html))return html;
   const t=document.createElement('template');t.innerHTML=html;
@@ -4487,6 +4524,7 @@ async function bootstrapWorkspace(){
   db=repairSavedPackagePhotos20261005(db);
   db=applyUniformEmailPhotoSizes20261005(db);
   db=applyTrioFollowupWording20261005(db);
+  db=putSophiaLastInTrioDrafts20261005(db);
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
