@@ -3572,7 +3572,7 @@ function generateInitialEmailHtml(){
   const toneDraft={...(activeRecord||working),id:activeRecord?.id||db.activeDraftId||working?.id||'',contactName:d.contactName,recipientEmail:d.recipientEmail,brandProject:d.brand||activeRecord?.brandProject||working?.brandProject||''};
   const tone=parisDraftRelationshipTone(toneDraft);
   const names=draftGreetingNames(toneDraft);
-  const isBridalFollowup=working.followupBatch==='bridal-20261002'&&d.purpose==='followup';
+  const isBridalFollowup=['bridal-20261002','bridal-20261004-sophia'].includes(working.followupBatch)&&d.purpose==='followup';
   const greeting=isBridalFollowup?esc(working.followupGreeting||'Hi,'):(names.length?`Hi ${esc(naturalNameList(names))},`:'Hi,');
   const picked=selectedModels();
   const identity=packageIdentity({...working,brandProject:d.brand,eventName:$('#emailEvent').value.trim()});
@@ -4190,6 +4190,47 @@ function labelAlianaInstagramLinks20261004(data){
   return data;
 }
 
+/* Sophia Pippen follow-ups for October 4 Bridal Week sends.
+   CRM drafts only: no Gmail draft creation and no send action. */
+function addSophiaBridalFollowups20261004(data){
+  if(data.recovery?.sophiaBridalFollowups20261004===1)return data;
+  const sophiaId='new-york-women-sophia-pippen';
+  const sophia=(data.models||[]).find(m=>m.id===sophiaId);
+  if(!sophia)return data;
+  data.drafts=Array.isArray(data.drafts)?data.drafts:[];
+  const entries=[{"brand":"Katherine Tash","email":"hello@katherinetash.com","greeting":"Katherine Tash Team"},{"brand":"Jaclyn Whyte","email":"info@jaclynwhyte.com","greeting":"Jaclyn Whyte Team"},{"brand":"Eva Lendel","email":"sales@evalendel.com, info@evalendel.com","greeting":"Eva Lendel Team"},{"brand":"Esé Azénabor","email":"assistNY@eseazenabor.com","greeting":"Esé Azénabor Team"},{"brand":"Elizabeth Fillmore","email":"enquiries@elizabethfillmorebridal.com","greeting":"Elizabeth Fillmore Team"},{"brand":"Nardos","email":"salesnyc@nardosdesign.com","greeting":"Nardos Team"},{"brand":"Dana Harel","email":"office@danahareldesign.com","greeting":"Dana Harel Team"},{"brand":"Mira Zwillinger","email":"studio@mirazwillinger.com","greeting":"Mira Zwillinger Team"},{"brand":"Barrientos","email":"barrientos@atelierbarrientos.com","greeting":"Barrientos Team"},{"brand":"Soul Mates Bridal","email":"soulmates@astralculturemedia.com","greeting":"Soul Mates Bridal Team"},{"brand":"Lein","email":"info@leinstudio.com","greeting":"Lein Team"},{"brand":"Ugochi Iwuaba","email":"shows@ugochiiwuaba.com","greeting":"Ugochi Iwuaba Team"},{"brand":"Atelier Arielle","email":"contact@atelierarielle.com","greeting":"Atelier Arielle Team"},{"brand":"Jude Jowilson","email":"info@judejowilson.com","greeting":"Jude Jowilson Team"},{"brand":"Ines di Santo","email":"info@inesdisanto.com","greeting":"Ines di Santo Team"},{"brand":"Julie Vino","email":"office@julievino.com","greeting":"Julie Vino Team"},{"brand":"House of Idan","email":"james@houseofidan.com","greeting":"James"},{"brand":"Mark Ingram Bridal","email":"press@miatelier.com","greeting":"Mark Ingram Bridal Team"},{"brand":"Verdin New York","email":"atelier@verdinnewyork.com","greeting":"Verdin New York Team"},{"brand":"Rita Vinieris","email":"info@cldstylehouse.com","greeting":"Rita Vinieris Team"},{"brand":"Hayley Paige","email":"press@hayleypaige.com","greeting":"Hayley Paige Team"},{"brand":"Pnina Tornai for Kleinfeld","email":"info@pninatornai.com","greeting":"Pnina Tornai Team"},{"brand":"Sareh Nouri","email":"press@sarehnouri.com","greeting":"Sareh Nouri Team"},{"brand":"Francesca Miranda","email":"info@francescamiranda.com","greeting":"Francesca Miranda Team"},{"brand":"Milla Nova","email":"info@millanova.com","greeting":"Milla Nova Team"},{"brand":"Veejay Floresca","email":"veejayfloresca@gmail.com","greeting":"Veejay Floresca Team"},{"brand":"Kaviar Gauche","email":"press@kaviargauche.com","greeting":"Kaviar Gauche Team"},{"brand":"Cortana","email":"press@cortana.es","greeting":"Cortana Team"},{"brand":"Yolancris","email":"communication@yolancris.com","greeting":"Yolancris Team"}];
+  const photo=((data.customPhotos||{})[sophiaId]||sophia.photo||sophia.photoUrl||'');
+  const stats=sophia.stats||sophia.measurements||"Height: 5’11’’ | Bust: 32’’ | Waist: 25’’ | Hip: 35’’ | Shoe: 10 US Women | Tattoos: No | Hair: Dark Brown | Eyes: Dark Brown";
+  const profile=sophia.profile||sophia.profileUrl||'https://www.instagram.com/reel/Dau7LamBWMM/';
+  const profileLabel=sophia.profileLabel||'Size Reference';
+  const credential=String(sophia.description||'Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian');
+  const slug=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+  for(const entry of entries){
+    const id='nybfw_followup_20261004_'+slug(entry.brand)+'_sophia';
+    if(data.drafts.some(d=>d.id===id))continue;
+    const primaryEmail=String(entry.email||'').split(',')[0].trim().toLowerCase();
+    const contact=(data.contacts||[]).find(c=>String(c.email||'').trim().toLowerCase()===primaryEmail);
+    const subject='New York Bridal Week | '+entry.brand;
+    const message='I wanted to follow up and send Sophia Pippen as an additional option for '+entry.brand+'. Her materials are below. Please let me know what you think!';
+    const modelBlock='<div data-clm-model-id="'+esc(sophiaId)+'" style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>Sophia Pippen</b> | '+esc(stats)+'</div>'+(profile?'<div><a href="'+esc(profile)+'" target="_blank">'+esc(profileLabel)+'</a></div>':'')+(credential?'<div data-clm-model-extra="'+esc(sophiaId)+'" style="margin:6px 0 0"><span class="saved-model-text" style="color:#b00020;font-weight:800">'+esc(credential)+'</span></div>':'')+(photo?'<div style="text-align:left"><img src="'+esc(photo)+'" width="440" style="max-width:100%;height:auto;margin:8px 0 0" alt="Sophia Pippen"></div>':'')+'</div>';
+    const previewHtml='<div style="font-family:Arial,sans-serif;font-size:13px;color:#000"><div>Hi '+esc(entry.greeting)+',</div><br><div>'+esc(message)+'</div><br>'+modelBlock+'<div>Thank you,</div><div>Justin</div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>';
+    const photoSelections={};if(photo)photoSelections[sophiaId]=[photo];
+    const modelExtras={};modelExtras[sophiaId]={enabled:!!credential,text:credential,textOptionId:'',mediaEnabled:false,mediaUrl:'',mediaLabel:''};
+    data.drafts.push({
+      id,date:'2026-10-04',eventName:'New York Bridal Week',packageName:subject,purpose:'followup',
+      followupBatch:'bridal-20261004-sophia',followupGreeting:'Hi '+entry.greeting+',',
+      contactId:contact?.id||'',contactName:entry.greeting,company:entry.brand,recipientEmail:entry.email,cc:'agent@chezlesmannequins.com',
+      brandProject:entry.brand,packageLink:'',brief:'',initialMessage:'',subject,
+      includeStats:true,includePhotos:true,includeSources:true,models:['Sophia Pippen'],modelIds:[sophiaId],
+      photoSelections,packagePhotos:structuredClone(photoSelections),modelExtras,previewHtml,html:'',castingBriefRaw:'',
+      parsedBrief:{project:entry.brand,location:'New York'},signatureClose:'Thank you,',
+      source:'Work Gmail sent-mail review October 4 2026',
+      notes:'Sophia Pippen follow-up for an October 4 Bridal Week submission that had not received Sophia in sent mail.'
+    });
+  }
+  data.recovery={...(data.recovery||{}),sophiaBridalFollowups20261004:1};
+  return data;
+}
 async function bootstrapWorkspace(){
   try{await window.CLMMediaStore?.init?.()}catch(err){console.info('Media store init skipped',err)}
   await ensureMilanArchiveLoaded();
@@ -4217,6 +4258,7 @@ async function bootstrapWorkspace(){
   db=recoverBridalMaterials20261004(db);
   db=correctErinMaterials20261004(db);
   db=removeCanvaLinksFromWorkspace(db);
+  db=addSophiaBridalFollowups20261004(db);
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
