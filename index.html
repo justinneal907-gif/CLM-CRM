@@ -4501,11 +4501,29 @@ function addSophiaBridalFollowups20261004(data){
 /* Garnier and ON Running follow ups requested October 5 2026.
    CRM drafts only. Body copy stays blank for agent editing. */
 function addBrandFollowups20261005(data){
-  if(data.recovery?.brandFollowups20261005===1)return data;
-  const raquelId='miami-women-raquel';
-  const raquel=(data.models||[]).find(m=>m.id===raquelId);
-  if(!raquel)return data;
+  if(data.recovery?.brandFollowups20261005Version===2)return data;
   data.drafts=Array.isArray(data.drafts)?data.drafts:[];
+
+  const modelNameById={
+    'site-women-81-iyanu':'Iyanu',
+    'new-york-women-erin-connors':'Erin Connors',
+    'miami-women-raquel':'Raquel',
+    'new-york-women-sophia-pippen':'Sophia Pippen'
+  };
+  const garnierModelIds=[
+    'site-women-81-iyanu',
+    'new-york-women-erin-connors',
+    'new-york-women-sophia-pippen'
+  ];
+  const onRunningModelIds=[
+    'site-women-81-iyanu',
+    'new-york-women-erin-connors',
+    'miami-women-raquel',
+    'new-york-women-sophia-pippen'
+  ];
+  const allNeeded=[...new Set([...garnierModelIds,...onRunningModelIds])];
+  if(allNeeded.some(id=>!(data.models||[]).some(m=>m.id===id)))return data;
+
   const entries=[
     {
       id:'brand_followup_20261005_garnier_nutrisse_raquel',
@@ -4517,7 +4535,8 @@ function addBrandFollowups20261005(data){
       brandProject:'Garnier Nutrisse Ultra Color',
       subject:'S/S 2027 Model Package (Garnier Nutrisse)',
       sourceMessageIds:['1a0a63441424ac32'],
-      notes:'Garnier follow up requested October 5 2026. Raquel included.'
+      modelIds:garnierModelIds,
+      notes:'Garnier follow up requested October 5 2026.'
     },
     {
       id:'brand_followup_20261005_on_running_raquel',
@@ -4529,49 +4548,71 @@ function addBrandFollowups20261005(data){
       brandProject:'ON Running',
       subject:'ON Running Submission',
       sourceMessageIds:['1a0a6bd6bfbd3480'],
+      modelIds:onRunningModelIds,
       notes:'ON Running follow up requested October 5 2026. Raquel included.'
     }
   ];
+
   for(const entry of entries){
-    if(data.drafts.some(d=>d.id===entry.id))continue;
+    const existing=data.drafts.find(d=>d.id===entry.id)||null;
     const photoSelections={};
-    const photo=(data.customPhotos||{})[raquelId]||raquel.photo||raquel.photoUrl||'';
-    if(photo)photoSelections[raquelId]=[photo];
+    for(const mid of entry.modelIds){
+      const current=existing?.photoSelections?.[mid]||existing?.packagePhotos?.[mid]||[];
+      if(Array.isArray(current)&&current.length){
+        photoSelections[mid]=structuredClone(current);
+        continue;
+      }
+      const model=(data.models||[]).find(m=>m.id===mid);
+      const custom=(data.customPhotos||{})[mid];
+      if(Array.isArray(custom)&&custom.length)photoSelections[mid]=structuredClone(custom);
+      else{
+        const photo=custom||model?.photo||model?.photoUrl||'';
+        if(photo)photoSelections[mid]=[photo];
+      }
+    }
     const contact=(data.contacts||[]).find(c=>String(c.email||'').trim().toLowerCase()===entry.recipientEmail.toLowerCase());
-    data.drafts.push({
+    const record={
       id:entry.id,
       date:'2026-10-05',
       eventName:entry.eventName,
       packageName:entry.packageName,
       purpose:'followup',
-      contactId:contact?.id||'',
-      contactName:contact?.name||entry.contactName,
+      contactId:contact?.id||existing?.contactId||'',
+      contactName:contact?.name||existing?.contactName||entry.contactName,
       company:entry.company,
       recipientEmail:entry.recipientEmail,
       cc:'agent@chezlesmannequins.com',
       brandProject:entry.brandProject,
-      packageLink:'',
-      brief:'',
-      initialMessage:'',
+      packageLink:existing?.packageLink||'',
+      brief:existing?.brief||'',
+      initialMessage:existing?.initialMessage||'',
       subject:entry.subject,
       includeStats:true,
       includePhotos:true,
       includeSources:true,
-      models:['Raquel'],
-      modelIds:[raquelId],
+      models:entry.modelIds.map(id=>modelNameById[id]),
+      modelIds:[...entry.modelIds],
       photoSelections,
       packagePhotos:structuredClone(photoSelections),
       html:'',
-      castingBriefRaw:'',
-      parsedBrief:{project:entry.brandProject},
+      previewHtml:'',
+      castingBriefRaw:existing?.castingBriefRaw||'',
+      parsedBrief:{...(existing?.parsedBrief||{}),project:entry.brandProject},
       blankBodyCopy:true,
       followupBatch:'brand-followups-20261005',
       sourceMessageIds:entry.sourceMessageIds,
       source:'Work Gmail sent mail review October 5 2026',
       notes:entry.notes
-    });
+    };
+    if(existing)Object.assign(existing,record);
+    else data.drafts.push(record);
   }
-  data.recovery={...(data.recovery||{}),brandFollowups20261005:1};
+
+  data.recovery={
+    ...(data.recovery||{}),
+    brandFollowups20261005:1,
+    brandFollowups20261005Version:2
+  };
   return data;
 }
 
