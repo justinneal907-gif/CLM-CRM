@@ -4083,7 +4083,10 @@ async function setDraftPhotoFile(id,input){
 function modelDraftPhotosHtml(m){
   const urls=draftPhotosForModel(m);
   if(!urls.length)return'';
-  return `<div style="text-align:left">${urls.map((url,i)=>`<div style="display:inline-block;vertical-align:top;margin:8px 8px 0 0"><img src="${esc(url)}" width="${urls.length>1?300:440}" style="max-width:100%;height:auto;display:block" alt="${esc(m.name)} photo ${i+1}"></div>`).join('')}</div>`;
+  // Keep every photo for a model in its own block-level row. This inline
+  // structure survives copy/paste and Gmail rendering without depending on
+  // external CSS, so multiple photos can never tile side-by-side.
+  return `<div style="text-align:left">${urls.map((url,i)=>`<div style="display:block;margin:8px 0 0"><img src="${esc(url)}" width="440" style="max-width:100%;height:auto;display:block" alt="${esc(m.name)} photo ${i+1}"></div>`).join('')}</div>`;
 }
 function renderPhotoLibrary(){
   const s=$('#photoLibraryModel'),g=$('#photoLibraryGrid');if(!s||!g)return;
@@ -4219,6 +4222,49 @@ function labelAlianaInstagramLinks20261004(data){
       if(before!==record[field]&&record.gmailDraftId)record.previewNeedsGmailUpdate=true;
     }
   }
+  return data;
+}
+
+/* MODEL PHOTO STACK NORMALIZATION 2026-10-05
+   Layout-only repair. It does not regenerate or replace any draft text. */
+function stackModelPhotosVertically20261005(data){
+  const rewrite=html=>{
+    if(typeof html!=='string'||!html.includes('data-clm-model-id'))return html;
+    const t=document.createElement('template');
+    t.innerHTML=html;
+    let changed=false;
+    t.content.querySelectorAll('[data-clm-model-id]').forEach(block=>{
+      const images=[...block.querySelectorAll('img')];
+      if(images.length<2)return;
+      images.forEach(img=>{
+        const wrapper=img.parentElement;
+        if(wrapper&&wrapper!==block&&wrapper.childElementCount===1&&wrapper.firstElementChild===img){
+          if(wrapper.style.display!=='block'){wrapper.style.display='block';changed=true;}
+          if(wrapper.style.verticalAlign){wrapper.style.verticalAlign='';changed=true;}
+          if(wrapper.style.margin!=='8px 0px 0px'&&wrapper.style.margin!=='8px 0 0'){wrapper.style.margin='8px 0 0';changed=true;}
+        }else{
+          if(img.style.display!=='block'){img.style.display='block';changed=true;}
+          if(img.style.margin!=='8px 0px 0px'&&img.style.margin!=='8px 0 0'){img.style.margin='8px 0 0';changed=true;}
+        }
+        if(img.getAttribute('width')!=='440'){img.setAttribute('width','440');changed=true;}
+        if(img.style.maxWidth!=='100%'){img.style.maxWidth='100%';changed=true;}
+        if(img.style.height!=='auto'){img.style.height='auto';changed=true;}
+        if(img.style.display!=='block'){img.style.display='block';changed=true;}
+      });
+    });
+    return changed?t.innerHTML:html;
+  };
+  for(const record of [data.draft,...(data.drafts||[])].filter(Boolean)){
+    for(const field of ['previewHtml','html']){
+      if(typeof record[field]!=='string')continue;
+      const before=record[field],after=rewrite(before);
+      if(after!==before){
+        record[field]=after;
+        if(record.gmailDraftId)record.previewNeedsGmailUpdate=true;
+      }
+    }
+  }
+  data.recovery={...(data.recovery||{}),verticalModelPhotoStackVersion:1,verticalModelPhotoStackUpdatedOn:'2026-10-05'};
   return data;
 }
 
@@ -4364,6 +4410,7 @@ async function bootstrapWorkspace(){
   db=addRemainingBridalClosingLink20261004(db);
   db=formatSavedCanvaHereLinks20261004(db);
   db=labelAlianaInstagramLinks20261004(db);
+  db=stackModelPhotosVertically20261005(db);
   db=recoverBridalMaterials20261004(db);
   db=correctErinMaterials20261004(db);
   db=removeCanvaLinksFromWorkspace(db);
