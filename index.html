@@ -277,7 +277,7 @@ th,td{padding:8px}
 <script src="assets/models/sophia-extra-photo-2.js"></script>
 <script src="assets/data/core-roster.js?v=20261002-iyanu-active-1"></script>
 <script src="assets/crm-media-store.js?v=20261002-reviewed-image-bytes-2"></script>
-<script src="assets/crm-bridal-materials.js?v=20261004-recovery-1"></script>
+<script src="assets/crm-bridal-materials.js?v=20261005-photo-persistence-2"></script>
 <script>
 const SOURCE_DATE='2026-09-14';
 const BASE_ROSTER=window.CLM_CORE_ROSTER?.BASE_ROSTER||[];
@@ -3588,6 +3588,7 @@ function emailHtml(){
   return html;
 }
 function generateInitialEmailHtml(){
+  if(db.draft)db.draft.reuseSavedModelPhotos=true;
   const activeRecord=activeDraftRecord();
   const working=db.draft||{};
 
@@ -3946,6 +3947,7 @@ function draftPhotosForModel(m){
     return uniqueGalleryPhotoUrls(raw.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)));
   }
   const selections=draftPhotoSelections();
+  if(!manual?.hasOwnProperty(m.id)&&db.draft?.reuseSavedModelPhotos&&savedModelPackagePhotos(db,m.id,db.draft))return savedModelPackagePhotos(db,m.id,db.draft);
   if(Object.prototype.hasOwnProperty.call(selections,m.id)){
     const raw=Array.isArray(selections[m.id])?selections[m.id]:[selections[m.id]];
     return uniqueGalleryPhotoUrls(raw.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)));
@@ -3954,6 +3956,7 @@ function draftPhotosForModel(m){
   if(Array.isArray(legacy)&&legacy.length){
     return uniqueGalleryPhotoUrls(legacy.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)));
   }
+  const reusable=savedModelPackagePhotos(db,m.id,db.draft);if(reusable)return reusable;
   if(isBridalMaterialsDraft(db.draft)&&Array.isArray(m.bridalMaterials?.photos))return [...m.bridalMaterials.photos];
   const fallback=getPhoto(m);
   return fallback?[fallback]:[];
@@ -3961,6 +3964,7 @@ function draftPhotosForModel(m){
 function draftPhotoForModel(m){return draftPhotosForModel(m)[0]||''}
 function setDraftPhotosForModel(id,urls){
   const clean=uniqueGalleryPhotoUrls((urls||[]).map(upgradedPhotoURL).filter(Boolean));
+  rememberModelPackagePhotos(id,clean);
   db.draft=db.draft||structuredClone(seed.draft);
   for(const target of activeDraftOverrideTargets()){
     target.photoSelections=target.photoSelections||{};
@@ -4437,6 +4441,7 @@ async function bootstrapWorkspace(){
   db=addSophiaBridalFollowups20261004(db);
   db=addBrandFollowups20261005(db);
   db=addWhatsAppContactToDrafts20261005(db);
+  db=repairSavedPackagePhotos20261005(db);
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();

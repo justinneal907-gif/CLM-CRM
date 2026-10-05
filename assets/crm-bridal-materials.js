@@ -193,3 +193,63 @@ function correctErinMaterials20261004(data){
   data.recovery={...(data.recovery||{}),erinPhotoCorrected20261004:1};
   return data;
 }
+
+
+// Reusable photo choices are scoped to the event, and exact package edits win.
+function packagePhotoScope(d){return isBridalMaterialsDraft(d)?'bridal':String(d?.eventName||'general').trim().toLowerCase()}
+function savedModelPackagePhotos(data,id,d){return data.savedModelPackagePhotos?.[packagePhotoScope(d)]?.[id]||null}
+function rememberModelPackagePhotos(id,photos){
+  const scope=packagePhotoScope(db.draft);
+  db.savedModelPackagePhotos=db.savedModelPackagePhotos||{};
+  const map=db.savedModelPackagePhotos[scope]||(db.savedModelPackagePhotos[scope]={});
+  map[id]=[...photos];
+}
+function repairSavedPackagePhotos20261005(data){
+  for(const record of [data.draft,...(data.drafts||[])].filter(Boolean))if(!Object.prototype.hasOwnProperty.call(record,'previewHtml'))record.reuseSavedModelPhotos=true;
+  if(data.recovery?.savedPackagePhotos20261005===2)return data;
+  data.savedModelPackagePhotos=data.savedModelPackagePhotos||{};
+  const records=[...(data.drafts||[]),data.draft].filter(Boolean);
+  const list=v=>(Array.isArray(v)?v:[v]).filter(x=>typeof x==='string'&&x&&!/^(blob:|cid:|file:)/i.test(x));
+  // Recover exact model associations from saved user selections and previews.
+  for(const record of records){
+    const scope=packagePhotoScope(record),map=data.savedModelPackagePhotos[scope]||(data.savedModelPackagePhotos[scope]={});
+    for(const id of record.modelIds||[]){
+      const explicit=record.userOverrides?.photoSelections;
+      if(explicit&&Object.prototype.hasOwnProperty.call(explicit,id)){map[id]=list(explicit[id]);continue}
+      const model=data.models.find(m=>m.id===id);if(!model)continue;
+      const t=document.createElement('template');t.innerHTML=record.previewHtml||'';
+      const block=bridalMaterialBlock(t.content,id,model,data.models);
+      const photos=block?list([...block.querySelectorAll('img')].map(img=>img.getAttribute('src'))):list(record.photoSelections?.[id]||record.packagePhotos?.[id]);
+      const defaults=new Set([model.photo,model.photoUrl,data.customPhotos?.[id]].filter(Boolean).map(bridalMaterialPhotoKey));
+      if(photos.length&&(photos.length>1||photos.some(p=>!defaults.has(bridalMaterialPhotoKey(p)))))map[id]=photos;
+    }
+  }
+  data.savedPackagePhotosBackups20261005=[];
+  for(const record of records){
+    const before=structuredClone(record),t=document.createElement('template');t.innerHTML=record.previewHtml||'';
+    let changed=false;
+    for(const id of record.modelIds||[]){
+      const model=data.models.find(m=>m.id===id);if(!model)continue;
+      const block=bridalMaterialBlock(t.content,id,model,data.models);
+      const explicit=record.userOverrides?.photoSelections;
+      const owns=explicit&&Object.prototype.hasOwnProperty.call(explicit,id);
+      const images=block?[...block.querySelectorAll('img')]:[];
+      const current=list(images.map(img=>img.getAttribute('src')));
+      const defaults=new Set([model.photo,model.photoUrl,data.customPhotos?.[id]].filter(Boolean).map(bridalMaterialPhotoKey));
+      const reusable=savedModelPackagePhotos(data,id,record);
+      // Repair seed-only packages; preserve custom, empty and explicit choices.
+      const desired=owns?list(explicit[id]):reusable&&current.length&&current.every(p=>defaults.has(bridalMaterialPhotoKey(p)))?reusable:current;
+      if(block&&record.includePhotos!==false&&JSON.stringify(current)!==JSON.stringify(desired)){
+        images.forEach(img=>img.remove());
+        for(const src of desired){const row=document.createElement('div'),img=document.createElement('img');row.style.marginTop='8px';img.src=src;img.alt=model.name+' photo';img.width=440;img.style.cssText='display:block;max-width:100%;height:auto';row.appendChild(img);block.appendChild(row)}
+        changed=true;
+      }
+      if(block){record.photoSelections={...(record.photoSelections||{}),[id]:[...desired]};record.packagePhotos={...(record.packagePhotos||{}),[id]:[...desired]}}
+    }
+    if(changed){record.previewHtml=t.innerHTML;record.html='';record.previewNeedsGmailUpdate=true}
+    if(JSON.stringify(before)!==JSON.stringify(record))data.savedPackagePhotosBackups20261005.push(before);
+    // A new generated preview uses the saved model choices instead of seed photos.
+    if(!Object.prototype.hasOwnProperty.call(record,'previewHtml'))record.reuseSavedModelPhotos=true;
+  }
+  data.recovery={...(data.recovery||{}),savedPackagePhotos20261005:2};return data;
+}
