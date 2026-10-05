@@ -4568,65 +4568,75 @@ function addSophiaBridalFollowups20261004(data){
 /* Alon Livne Bridal Week follow-up requested October 5 2026.
    CRM draft only. No Gmail draft creation or send action. */
 function addAlonLivneFollowup20261005(data){
-  if(data.recovery?.alonLivneFollowup20261005===1)return data;
   data.drafts=Array.isArray(data.drafts)?data.drafts:[];
   const id='nybfw_followup_20261005_alon_livne';
-  if(!data.drafts.some(d=>d.id===id)){
-    const modelIds=[
-      'new-york-women-callie-steg',
-      'new-york-women-seven-wright',
-      'new-york-women-claudia-lucchini',
-      'new-york-women-maja-stockwell',
-      'user-women-aliana',
-      'new-york-women-molly-gardiner',
-      'new-york-women-sophia-pippen'
-    ];
-    const modelNames=['Callie','Seven','Claudia','Maja','Aliana','Molly','Sophia Pippen'];
-    const publicLink=CANVA_DRAFT_LINK;
-    const initialMessage='Hi Moran,\n\nI wanted to follow up and send Callie, Seven, Claudia, Maja, Aliana, Molly, and Sophia Pippen as additional options. Their materials are below.';
-    const linkHtml='<div style="margin:0 0 18px">You can also view the rest of our Bridal Week package <a href="'+publicLink+'" target="_blank"><strong><em>HERE</em></strong></a>.</div>';
-    const photoSelections={};
-    for(const modelId of modelIds){
-      const m=(data.models||[]).find(x=>x.id===modelId);
-      if(!m)continue;
-      const saved=(data.customPhotos||{})[modelId];
-      const url=String(saved||m.photo||m.photoUrl||'').trim();
-      if(url)photoSelections[modelId]=[url];
-    }
-    data.drafts.push({
-      id,
-      date:'2026-10-05',
-      eventName:'New York Bridal Week',
-      packageName:'New York Bridal Week | Alon Livne',
-      purpose:'followup',
-      contactId:'',
-      contactName:'Moran',
-      company:'Alon Livne',
-      recipientEmail:'global@alonlivne.com',
-      cc:'agent@chezlesmannequins.com',
-      brandProject:'Alon Livne',
-      packageLink:publicLink,
-      brandCanvaPublicViewLink:publicLink,
-      brief:'',
-      initialMessage,
-      subject:'New York Bridal Week | Alon Livne',
-      includeStats:true,
-      includePhotos:true,
-      includeSources:true,
-      models:modelNames,
-      modelIds,
-      photoSelections,
-      packagePhotos:structuredClone(photoSelections),
-      followupCtaHtml:linkHtml,
-      html:'',
-      castingBriefRaw:'',
-      parsedBrief:{project:'Alon Livne',location:'New York'},
-      signatureClose:'Thank you,',
-      source:'Existing Alon Livne Bridal Week Gmail thread',
-      notes:'CRM-only Alon Livne Bridal Week follow-up requested October 5, 2026. Uses the verified Bridal Week public-view Canva link.'
-    });
+  const modelIds=[
+    'new-york-women-callie-steg',
+    'new-york-women-seven-wright',
+    'new-york-women-claudia-lucchini',
+    'new-york-women-maja-stockwell',
+    'user-women-aliana',
+    'new-york-women-molly-gardiner',
+    'new-york-women-sophia-pippen'
+  ];
+  const modelNames=['Callie','Seven','Claudia','Maja','Aliana','Molly','Sophia Pippen'];
+  const publicLink=CANVA_DRAFT_LINK;
+  const initialMessage='Hi Moran,\n\nI wanted to follow up and send Callie, Seven, Claudia, Maja, Aliana, Molly, and Sophia Pippen as additional options. Their materials are below.';
+  const followupCtaHtml='<div style="margin:0 0 18px">You can also view the rest of our Bridal Week package <a href="'+publicLink+'" target="_blank"><strong><em>HERE</em></strong></a>.</div>';
+  const existing=data.drafts.find(d=>d.id===id)||null;
+  const photoSelections=structuredClone(existing?.photoSelections||existing?.packagePhotos||{});
+  for(const modelId of modelIds){
+    if(Array.isArray(photoSelections[modelId])&&photoSelections[modelId].length)continue;
+    const m=(data.models||[]).find(x=>x.id===modelId);
+    if(!m)continue;
+    const custom=(data.customPhotos||{})[modelId];
+    const first=Array.isArray(custom)?custom[0]:(custom||m.photo||m.photoUrl||'');
+    if(first)photoSelections[modelId]=[first];
   }
-  data.recovery={...(data.recovery||{}),alonLivneFollowup20261005:1};
+  const record={
+    ...(existing||{}),
+    id,
+    date:'2026-10-05',
+    eventName:'New York Bridal Week',
+    packageName:'New York Bridal Week | Alon Livne',
+    purpose:'followup',
+    followupBatch:'alon-livne-20261005',
+    contactId:existing?.contactId||'',
+    contactName:'Moran',
+    company:'Alon Livne',
+    recipientEmail:'global@alonlivne.com',
+    cc:'agent@chezlesmannequins.com',
+    brandProject:'Alon Livne',
+    packageLink:publicLink,
+    brandCanvaPublicViewLink:publicLink,
+    brief:existing?.brief||'',
+    initialMessage,
+    subject:'New York Bridal Week | Alon Livne',
+    includeStats:true,
+    includePhotos:true,
+    includeSources:true,
+    models:modelNames,
+    modelIds:[...modelIds],
+    photoSelections,
+    packagePhotos:structuredClone(photoSelections),
+    followupCtaHtml,
+    html:'',
+    castingBriefRaw:existing?.castingBriefRaw||'',
+    parsedBrief:{...(existing?.parsedBrief||{}),project:'Alon Livne',location:'New York'},
+    signatureClose:'Thank you,',
+    source:'Existing Alon Livne Bridal Week Gmail thread',
+    notes:'CRM-only Alon Livne Bridal Week follow-up requested October 5, 2026. Uses the verified Bridal Week public-view Canva link.'
+  };
+  if(existing)Object.assign(existing,record);
+  else data.drafts.push(record);
+
+  // Open the package once after this repair so it is immediately visible.
+  if(Number(data.recovery?.alonLivneFollowupVisibleVersion||0)<2){
+    data.activeDraftId=id;
+    data.draft=structuredClone(record);
+    data.selected=[...modelIds];
+  }
+  data.recovery={...(data.recovery||{}),alonLivneFollowup20261005:1,alonLivneFollowupVisibleVersion:2};
   return data;
 }
 
