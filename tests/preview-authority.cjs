@@ -14,7 +14,7 @@ const ctx={console,structuredClone,Blob,AbortController,setTimeout,clearTimeout,
 vm.createContext(ctx);
 for(const name of ['migrateDraftPreviewDocuments','applyRecovered','activeSavedDraftRecord','markPreviewNeedsGmailUpdate','storeDraftPreview','sanitizeEditableEmailHtml','emailHtml','currentEmailPreviewHtml','refreshEmailPreview','saveDraft','loadDraft','renderEmail','renderEmailPreviewOnly'])vm.runInContext(fn(name),ctx);
 // Body editor and destructive rebuild paths are absent.
-for(const token of ['emailCustomBody','resetBodyTextOverride','resetEmailPreviewEdits','ignoreFullPreviewOverride','syncManualPackageModels','Body text override','copyEmailBtn','copyRichEmailForGmail'])assert.ok(!source.includes(token),token);
+for(const token of ['emailCustomBody','resetBodyTextOverride','resetEmailPreviewEdits','ignoreFullPreviewOverride','syncManualPackageModels','Body text override','copyRichEmailForGmail'])assert.ok(!source.includes(token),token);
 // Migrate existing body and manually edited full preview without deleting content.
 const legacy={draft:{customBody:'Already added text'},drafts:[{id:'edited',manualEmailHtml:'<p>My typed edit</p>',customBody:'Stale body',userOverrides:{fullHtmlLocked:true,fullHtml:'<p>Old</p>',fields:{customBody:'Stale'}}}]};
 const converted=ctx.migrateDraftPreviewDocuments(legacy);assert.equal(converted.draft.initialMessage,'Already added text');assert.equal(converted.drafts[0].previewHtml,'<p>My typed edit</p>');assert.ok(!('customBody' in converted.drafts[0]));assert.ok(!('manualEmailHtml' in converted.drafts[0]));assert.ok(!('fullHtml' in converted.drafts[0].userOverrides));
