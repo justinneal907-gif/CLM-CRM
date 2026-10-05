@@ -3313,7 +3313,7 @@ function applySophiaFollowupTemplate20261002(data){
     if(!brand||!models.length)continue;
     const list=models.length===1?models[0]:models.length===2?models.join(' and '):models.slice(0,-1).join(', ')+', and '+models.at(-1);
     const pronoun=models.length>1?'Their':'Her';
-    d.initialMessage='Hi '+brand+' Team,\n\nI wanted to follow up and send '+list+' as an additional option for '+brand+'. '+pronoun+'  materials are below.';
+    d.initialMessage='Hi '+brand+' Team,\n\nI wanted to follow up and send Sophia Pippen, Iyanu, and Erin as additional options. Their materials are below.';
     d.followupTemplateIncludesGreeting=true;
     if(data.activeDraftId===d.id&&data.draft){
       data.draft.initialMessage=d.initialMessage;
@@ -3570,7 +3570,7 @@ function editPreviewModels(previousIds,photoModelId=''){
 }
 function storeDraftPreview(html,changed=true){
   db.draft=db.draft||structuredClone(seed.draft);
-  db.draft.previewHtml=stripCanvaLinksText(html);
+  db.draft.previewHtml=uniformEmailPhotoSizes(stripCanvaLinksText(html));
   delete db.draft.initialMessage;
   const active=activeSavedDraftRecord();
   if(active){active.previewHtml=db.draft.previewHtml;delete active.initialMessage;}
@@ -3744,7 +3744,7 @@ async function copyFormattedPreview(){
 let emailPreviewEditTimer=0;
 function sanitizeEditableEmailHtml(html){
   const template=document.createElement('template');
-  template.innerHTML=stripCanvaLinksText(html);
+  template.innerHTML=uniformEmailPhotoSizes(stripCanvaLinksText(html));
   // The visible src is authoritative. Hidden attributes must never substitute another image.
   template.content.querySelectorAll('img').forEach(img=>{['data-gif-src','data-gif-playing','data-gif-bound','data-media-ref','title','role','tabindex'].forEach(name=>img.removeAttribute(name));img.style.removeProperty('cursor')});
   template.content.querySelectorAll('script,style,iframe,object,embed,form,input,textarea,button,meta,link').forEach(el=>el.remove());
@@ -4251,6 +4251,50 @@ function labelAlianaInstagramLinks20261004(data){
 
 /* MODEL PHOTO STACK NORMALIZATION 2026-10-05
    Layout-only repair. It does not regenerate or replace any draft text. */
+// Fixed portrait frames keep photos equal without cropping their contents.
+function applyTrioFollowupWording20261005(data){
+  if(data.recovery?.trioFollowupWording20261005===1)return data;
+  const body='I wanted to follow up and send Sophia Pippen, Iyanu, and Erin as additional options. Their materials are below.';
+  const ids=['new-york-women-sophia-pippen','site-women-81-iyanu','new-york-women-erin-connors'];
+  for(const d of [data.draft,...(data.drafts||[])].filter(Boolean)){
+    if(d.purpose!=='followup'||!ids.every(id=>(d.modelIds||[]).includes(id))||!isBridalMaterialsDraft(d))continue;
+    const greeting='Hi '+(d.company||d.brandProject||'')+' Team,';
+    d.initialMessage=greeting+'\n\n'+body;d.followupTemplateIncludesGreeting=true;
+    if(typeof d.previewHtml==='string'){
+      const t=document.createElement('template');t.innerHTML=d.previewHtml;
+      const rows=[...t.content.querySelectorAll('p,div')].filter(el=>!el.querySelector('p,div,img')&&/^(?:I wanted to follow up|Wanted to send over)/i.test(el.textContent.trim()));
+      if(rows.length)rows[0].textContent=body;
+      else{const first=t.content.querySelector('[data-clm-model-id]');if(first){const row=document.createElement('p');row.textContent=body;first.before(row)}}
+      d.previewHtml=t.innerHTML;d.html='';if(d.gmailDraftId)d.previewNeedsGmailUpdate=true;
+    }
+  }
+  data.recovery={...(data.recovery||{}),trioFollowupWording20261005:1};return data;
+}
+function uniformEmailPhotoSizes(html){
+  if(typeof html!=='string'||!/<img\b/i.test(html))return html;
+  const t=document.createElement('template');t.innerHTML=html;
+  for(const img of t.content.querySelectorAll('img')){
+    // Tracking pixels keep their original invisible dimensions.
+    if(img.getAttribute('width')==='1'&&img.getAttribute('height')==='1')continue;
+    img.setAttribute('width','440');img.setAttribute('height','600');
+    img.style.width='440px';img.style.height='600px';
+    img.style.maxWidth='100%';img.style.maxHeight='none';
+    img.style.objectFit='contain';img.style.objectPosition='left center';
+    img.style.display='block';
+    img.style.removeProperty('aspect-ratio');
+  }
+  return t.innerHTML;
+}
+function applyUniformEmailPhotoSizes20261005(data){
+  for(const record of [data.draft,...(data.drafts||[])].filter(Boolean)){
+    for(const field of ['previewHtml','html']){
+      if(typeof record[field]!=='string')continue;
+      const before=record[field];record[field]=uniformEmailPhotoSizes(before);
+      if(record[field]!==before&&record.gmailDraftId)record.previewNeedsGmailUpdate=true;
+    }
+  }
+  return data;
+}
 function stackModelPhotosVertically20261005(data){
   const rewrite=html=>{
     if(typeof html!=='string'||!html.includes('data-clm-model-id'))return html;
@@ -4442,6 +4486,8 @@ async function bootstrapWorkspace(){
   db=addBrandFollowups20261005(db);
   db=addWhatsAppContactToDrafts20261005(db);
   db=repairSavedPackagePhotos20261005(db);
+  db=applyUniformEmailPhotoSizes20261005(db);
+  db=applyTrioFollowupWording20261005(db);
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
