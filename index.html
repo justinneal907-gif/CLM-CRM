@@ -275,7 +275,7 @@ th,td{padding:8px}
 <dialog id="recordDialog"><div class="modal"><h2 id="recordModalTitle"></h2><form id="recordForm"></form><div class="actions"><button class="btn primary" id="recordSave" type="button">Save</button><button class="btn" id="recordCancel" type="button">Cancel</button></div></div></dialog>
 <script src="assets/models/sophia-extra-photo-1.js"></script>
 <script src="assets/models/sophia-extra-photo-2.js"></script>
-<script src="assets/data/core-roster.js?v=20261002-iyanu-active-1"></script>
+<script src="assets/data/core-roster.js?v=20261005-iyanu-country-removed-1"></script>
 <script src="assets/crm-media-store.js?v=20261002-reviewed-image-bytes-2"></script>
 <script src="assets/crm-bridal-materials.js?v=20261005-photo-persistence-2"></script>
 <script>
@@ -1793,10 +1793,11 @@ const MODEL_DRAFT_CREDENTIALS={
 };
 function defaultModelDraftExtra(m){
   const base=m?MODEL_DRAFT_CREDENTIALS[m.id]||{}:{};
+  const isSophia=m?.id==='new-york-women-sophia-pippen';
   const description=String(m?.description||'').trim();
   return {
-    enabled:!!base.text,
-    text:String(base.text||description||''),
+    enabled:isSophia||!!base.text,
+    text:String(isSophia?'Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian':base.text||description||''),
     bold:!!base.bold,
     mediaEnabled:!!base.link,
     mediaUrl:String(base.link||''),
@@ -4307,6 +4308,56 @@ function putSophiaLastInTrioDrafts20261005(data){
   if(data.draft?.modelIds?.length===3&&order.every(id=>data.draft.modelIds.includes(id)))data.selected=[...order];
   data.recovery={...(data.recovery||{}),sophiaLastInTrio20261005:1};return data;
 }
+function removeIyanuCountryAndEnableSophiaText20261005(data){
+  if(data.recovery?.iyanuCountrySophiaText20261005===1)return data;
+  const iyanuId='site-women-81-iyanu',sophiaId='new-york-women-sophia-pippen';
+  const iyanu=(data.models||[]).find(m=>m.id===iyanuId);
+  if(iyanu){
+    for(const field of ['measurements','stats','description','country'])if(typeof iyanu[field]==='string'){
+      if(field==='country'&&/^jamaica$/i.test(iyanu[field].trim()))delete iyanu[field];
+      else iyanu[field]=iyanu[field].replace(/\s*\|\s*Country:\s*Jamaica/ig,'').replace(/\bCountry:\s*Jamaica\b/ig,'').trim();
+    }
+    if(typeof iyanu.notes==='string')iyanu.notes=iyanu.notes.replace(/\s*Country:\s*Jamaica\.?/ig,'').trim();
+  }
+  const credential='Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian';
+  for(const record of [data.draft,...(data.drafts||[])].filter(Boolean)){
+    const hasIyanu=(record.modelIds||[]).includes(iyanuId)||(record.models||[]).some(n=>normalizeName(n)==='iyanu');
+    if(hasIyanu)for(const field of ['previewHtml','html']){
+      const before=record[field];if(typeof before!=='string')continue;
+      record[field]=before.replace(/\s*\|\s*Country:\s*Jamaica/ig,'').replace(/\bCountry:\s*Jamaica\b/ig,'');
+      if(record[field]!==before&&record.gmailDraftId)record.previewNeedsGmailUpdate=true;
+    }
+    const hasSophia=(record.modelIds||[]).includes(sophiaId)||(record.models||[]).some(n=>normalizeName(n)==='sophia pippen');
+    if(!hasSophia)continue;
+    record.modelExtras=record.modelExtras||{};
+    record.userOverrides=record.userOverrides||{};
+    record.userOverrides.modelExtras=record.userOverrides.modelExtras||{};
+    for(const map of [record.modelExtras,record.userOverrides.modelExtras]){
+      map[sophiaId]={...(map[sophiaId]||{}),enabled:true,text:map[sophiaId]?.text||credential};
+      delete map[sophiaId].textOptionId;
+    }
+    for(const field of ['previewHtml','html']){
+      const html=record[field];if(typeof html!=='string'||!html)continue;
+      const re=/<([a-z][a-z0-9]*)\b[^>]*\bdata-clm-model-id\s*=\s*(["'])new-york-women-sophia-pippen\2[^>]*>/i;
+      const start=re.exec(html);if(!start)continue;
+      const tag=start[1].toLowerCase(),stack=[],tags=/<\/?([a-z][a-z0-9]*)\b[^>]*>/gi;
+      tags.lastIndex=start.index;let match,end=-1;
+      while((match=tags.exec(html))){
+        const name=match[1].toLowerCase();
+        if(match[0].startsWith('</')){const ix=stack.findLastIndex(x=>x===name);if(ix<0)continue;stack.length=ix;if(stack.length===0){end=tags.lastIndex;break}}
+        else if(!/^(?:area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/.test(name)&&!match[0].endsWith('/>'))stack.push(name);
+      }
+      if(end<0||end<=start.index)continue;
+      if(/Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian/i.test(html.slice(start.index,end)))continue;
+      const insert='<div data-clm-model-extra="'+sophiaId+'" style="margin:6px 0 0"><span class="saved-model-text" style="color:#b00020;font-weight:800">'+credential+'</span></div>';
+      const closeAt=end-tag.length-3;
+      record[field]=html.slice(0,closeAt)+insert+html.slice(closeAt);
+      if(record.gmailDraftId)record.previewNeedsGmailUpdate=true;
+    }
+  }
+  data.recovery={...(data.recovery||{}),iyanuCountrySophiaText20261005:1};return data;
+}
+
 function uniformEmailPhotoSizes(html){
   if(typeof html!=='string'||!/<img\b/i.test(html))return html;
   const t=document.createElement('template');t.innerHTML=html;
@@ -4525,6 +4576,7 @@ async function bootstrapWorkspace(){
   db=applyUniformEmailPhotoSizes20261005(db);
   db=applyTrioFollowupWording20261005(db);
   db=putSophiaLastInTrioDrafts20261005(db);
+  db=removeIyanuCountryAndEnableSophiaText20261005(db);
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
