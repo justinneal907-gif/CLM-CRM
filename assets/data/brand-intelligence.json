@@ -1,0 +1,258 @@
+[
+  {
+    "schemaVersion": 1,
+    "brand": "Galia Lahav",
+    "officialWebsite": "https://www.galialahav.com",
+    "season": "SS 27 (homepage label; casting unverified)",
+    "jobType": "Bridal Week / Bridal Market",
+    "researchedAt": "2026-10-06T14:36:00Z",
+    "confidence": "Low",
+    "sources": [
+      {
+        "id": "1",
+        "url": "https://www.galialahav.com/products/delilah",
+        "title": "Galia Lahav current collection navigation",
+        "kind": "Official brand",
+        "accessedAt": "2026-10-06T14:36:00Z",
+        "summary": "The retrieved page identifies SS 27 couture. It does not establish the identities or measurements of the models."
+      },
+      {
+        "id": "2",
+        "url": "https://www.galialahav.com/products/gale",
+        "title": "Gale product archive",
+        "kind": "Official brand",
+        "accessedAt": "2026-10-06T14:36:00Z",
+        "summary": "Explicitly SS 22: a historical example of corset construction, not evidence of current casting."
+      }
+    ],
+    "claims": [
+      {
+        "section": "Brand Profile",
+        "label": "Category",
+        "value": "The official site offers bridal couture and ready-to-wear.",
+        "status": "Verified",
+        "sourceIds": [
+          "1"
+        ]
+      },
+      {
+        "section": "Current Collection",
+        "label": "Season evidence",
+        "value": "The retrieved official page displays SS 27 couture; detailed current collection analysis remains incomplete.",
+        "status": "Verified",
+        "sourceIds": [
+          "1"
+        ]
+      },
+      {
+        "section": "Current Collection",
+        "label": "Historical garment example",
+        "value": "The SS 22 Gale gown uses a sheer pointed corset and ballgown silhouette. This older design must not be treated as the current collection.",
+        "status": "Verified",
+        "sourceIds": [
+          "2"
+        ]
+      },
+      {
+        "section": "Casting Intelligence",
+        "label": "Model identities, measurements and agencies",
+        "value": "Not verified in this research. No casting measurements or appearance requirements are assumed.",
+        "status": "Unknown",
+        "sourceIds": []
+      },
+      {
+        "section": "Casting Intelligence",
+        "label": "Latest models.com show",
+        "value": "No verified show record retrieved in the initial research. Review the newest show before making a visual casting assessment.",
+        "status": "Unknown",
+        "sourceIds": []
+      }
+    ],
+    "referenceSources": [
+      {
+        "url": "https://www.galialahav.com/products/delilah",
+        "label": "Official collection references; images remain on the source site"
+      }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "brand": "Arava Polak",
+    "officialWebsite": "https://www.aravapolak.com",
+    "season": "Lueur Secrète (season not verified)",
+    "jobType": "Bridal Week / Bridal Market",
+    "researchedAt": "2026-10-06T14:36:00Z",
+    "confidence": "Low",
+    "sources": [
+      {
+        "id": "1",
+        "url": "https://www.aravapolak.com/collections",
+        "title": "Official collection index",
+        "kind": "Official brand",
+        "accessedAt": "2026-10-06T14:36:00Z",
+        "summary": "Lists Lueur Secrète first, followed by Rêves de Floraison and earlier collections. No season date is established."
+      },
+      {
+        "id": "2",
+        "url": "https://www.aravapolak.com/about",
+        "title": "Official brand description",
+        "kind": "Official brand",
+        "accessedAt": "2026-10-06T14:36:00Z",
+        "summary": "The brand describes artisanal bridal construction, embroidered lace, floral detail and romantic/minimal designs."
+      },
+      {
+        "id": "3",
+        "url": "https://us.fashionnetwork.com/galeries/photos/Arava-Polak-Bridal,75337.html",
+        "title": "Spring/Summer 2027 bridal gallery",
+        "kind": "Fashion publication",
+        "accessedAt": "2026-10-06T14:36:00Z",
+        "summary": "A collection gallery labeled Spring/Summer 2027; cast identities and measurements were not verified."
+      }
+    ],
+    "claims": [
+      {
+        "section": "Brand Profile",
+        "label": "Positioning",
+        "value": "Bridal design with couture sewing and handcrafted textile detail, according to the brand.",
+        "status": "Verified",
+        "sourceIds": [
+          "2"
+        ]
+      },
+      {
+        "section": "Current Collection",
+        "label": "Collection index",
+        "value": "Lueur Secrète leads the current official collection index. The source does not establish its season.",
+        "status": "Verified",
+        "sourceIds": [
+          "1"
+        ]
+      },
+      {
+        "section": "Current Collection",
+        "label": "Brand design language",
+        "value": "Embroidered lace, floral detail, ivory and nude fabric hues, and romantic or minimalist treatments are described by the brand. These are garment descriptors, not model attributes.",
+        "status": "Verified",
+        "sourceIds": [
+          "2"
+        ]
+      },
+      {
+        "section": "Casting Intelligence",
+        "label": "Portfolio review priority",
+        "value": "Review bridal presentation and garment-detail work in portfolios. This is a suggested review approach, not a verified casting requirement.",
+        "status": "Inferred",
+        "sourceIds": [
+          "2",
+          "3"
+        ]
+      },
+      {
+        "section": "Casting Intelligence",
+        "label": "Model identities, measurements and agencies",
+        "value": "Not verified in this research. No casting measurements or appearance requirements are assumed.",
+        "status": "Unknown",
+        "sourceIds": []
+      },
+      {
+        "section": "Casting Intelligence",
+        "label": "Latest models.com show",
+        "value": "No verified show record retrieved in the initial research. Review the newest show before making a visual casting assessment.",
+        "status": "Unknown",
+        "sourceIds": []
+      }
+    ],
+    "referenceSources": [
+      {
+        "url": "https://www.aravapolak.com/collections",
+        "label": "Official collection references; images remain on the source site"
+      }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "brand": "Nardos",
+    "officialWebsite": "https://www.nardosdesign.com",
+    "season": "SS 27 navigation; FW 26 archive identified",
+    "jobType": "Bridal Week / Bridal Market",
+    "researchedAt": "2026-10-06T14:36:00Z",
+    "confidence": "Low",
+    "sources": [
+      {
+        "id": "1",
+        "url": "https://www.nardosdesign.com/",
+        "title": "Official Nardos collections",
+        "kind": "Official brand",
+        "accessedAt": "2026-10-06T14:36:00Z",
+        "summary": "The site advertises Spring/Summer 2027 and describes the bridal Art of Creation theme; it separately identifies Victorian Rosette as FW26."
+      },
+      {
+        "id": "2",
+        "url": "https://www.nardosdesign.com/collections/bridal-gowns",
+        "title": "Official bridal collections",
+        "kind": "Official brand",
+        "accessedAt": "2026-10-06T14:36:00Z",
+        "summary": "Brand description emphasizes dimensional textures and contrast, alongside classical craft and contemporary design."
+      }
+    ],
+    "claims": [
+      {
+        "section": "Brand Profile",
+        "label": "Category",
+        "value": "Luxury bridal, evening and ready-to-wear collections are offered on the official site.",
+        "status": "Verified",
+        "sourceIds": [
+          "1"
+        ]
+      },
+      {
+        "section": "Current Collection",
+        "label": "Collection themes",
+        "value": "The site describes Art of Creation around craftsmanship and intentional sculptural design. Victorian Rosette is explicitly identified as Fall/Winter 2026, so its Victorian references are historical context.",
+        "status": "Verified",
+        "sourceIds": [
+          "1"
+        ]
+      },
+      {
+        "section": "Current Collection",
+        "label": "Garment direction",
+        "value": "The general bridal page highlights dimensional surface detail and contrasting forms; this is brand-level context rather than a specific new casting brief.",
+        "status": "Verified",
+        "sourceIds": [
+          "2"
+        ]
+      },
+      {
+        "section": "Casting Intelligence",
+        "label": "Portfolio review priority",
+        "value": "Review gown presentation, movement and handling of sculptural garments. Specific model preferences remain unverified.",
+        "status": "Inferred",
+        "sourceIds": [
+          "1",
+          "2"
+        ]
+      },
+      {
+        "section": "Casting Intelligence",
+        "label": "Model identities, measurements and agencies",
+        "value": "Not verified in this research. No casting measurements or appearance requirements are assumed.",
+        "status": "Unknown",
+        "sourceIds": []
+      },
+      {
+        "section": "Casting Intelligence",
+        "label": "Latest models.com show",
+        "value": "No verified show record retrieved in the initial research. Review the newest show before making a visual casting assessment.",
+        "status": "Unknown",
+        "sourceIds": []
+      }
+    ],
+    "referenceSources": [
+      {
+        "url": "https://www.nardosdesign.com/",
+        "label": "Official collection references; images remain on the source site"
+      }
+    ]
+  }
+]
