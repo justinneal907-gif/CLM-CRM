@@ -1,0 +1,3 @@
+[functions.brand-intelligence]
+# The handler validates the private CLM_RESEARCH_TOKEN itself; anonymous keys are rejected.
+verify_jwt = false

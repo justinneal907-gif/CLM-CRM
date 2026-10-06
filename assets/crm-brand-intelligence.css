@@ -1,0 +1,9 @@
+.bi-panel{background:var(--panel,#fff);color:var(--text,#222);font-weight:400;padding:12px;border:1px solid var(--line,#ddd);border-radius:9px;overflow-wrap:anywhere}
+.bi-panel h3{margin:12px 0 6px}.bi-panel h4{margin:14px 0 6px}
+.bi-panel details{margin:8px 0}.bi-panel summary{cursor:pointer;font-weight:600;line-height:1.5}
+.bi-panel p{line-height:1.5;margin:8px 0}.bi-panel ul{padding-left:20px;line-height:1.5}
+.bi-panel .bi-field{display:block;margin:8px 0;font-weight:500}.bi-panel input:not([type=checkbox]),.bi-panel select{display:block;width:100%;min-width:0;margin-top:4px}
+.bi-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.bi-card{border-top:1px solid var(--line,#ddd);padding:10px 0}.bi-card .actions{margin-top:8px;flex-wrap:wrap}
+.bi-panel .tiny{line-height:1.5}.bi-panel .btn{white-space:normal}.bi-panel input[type=file]{max-width:100%}
+@media(max-width:600px){.bi-columns{grid-template-columns:1fr}}
