@@ -6,4 +6,5 @@
 .bi-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .bi-card{border-top:1px solid var(--line,#ddd);padding:10px 0}.bi-card .actions{margin-top:8px;flex-wrap:wrap}
 .bi-panel .tiny{line-height:1.5}.bi-panel .btn{white-space:normal}.bi-panel input[type=file]{max-width:100%}
+.bi-panel .bi-token-status{font-size:.92em;color:var(--muted,#555)}
 @media(max-width:600px){.bi-columns{grid-template-columns:1fr}}

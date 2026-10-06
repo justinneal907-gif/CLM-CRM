@@ -116,6 +116,7 @@
     message = 'Job requirements saved.';
   }
   function settingsHtml(c) {
+    const tokenSaved = !!sessionStorage.getItem(KEY+'.token');
     return `<details class="bi-settings"><summary>Job requirements</summary>
       <p>Use confirmed client requirements. Unknown availability stays visible for confirmation.</p>
       ${field('Collection / season', 'biSeason', c.season)}
@@ -133,7 +134,8 @@
     </details><details class="bi-settings"><summary>Research connection</summary>
       <p>Your provider key stays on the server. Enter the private CRM access token here. Research sends only the brand, season and job type.</p>
       ${field('HTTPS research endpoint','biEndpoint',state.endpoint||'','url')}${field('CRM access token (this tab only)','biToken','','password')}
-      <button type="button" class="btn" id="biSaveEndpoint">Save connection</button>
+      <p class="bi-token-status" role="status">${tokenSaved?'Access token saved for this tab. The password field is blank after saving; the token stays until you close this tab.':'No access token saved in this tab yet.'}</p>
+      <button type="button" class="btn" id="biSaveEndpoint">Save connection</button>${tokenSaved?'<button type="button" class="btn" id="biClearToken">Clear this tab’s token</button>':''}
     </details>`;
   }
   function cardHtml(r, i) {
@@ -192,8 +194,9 @@
       const token=el('biToken').value.trim();
       if(endpoint!==state.endpoint)sessionStorage.removeItem(KEY+'.token');
       state.endpoint=endpoint;if(token)sessionStorage.setItem(KEY+'.token',token);
-      persist();message='Research connection saved.';
+      persist();message=token?'Access token saved for this tab.':sessionStorage.getItem(KEY+'.token')?'Connection saved; this tab’s access token is still available.':'Endpoint saved. Paste the private CRM access token to enable research.';
     });
+    if(el('biClearToken'))el('biClearToken').onclick=()=>act(()=>{sessionStorage.removeItem(KEY+'.token');message='Access token cleared from this tab.';});
     el('biSaveWeights').onclick=()=>act(()=>{
       const w=Object.fromEntries(Object.keys(B.WEIGHTS).map(k=>[k,Number(el('biWeight-'+k).value)]));
       if(Object.values(w).some(v=>!Number.isFinite(v)||v<0)||!Object.values(w).some(v=>v>0))throw Error('Use nonnegative weights and at least one positive value.');
