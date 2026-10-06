@@ -2347,7 +2347,7 @@ function clmPackageImageIdentifier(modelId,source){
 }
 function clmLegacyGenericImageIdentifier(value){
   return /(?:^|[\\/_-])model[-_ ]?photo[-_ ]?\d+(?:\.[a-z0-9]+)?$/i.test(String(value||'').trim())||
-    /^model\\s+photo\s+\d+(?:\.[a-z0-9]+)?$/i.test(String(value||'').trim());
+    /^model\s+photo\s+\d+(?:\.[a-z0-9]+)?$/i.test(String(value||'').trim());
 }
 function assignPackageImageIdentifiers(root){
   const scope=root?.querySelectorAll?root:null;if(!scope)return false;
