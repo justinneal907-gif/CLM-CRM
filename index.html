@@ -1106,10 +1106,13 @@ function maintainSophiaProfileWithoutAutoAdd(data){
   return data;
 }
 function modelDraftPhotosHtml(m){
-  const url=draftPhotoForModel(m);
-  return url?`<div style="text-align:left"><img src="${esc(url)}" width="440" style="max-width:100%;height:auto;margin:8px 0 0" alt="${esc(m.name)}"></div>`:'';
+  const urls=typeof draftPhotosForModel==='function'?draftPhotosForModel(m):[draftPhotoForModel(m)].filter(Boolean);
+  if(!urls.length)return'';
+  return `<div style="text-align:left">${urls.map(url=>{
+    const imageId=clmPackageImageIdentifier(m.id,url);
+    return `<div style="display:block;margin:8px 0 0"><img src="${esc(url)}" data-clm-image-id="${esc(imageId)}" width="440" style="max-width:100%;height:auto;display:block" alt="${esc(m.name)}"></div>`;
+  }).join('')}</div>`;
 }
-
 function mergeContacts(recovered,current){const contacts=(current||[]).map(c=>({...c}));for(const c of (recovered||[])){const email=String(c.email||'').trim().toLowerCase();if(!contacts.some(existing=>(c.id&&existing.id===c.id)||(email&&String(existing.email||'').trim().toLowerCase()===email)))contacts.push({...c})}return contacts}
 function applyCallieEuropeGoSeeCopyV2(data){
   const sourceById=new Map(CALLIE_EUROPE_GOSEE_DRAFTS_2026_09_25.map(d=>[d.id,d]));
@@ -2257,6 +2260,7 @@ async function freezePreviewImagesForReview(){
   const preview=$('#emailPreview');
   const original=currentEmailPreviewHtml(),draftId=db.activeDraftId;
   const t=document.createElement('template');t.innerHTML=original;
+  assignPackageImageIdentifiers(t.content);
   let changed=false;
   for(const img of t.content.querySelectorAll('img')){
     const src=img.getAttribute('src')||'';
@@ -2328,25 +2332,69 @@ async function verifyStoredGmailPackage(draftId,allowPixel=false){
   return true;
 }
 
+function clmImageSlug(value){
+  return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,80);
+}
+function clmImageFingerprint(value){
+  const s=String(value||'');let a=2166136261,b=5381;
+  for(let i=0;i<s.length;i++){const code=s.charCodeAt(i);a=Math.imul(a^code,16777619);b=(Math.imul(b,33)^code)>>>0}
+  return (a>>>0).toString(36)+(b>>>0).toString(36);
+}
+function clmPackageImageIdentifier(modelId,source){
+  const model=clmImageSlug(modelId);
+  if(!model)throw new Error('Every package image must belong to a model with a unique model ID.');
+  return 'clm-img-'+model+'-'+clmImageFingerprint(source);
+}
+function clmLegacyGenericImageIdentifier(value){
+  return /(?:^|[\\/_-])model[-_ ]?photo[-_ ]?\\d+(?:\\.[a-z0-9]+)?$/i.test(String(value||'').trim())||
+    /^model\\s+photo\\s+\\d+(?:\\.[a-z0-9]+)?$/i.test(String(value||'').trim());
+}
+function assignPackageImageIdentifiers(root){
+  const scope=root?.querySelectorAll?root:null;if(!scope)return false;
+  let changed=false;
+  for(const block of scope.querySelectorAll('[data-clm-model-id]')){
+    const modelId=String(block.getAttribute('data-clm-model-id')||'').trim();
+    if(!modelId)continue;
+    for(const img of block.querySelectorAll('img')){
+      const src=img.getAttribute('src')||'';
+      const current=img.getAttribute('data-clm-image-id')||'';
+      if(!current||clmLegacyGenericImageIdentifier(current)){
+        img.setAttribute('data-clm-image-id',clmPackageImageIdentifier(modelId,src));changed=true;
+      }
+      if(clmLegacyGenericImageIdentifier(img.getAttribute('alt')||'')){img.setAttribute('alt',modelId);changed=true}
+      if(clmLegacyGenericImageIdentifier(img.getAttribute('title')||'')){img.removeAttribute('title');changed=true}
+    }
+  }
+  return changed;
+}
 function gmailInlineDataImages(html){
   const holder=document.createElement('div');holder.innerHTML=html;
-  const parts=[];
+  assignPackageImageIdentifiers(holder);
+  const parts=[],seenImageIds=new Set();
   const exportId=crypto.randomUUID().replace(/-/g,'');
   for(const img of holder.querySelectorAll('img'))if(!/^data:image\//i.test(img.getAttribute('src')||''))throw new Error('Images must be frozen and reviewed in the preview before Gmail upload.');
-  [...holder.querySelectorAll('img[src^="data:"]')].forEach((img,index)=>{
+  [...holder.querySelectorAll('img[src^="data:"]')].forEach(img=>{
+    const block=img.closest('[data-clm-model-id]');
+    const modelId=String(block?.getAttribute('data-clm-model-id')||'').trim();
+    if(!modelId)throw new Error('A package image is not attached to a model. Sending is blocked until it has a unique model image identifier.');
     const src=img.getAttribute('src')||'';
-    const match=src.match(/^data:([^;,]+)?(;base64)?,([\s\S]*)$/);
+    const match=src.match(/^data:([^;,]+)?(;base64)?,([\\s\\S]*)$/);
     if(!match)throw new Error('Invalid preview image data. Replace the image before creating a Gmail draft.');
     const mime=match[1]||'image/jpeg';
     let payload='';
-    try{payload=match[2]?match[3].replace(/\s/g,''):gmailBase64Utf8(decodeURIComponent(match[3]))}catch{throw new Error('Could not encode the preview image.')}
-    const modelId=img.closest('[data-clm-model-id]')?.getAttribute('data-clm-model-id')||img.getAttribute('alt')||'photo';
-    const label=String(modelId).replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').slice(0,80)||'photo';
-    const identity='clm-'+exportId+'-'+label+'-'+index;
-    const cid=identity+'@chezlesmannequins';
+    try{payload=match[2]?match[3].replace(/\\s/g,''):gmailBase64Utf8(decodeURIComponent(match[3]))}catch{throw new Error('Could not encode the preview image.')}
+    let imageId=String(img.getAttribute('data-clm-image-id')||'').trim();
+    if(!imageId||clmLegacyGenericImageIdentifier(imageId))imageId=clmPackageImageIdentifier(modelId,src);
+    if(clmLegacyGenericImageIdentifier(imageId)||!imageId.startsWith('clm-img-'))throw new Error('Generic package image identifiers are forbidden.');
+    if(seenImageIds.has(imageId))throw new Error('The same package image identifier appears more than once. Remove the duplicate image before creating the Gmail draft.');
+    seenImageIds.add(imageId);
+    img.setAttribute('data-clm-image-id',imageId);
+    const cid='clm-'+exportId+'-'+imageId+'@chezlesmannequins';
     const ext=mime.includes('png')?'png':mime.includes('gif')?'gif':mime.includes('webp')?'webp':'jpg';
+    const filename=imageId+'.'+ext;
+    if(clmLegacyGenericImageIdentifier(filename))throw new Error('Generic package image filenames are forbidden.');
     img.setAttribute('src','cid:'+cid);
-    parts.push({mime,payload,cid,modelId,filename:identity+'.'+ext});
+    parts.push({mime,payload,cid,modelId,imageId,filename});
   });
   return {html:holder.innerHTML,parts};
 }
@@ -2385,6 +2433,7 @@ function buildGmailDraftRaw(to,subject,html,signalId='',asBlob=false){
       mime+='Content-Transfer-Encoding: base64\r\n';
       mime+='Content-ID: <'+part.cid+'>\r\n';
       mime+='X-Attachment-Id: '+part.cid+'\r\n';
+      mime+='X-CLM-Image-ID: '+part.imageId+'\r\n';
       mime+='Content-Disposition: inline; filename="'+part.filename+'"\r\n\r\n';
       mime+=gmailWrapBase64(part.payload)+'\r\n';
     }
@@ -3773,6 +3822,7 @@ function sanitizeEditableEmailHtml(html){
   // The visible src is authoritative. Hidden attributes must never substitute another image.
   template.content.querySelectorAll('img').forEach(img=>{['data-gif-src','data-gif-playing','data-gif-bound','data-media-ref','title','role','tabindex'].forEach(name=>img.removeAttribute(name));img.style.removeProperty('cursor')});
   template.content.querySelectorAll('script,style,iframe,object,embed,form,input,textarea,button,meta,link').forEach(el=>el.remove());
+  assignPackageImageIdentifiers(template.content);
   template.content.querySelectorAll('*').forEach(el=>{
     [...el.attributes].forEach(attr=>{
       const name=String(attr.name||'').toLowerCase(),value=String(attr.value||'');
@@ -4139,12 +4189,12 @@ async function setDraftPhotoFile(id,input){
   setStatus(added.length===1?'Uploaded photo added to this package.':`${added.length} uploaded photos added to this package.`);
 }
 function modelDraftPhotosHtml(m){
-  const urls=draftPhotosForModel(m);
+  const urls=typeof draftPhotosForModel==='function'?draftPhotosForModel(m):[draftPhotoForModel(m)].filter(Boolean);
   if(!urls.length)return'';
-  // Keep every photo for a model in its own block-level row. This inline
-  // structure survives copy/paste and Gmail rendering without depending on
-  // external CSS, so multiple photos can never tile side-by-side.
-  return `<div style="text-align:left">${urls.map((url,i)=>`<div style="display:block;margin:8px 0 0"><img src="${esc(url)}" width="440" style="max-width:100%;height:auto;display:block" alt="${esc(m.name)} photo ${i+1}"></div>`).join('')}</div>`;
+  return `<div style="text-align:left">${urls.map(url=>{
+    const imageId=clmPackageImageIdentifier(m.id,url);
+    return `<div style="display:block;margin:8px 0 0"><img src="${esc(url)}" data-clm-image-id="${esc(imageId)}" width="440" style="max-width:100%;height:auto;display:block" alt="${esc(m.name)}"></div>`;
+  }).join('')}</div>`;
 }
 function renderPhotoLibrary(){
   const s=$('#photoLibraryModel'),g=$('#photoLibraryGrid');if(!s||!g)return;
@@ -4792,6 +4842,52 @@ function addBrandFollowups20261005(data){
   return data;
 }
 
+function repairUniquePackageImageIdentifiers20261006(data){
+  const byId=new Map((data.models||[]).map(m=>[m.id,m]));
+  let changedAny=false;
+  const genericLabel=value=>clmLegacyGenericImageIdentifier(String(value||''))||/^photo\\s+\\d+$/i.test(String(value||'').trim());
+  for(const [modelId,list] of Object.entries(data.photoLibrary||{})){
+    if(!Array.isArray(list))continue;
+    data.photoLibrary[modelId]=list.map(item=>{
+      if(typeof item==='string')return item;
+      if(!item||typeof item!=='object')return item;
+      const url=item.url||item.src||'';
+      if(!genericLabel(item.label||item.title||''))return item;
+      changedAny=true;
+      const next={...item,label:clmPackageImageIdentifier(modelId,url)};
+      if(genericLabel(next.title||''))delete next.title;
+      return next;
+    });
+  }
+  const patchHtml=(record,field)=>{
+    const raw=record?.[field];if(typeof raw!=='string'||!raw.trim())return false;
+    const t=document.createElement('template');t.innerHTML=raw;let changed=false;
+    for(const block of t.content.querySelectorAll('[data-clm-model-id]')){
+      const modelId=String(block.getAttribute('data-clm-model-id')||'').trim();if(!modelId)continue;
+      const model=byId.get(modelId);
+      const explicit=record.userOverrides?.photoSelections?.[modelId]??record.photoSelections?.[modelId]??record.packagePhotos?.[modelId];
+      const choices=(Array.isArray(explicit)?explicit:[explicit]).filter(Boolean);
+      [...block.querySelectorAll('img')].forEach((img,index)=>{
+        let src=img.getAttribute('src')||'';
+        if(/^cid:model[-_ ]?photo[-_ ]?\\d+/i.test(src)&&choices[index]){src=choices[index];img.setAttribute('src',src);changed=true}
+        const expected=clmPackageImageIdentifier(modelId,src);
+        const current=img.getAttribute('data-clm-image-id')||'';
+        if(current!==expected){img.setAttribute('data-clm-image-id',expected);changed=true}
+        if(genericLabel(img.getAttribute('alt')||'')){img.setAttribute('alt',model?.name||modelId);changed=true}
+        if(genericLabel(img.getAttribute('title')||'')){img.removeAttribute('title');changed=true}
+      });
+    }
+    if(changed){record[field]=t.innerHTML;record.previewNeedsGmailUpdate=true;changedAny=true}
+    return changed;
+  };
+  for(const record of [data.draft,...(data.drafts||[])].filter(Boolean)){
+    patchHtml(record,'previewHtml');
+    patchHtml(record,'html');
+  }
+  data.recovery={...(data.recovery||{}),uniquePackageImageIdentifiersVersion:1,uniquePackageImageIdentifiersUpdatedOn:'2026-10-06'};
+  return data;
+}
+
 async function bootstrapWorkspace(){
   try{await window.CLMMediaStore?.init?.()}catch(err){console.info('Media store init skipped',err)}
   await ensureMilanArchiveLoaded();
@@ -4832,6 +4928,7 @@ async function bootstrapWorkspace(){
   db=applyTrioFollowupWording20261005(db);
   db=putSophiaLastInTrioDrafts20261005(db);
   db=removeIyanuCountryAndEnableSophiaText20261005(db);
+  db=repairUniquePackageImageIdentifiers20261006(db);
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
