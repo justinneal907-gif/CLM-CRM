@@ -2346,8 +2346,8 @@ function clmPackageImageIdentifier(modelId,source){
   return 'clm-img-'+model+'-'+clmImageFingerprint(source);
 }
 function clmLegacyGenericImageIdentifier(value){
-  return /(?:^|[\\/_-])model[-_ ]?photo[-_ ]?\\d+(?:\\.[a-z0-9]+)?$/i.test(String(value||'').trim())||
-    /^model\\s+photo\\s+\\d+(?:\\.[a-z0-9]+)?$/i.test(String(value||'').trim());
+  return /(?:^|[\\/_-])model[-_ ]?photo[-_ ]?\d+(?:\.[a-z0-9]+)?$/i.test(String(value||'').trim())||
+    /^model\\s+photo\s+\d+(?:\.[a-z0-9]+)?$/i.test(String(value||'').trim());
 }
 function assignPackageImageIdentifiers(root){
   const scope=root?.querySelectorAll?root:null;if(!scope)return false;
@@ -2378,11 +2378,11 @@ function gmailInlineDataImages(html){
     const modelId=String(block?.getAttribute('data-clm-model-id')||'').trim();
     if(!modelId)throw new Error('A package image is not attached to a model. Sending is blocked until it has a unique model image identifier.');
     const src=img.getAttribute('src')||'';
-    const match=src.match(/^data:([^;,]+)?(;base64)?,([\\s\\S]*)$/);
+    const match=src.match(/^data:([^;,]+)?(;base64)?,([\s\S]*)$/);
     if(!match)throw new Error('Invalid preview image data. Replace the image before creating a Gmail draft.');
     const mime=match[1]||'image/jpeg';
     let payload='';
-    try{payload=match[2]?match[3].replace(/\\s/g,''):gmailBase64Utf8(decodeURIComponent(match[3]))}catch{throw new Error('Could not encode the preview image.')}
+    try{payload=match[2]?match[3].replace(/\s/g,''):gmailBase64Utf8(decodeURIComponent(match[3]))}catch{throw new Error('Could not encode the preview image.')}
     let imageId=String(img.getAttribute('data-clm-image-id')||'').trim();
     if(!imageId||clmLegacyGenericImageIdentifier(imageId))imageId=clmPackageImageIdentifier(modelId,src);
     if(clmLegacyGenericImageIdentifier(imageId)||!imageId.startsWith('clm-img-'))throw new Error('Generic package image identifiers are forbidden.');
@@ -4845,7 +4845,7 @@ function addBrandFollowups20261005(data){
 function repairUniquePackageImageIdentifiers20261006(data){
   const byId=new Map((data.models||[]).map(m=>[m.id,m]));
   let changedAny=false;
-  const genericLabel=value=>clmLegacyGenericImageIdentifier(String(value||''))||/^photo\\s+\\d+$/i.test(String(value||'').trim());
+  const genericLabel=value=>clmLegacyGenericImageIdentifier(String(value||''))||/^photo\s+\d+$/i.test(String(value||'').trim());
   for(const [modelId,list] of Object.entries(data.photoLibrary||{})){
     if(!Array.isArray(list))continue;
     data.photoLibrary[modelId]=list.map(item=>{
@@ -4869,7 +4869,7 @@ function repairUniquePackageImageIdentifiers20261006(data){
       const choices=(Array.isArray(explicit)?explicit:[explicit]).filter(Boolean);
       [...block.querySelectorAll('img')].forEach((img,index)=>{
         let src=img.getAttribute('src')||'';
-        if(/^cid:model[-_ ]?photo[-_ ]?\\d+/i.test(src)&&choices[index]){src=choices[index];img.setAttribute('src',src);changed=true}
+        if(/^cid:model[-_ ]?photo[-_ ]?\d+/i.test(src)&&choices[index]){src=choices[index];img.setAttribute('src',src);changed=true}
         const expected=clmPackageImageIdentifier(modelId,src);
         const current=img.getAttribute('data-clm-image-id')||'';
         if(current!==expected){img.setAttribute('data-clm-image-id',expected);changed=true}
