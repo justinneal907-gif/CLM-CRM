@@ -4842,6 +4842,204 @@ function addBrandFollowups20261005(data){
   return data;
 }
 
+
+function addMiamiFashionWeekDrafts20261006(data){
+  if(Number(data.recovery?.miamiFashionWeekDrafts20261006Version||0)>=1)return data;
+  data.drafts=Array.isArray(data.drafts)?data.drafts:[];
+
+  const entries=[
+    {
+      id:'miami_fashion_week_2026_jhoan_sebastian_grey',
+      brand:'Jhoan Sebastian Grey',
+      recipientEmail:'',
+      contactName:'Jhoan Sebastian Grey',
+      contactUrl:'https://jhoansebastiangrey.com/pages/contact-new-58clicks',
+      modelIds:['new-york-women-claudia-lucchini','new-york-women-maja-stockwell','new-york-women-rachel-stone'],
+      research:{
+        positioning:'Minimal yet intricate luxury with strong tailoring, knit leather, sculptural texture and metropolitan polish.',
+        latestEvidence:'Miami Fashion Week 2025 physical runway at Gale Miami plus the current Seasonless IV 2026 collection.',
+        selectionLogic:'Claudia brings proven high fashion runway authority and compact sample proportions. Maja adds exceptional height and a sculptural frame for architectural pieces. Rachel gives a polished editorial alternative with strong runway proportions.',
+        sources:['https://jhoansebastiangrey.com/','https://www.prnewswire.com/news-releases/miami-fashion-week-2025-concludes-with-a-global-celebration-of-style-sustainability-and-innovation-302596971.html']
+      }
+    },
+    {
+      id:'miami_fashion_week_2026_yenny_bastida',
+      brand:'Yenny Bastida',
+      recipientEmail:'',
+      contactName:'Yenny Bastida',
+      contactUrl:'https://yennybastida.com/pages/contact',
+      contactPhone:'+58 424 1271179',
+      modelIds:['miami-women-raquel','los-angeles-women-elle-pickens','new-york-women-seven-wright'],
+      research:{
+        positioning:'Colorful textured ready to wear rooted in Venezuelan craft, handmade techniques, sustainability and feminine confidence.',
+        latestEvidence:'Miami Fashion Week 2025 physical runway plus the 2026 Buría virtual presentation built around memory, territory and craft.',
+        selectionLogic:'Raquel offers Miami availability and tall balanced proportions. Elle brings polished fashion commercial range and clean proportions. Seven adds height, long lines and a confident fashion presence suited to color and texture.',
+        sources:['https://yennybastida.com/','https://www.miamifashionweek.com/virtualrunwayyennybastida','https://www.prnewswire.com/news-releases/miami-fashion-week-returns-october-2025-2025-with-a-lineup-of-global-icons-latin-american-visionaries-and-miami-talent-302589328.html']
+      }
+    },
+    {
+      id:'miami_fashion_week_2026_jenny_polanco',
+      brand:'Jenny Polanco',
+      recipientEmail:'info@jennypolanco.com.do',
+      contactName:'Jenny Polanco Team',
+      contactUrl:'https://jennypolanco.com.do/en-us/pages/contact',
+      modelIds:['london-women-ambre-prognitz','new-york-women-rachel-stone','miami-women-raquel'],
+      research:{
+        positioning:'Timeless Caribbean luxury with sophisticated clean lines, natural textures, resort ease and Dominican artisanal detail.',
+        latestEvidence:'Miami Fashion Week 2025 physical runway at Gary Nader Art Centre and the Spring Summer 2025 collection built around elegant resort dressing.',
+        selectionLogic:'Ambre gives refined runway elegance and a complete fashion book. Rachel fits the clean sophisticated line of the clothes. Raquel adds a strong Miami based option with the height and proportions for long resort silhouettes.',
+        sources:['https://jennypolanco.com.do/en-us/collections/apparel','https://www.prnewswire.com/news-releases/miami-fashion-week-2025-concludes-with-a-global-celebration-of-style-sustainability-and-innovation-302596971.html']
+      }
+    },
+    {
+      id:'miami_fashion_week_2026_andres_otalora',
+      brand:'Andres Otalora',
+      recipientEmail:'costumerservice@andresotalora.com',
+      contactName:'Andres Otalora Team',
+      contactUrl:'https://www.andresotalora.com/pages/contact',
+      modelIds:['london-women-ambre-prognitz','new-york-women-mary-timms','los-angeles-women-elle-pickens'],
+      research:{
+        positioning:'Elevated resort and eveningwear defined by flowing silhouettes, artisanal detail, natural elegance, silk, linen, draping and wide leg shapes.',
+        latestEvidence:'Current Spring Summer 2026, Resort 2026, Pre Fall 2026 and Fall Winter 2026 collections, with a Miami retail presence at Aventura Mall.',
+        selectionLogic:'Ambre has the length and polished runway presence for fluid gowns. Mary provides sharper high fashion proportions and proven runway traction. Elle offers elegant movement and a softer fashion commercial alternative.',
+        sources:['https://www.andresotalora.com/','https://www.andresotalora.com/collections','https://www.modaoperandi.com/designer/andres-otalora/collection/fw26']
+      }
+    },
+    {
+      id:'miami_fashion_week_2026_giannina_azar',
+      brand:'Giannina Azar',
+      recipientEmail:'gianninaazaratelier@gmail.com',
+      contactName:'Giannina Azar Atelier',
+      contactUrl:'https://www.gianninaazaratelier.com/contact-2',
+      modelIds:['new-york-women-sophia-pippen','new-york-women-callie-steg','miami-women-raquel'],
+      research:{
+        positioning:'High glamour statement dressing with bold silhouettes, intricate embellishment, sheer details, shine and strong body conscious presentation.',
+        latestEvidence:'Miami Swim Week 2026 physical runway with Art Hearts Fashion, following recent New York and Los Angeles runway presentations.',
+        selectionLogic:'Sophia gives a polished editorial face and tall balanced frame that photographs strongly in statement looks. Callie adds dramatic height and a distinctive beauty profile. Raquel provides a tall Miami based option with proportions suited to fitted eveningwear.',
+        sources:['https://www.gianninaazaratelier.com/','https://creatorsfaire.com/new-release/giannina-azar-runway-show-miami-swim-week-2026','https://www.miamifashionweek.com/gianninaazar']
+      }
+    },
+    {
+      id:'miami_fashion_week_2026_beatriz_de_la_camara',
+      brand:'Beatriz de la Cámara',
+      recipientEmail:'info@beatrizdelacamara.com',
+      contactName:'Beatriz de la Cámara Team',
+      contactUrl:'https://www.beatrizdelacamara.com/en/pages/contact',
+      modelIds:['london-women-ambre-prognitz','new-york-women-claudia-lucchini','new-york-women-rachel-stone'],
+      research:{
+        positioning:'Prêt à couture built on precise lines, controlled volume, draping, Spanish craftsmanship and an ethereal timeless balance of simplicity and extravagance.',
+        latestEvidence:'Tierra en Calma opened Miami Fashion Week 2025 at Mr C Miami with black, ivory, gold and navy looks combining fluid volume and exact tailoring.',
+        selectionLogic:'Ambre gives quiet luxury and long elegant lines. Claudia brings proven couture level runway experience and very strong sample proportions. Rachel provides refined editorial restraint and a clean silhouette for the collection.',
+        sources:['https://www.beatrizdelacamara.com/en','https://www.beatrizdelacamara.com/en/pages/universe','https://www.prnewswire.com/news-releases/miami-fashion-week-2025-concludes-with-a-global-celebration-of-style-sustainability-and-innovation-302596971.html']
+      }
+    },
+    {
+      id:'miami_fashion_week_2026_efrain_mogollon',
+      brand:'Efrain Mogollon',
+      recipientEmail:'contact@byefrainmogollon.com',
+      contactName:'By Efrain Mogollon',
+      contactUrl:'https://byefrainmogollon.com/pages/contact',
+      modelIds:['new-york-women-maja-stockwell','new-york-women-claudia-lucchini','new-york-women-mary-timms'],
+      research:{
+        positioning:'Refined yet playful womenswear with ruffles, controlled volume, structural draping and subtly sensual pared back foundations.',
+        latestEvidence:'Current collections continue the sculptural draping and volume established in the physical Mexico runway presentation, with gowns, mesh, silk and shaped separates.',
+        selectionLogic:'Maja gives maximum length and a sculptural runway frame for volume. Claudia supplies angular editorial precision and couture experience. Mary offers very lean fashion proportions and current confirmed runway traction.',
+        sources:['https://byefrainmogollon.com/pages/about-us','https://www.vogue.com/fashion-shows/mexico-spring-2024/efrain-mogollon','https://www.fashionkind.com/collections/by-efrain-mogollon']
+      }
+    },
+    {
+      id:'miami_fashion_week_2026_vero_diaz',
+      brand:'Vero Diaz',
+      recipientEmail:'colecciones@verodiaz.mx',
+      contactName:'Vero Diaz Team',
+      contactUrl:'https://verodiaz.mx/',
+      modelIds:['new-york-women-callie-steg','new-york-women-sophia-pippen','los-angeles-women-elle-pickens'],
+      research:{
+        positioning:'Romantic feminine contemporary dressing across tailored separates, mini and midi dresses, jumpsuits, resort pieces and bridal.',
+        latestEvidence:'Current Fall Winter and Spring Summer collections plus the 2026 Miami Fashion Week Virtual Fashion Award for Best Creative Direction.',
+        selectionLogic:'Callie brings height, distinctive coloring and proven client level material. Sophia adds a modern editorial presence with strong bridal relevance. Elle offers a polished feminine alternative with ready fashion materials and balanced sample proportions.',
+        sources:['https://verodiaz.mx/','https://verodiaz.mx/en/collections/spring-summer-2025','https://www.miamifashionweek.com/virtualfashionawards']
+      }
+    },
+    {
+      id:'miami_fashion_week_2026_sitka_semsch',
+      brand:'Sitka Semsch',
+      recipientEmail:'storeops@sitkasemsch.com',
+      contactName:'Sitka Semsch Miami',
+      contactUrl:'https://sitkasemsch.com/pages/contact',
+      modelIds:['london-women-ambre-prognitz','los-angeles-women-elle-pickens','miami-women-raquel'],
+      research:{
+        positioning:'Understated sustainable luxury with Peruvian craftsmanship, natural fibers, fluid movement, artisan detail and refined cosmopolitan ease.',
+        latestEvidence:'Miami Fashion Week 2025 physical presentation followed by current 2026 collections featuring silk, maxi dresses, tailored separates and artisan crochet details.',
+        selectionLogic:'Ambre gives the strongest quiet luxury runway profile. Elle brings effortless elegance and fluid fashion commercial range. Raquel gives the brand a tall local Miami option with a clean adaptable silhouette.',
+        sources:['https://sitkasemsch.com/','https://sitkasemsch.com/collections','https://www.prnewswire.com/news-releases/miami-fashion-week-2025-concludes-with-a-global-celebration-of-style-sustainability-and-innovation-302596971.html']
+      }
+    }
+  ];
+
+  const missing=[...new Set(entries.flatMap(entry=>entry.modelIds))].filter(id=>!(data.models||[]).some(model=>model.id===id));
+  if(missing.length){
+    console.warn('Miami Fashion Week draft seed skipped because roster models are missing',missing);
+    return data;
+  }
+
+  for(const entry of entries){
+    if(data.drafts.some(d=>d.id===entry.id))continue;
+    const photoSelections={};
+    for(const modelId of entry.modelIds){
+      const model=(data.models||[]).find(m=>m.id===modelId);
+      const custom=(data.customPhotos||{})[modelId];
+      if(Array.isArray(custom)&&custom.length)photoSelections[modelId]=structuredClone(custom);
+      else{
+        const photo=custom||model?.photo||model?.photoUrl||'';
+        if(photo)photoSelections[modelId]=[photo];
+      }
+    }
+    const contact=entry.recipientEmail?(data.contacts||[]).find(c=>String(c.email||'').trim().toLowerCase()===entry.recipientEmail.toLowerCase()):null;
+    const record={
+      id:entry.id,
+      date:'2026-10-06',
+      eventName:'Miami Fashion Week 2026',
+      packageName:'Miami Fashion Week | '+entry.brand,
+      purpose:'submission',
+      contactId:contact?.id||'',
+      contactName:contact?.name||entry.contactName,
+      company:entry.brand,
+      recipientEmail:entry.recipientEmail,
+      cc:'agent@chezlesmannequins.com',
+      brandProject:entry.brand,
+      packageLink:CANVA_DRAFT_LINK,
+      brandCanvaPublicViewLink:CANVA_DRAFT_LINK,
+      brief:'',
+      initialMessage:'',
+      subject:'Miami Fashion Week | '+entry.brand,
+      includeStats:true,
+      includePhotos:true,
+      includeSources:true,
+      models:entry.modelIds.map(id=>(data.models||[]).find(m=>m.id===id)?.name||id),
+      modelIds:[...entry.modelIds],
+      photoSelections,
+      packagePhotos:structuredClone(photoSelections),
+      userOverrides:{photoSelections:structuredClone(photoSelections)},
+      html:'',
+      previewHtml:'',
+      castingBriefRaw:'',
+      parsedBrief:{project:entry.brand,location:'Miami',event:'Miami Fashion Week 2026'},
+      blankBodyCopy:true,
+      researchOnly:true,
+      castingResearch:structuredClone(entry.research),
+      contactUrl:entry.contactUrl||'',
+      contactPhone:entry.contactPhone||'',
+      source:'Parallel Search research October 6 2026',
+      notes:'Miami Fashion Week 2026 research based selection. Email body intentionally left blank.'
+    };
+    data.drafts.push(record);
+  }
+
+  data.recovery={...(data.recovery||{}),miamiFashionWeekDrafts20261006Version:1,miamiFashionWeekDrafts20261006AddedOn:'2026-10-06'};
+  return data;
+}
+
 function repairUniquePackageImageIdentifiers20261006(data){
   const byId=new Map((data.models||[]).map(m=>[m.id,m]));
   let changedAny=false;
@@ -4922,6 +5120,7 @@ async function bootstrapWorkspace(){
   db=addSophiaBridalFollowups20261004(db);
   db=addAlonLivneFollowup20261005(db);
   db=addBrandFollowups20261005(db);
+  db=addMiamiFashionWeekDrafts20261006(db);
   db=addWhatsAppContactToDrafts20261005(db);
   db=repairSavedPackagePhotos20261005(db);
   db=applyUniformEmailPhotoSizes20261005(db);
