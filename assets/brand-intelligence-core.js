@@ -5,6 +5,7 @@ const WEIGHTS={visual:30,casting:20,job:15,measurements:15,portfolio:10,freshnes
 const JOBS=['Runway','Presentation','Bridal Week / Bridal Market','Lookbook','E-commerce','Editorial','Showroom','Fit model','General submission'];
 const norm=s=>String(s||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 function key(name,aliases={}){const n=norm(name);return Object.hasOwn(aliases,n)?aliases[n]:n;}
+function locationKey(s){const n=norm(s),aliases={nyc:'new york','new york city':'new york','new york ny':'new york','los angeles ca':'los angeles',la:'los angeles',milano:'milan','miami fl':'miami'};return Object.hasOwn(aliases,n)?aliases[n]:n;}
 function url(s){try{const u=new URL(s);return u.protocol==='https:'&&!u.username&&!u.password?u.href:'';}catch{return '';}}
 function validate(p){
  if(!p||typeof p!=='object'||!norm(p.brand)||!Array.isArray(p.sources)||!Array.isArray(p.claims))throw Error('Research requires brand, sources and claims.');
@@ -13,8 +14,15 @@ function validate(p){
  const sources=p.sources.map((s,i)=>({id:String(s.id||i),url:url(s.url),title:String(s.title||'Source').slice(0,300),publishedAt:String(s.publishedAt||''),accessedAt:String(s.accessedAt||p.researchedAt),kind:String(s.kind||'reference'),summary:String(s.summary||'').slice(0,1400)}));
  if(sources.some(s=>!s.url)||new Set(sources.map(s=>s.id)).size!==sources.length)throw Error('Sources need unique IDs and valid HTTPS URLs.');
  const ids=new Set(sources.map(s=>s.id));
- const claims=p.claims.map(c=>{if(!['Verified','Observed','Inferred','Unknown'].includes(c.status))throw Error('Invalid evidence label.');const refs=(c.sourceIds||[]).map(String);if(refs.some(id=>!ids.has(id))||(c.status!=='Unknown'&&!refs.length))throw Error('Each finding needs a supporting source.');return {section:String(c.section||'Brand Profile').slice(0,80),label:String(c.label||'Finding').slice(0,120),value:String(c.value||'Unknown').slice(0,1600),status:c.status,sourceIds:refs};});
- return {schemaVersion:1,brand:String(p.brand).slice(0,160),officialWebsite:url(p.officialWebsite),season:String(p.season||'Unknown').slice(0,160),jobType:JOBS.includes(p.jobType)?p.jobType:'General submission',researchedAt:p.researchedAt,confidence:['Low','Medium','High'].includes(p.confidence)?p.confidence:'Low',sources,claims,visualDescriptors:[],referenceSources:(p.referenceSources||[]).slice(0,20).map(s=>({url:url(s.url),label:String(s.label||'Visual reference').slice(0,200)})).filter(s=>s.url)};
+ const claims=p.claims.map(c=>{if(!['Brand Profile','Casting Intelligence','Current Collection'].includes(c.section))throw Error('Invalid finding section.');if(!['Verified','Observed','Inferred','Unknown'].includes(c.status))throw Error('Invalid evidence label.');const refs=(c.sourceIds||[]).map(String);if(refs.some(id=>!ids.has(id))||(c.status!=='Unknown'&&!refs.length))throw Error('Each finding needs a supporting source.');return {section:String(c.section||'Brand Profile').slice(0,80),label:String(c.label||'Finding').slice(0,120),value:String(c.value||'Unknown').slice(0,1600),status:c.status,sourceIds:refs};});
+ const descriptors=(p.visualDescriptors||[]).slice(0,30).map(d=>{if(!['garment','styling','presentation','movement','work'].includes(d.kind)||!['Verified','Observed','Inferred'].includes(d.status)||!(d.sourceIds||[]).length||(d.sourceIds||[]).some(id=>!ids.has(String(id))))throw Error('Portfolio descriptors require supported work evidence.');return {kind:d.kind,value:String(d.value||'').slice(0,400),status:d.status,sourceIds:d.sourceIds.map(String)};});
+ return {schemaVersion:1,brand:String(p.brand).slice(0,160),officialWebsite:url(p.officialWebsite),season:String(p.season||'Unknown').slice(0,160),jobType:JOBS.includes(p.jobType)?p.jobType:'General submission',researchedAt:p.researchedAt,confidence:['Low','Medium','High'].includes(p.confidence)?p.confidence:'Low',sources,claims,visualDescriptors:descriptors,referenceSources:(p.referenceSources||[]).slice(0,20).map(s=>({url:url(s.url),label:String(s.label||'Visual reference').slice(0,200)})).filter(s=>s.url)};
+}
+function validateContext(c){
+ if(!c||!JOBS.includes(c.jobType))throw Error('Choose a supported job type.');
+ const start=day(c.start),end=day(c.end);if((c.start&&!start)||(c.end&&!end)||(start&&end&&start>end))throw Error('Invalid booking date range.');
+ const ranges={};for(const label of ['height','bust','waist','hip','chest','inseam']){const r=c.ranges?.[label];if(!r)continue;const min=r.min==null?null:Number(r.min),max=r.max==null?null:Number(r.max);if((min!=null&&(!Number.isFinite(min)||min<=0))||(max!=null&&(!Number.isFinite(max)||max<=0))||(min!=null&&max!=null&&min>max))throw Error('Invalid '+label+' range.');if(min!=null||max!=null)ranges[label]={min,max};}
+ return {jobType:c.jobType,start,end,season:String(c.season||'').slice(0,160),location:String(c.location||'').slice(0,160),division:String(c.division||'').slice(0,160),localOnly:!!c.localOnly,ranges};
 }
 function measurement(m,label){
  const text=String(m.stats||m.measurements||'');const part=text.split('|').find(x=>norm(x.split(':')[0])===label||(label==='hip'&&norm(x.split(':')[0])==='hips'));if(!part)return null;
@@ -22,18 +30,18 @@ function measurement(m,label){
  if(label==='height'){x=raw.match(/(\d+)\s*['’′]\s*(\d+(?:\.\d+)?)/);if(x)return (+x[1]*12 + +x[2])*2.54;}
  x=raw.match(/(\d+(?:\.\d+)?)\s*(?:in|["”’′'])/i);return x?+x[1]*2.54:null;
 }
-function day(s){return /^\d{4}-\d{2}-\d{2}$/.test(String(s))&&Number.isFinite(Date.parse(s))?String(s):'';}
+function day(s){const value=String(s||'');if(!/^\d{4}-\d{2}-\d{2}$/.test(value)||!Number.isFinite(Date.parse(value)))return '';return new Date(value).toISOString().slice(0,10)===value?value:'';}
 function eligibility(m,c={}){
  const excluded=[],pending=[];if(m.activeBoard===false||m.archived===true)excluded.push('Inactive model');
  const start=day(c.start),end=day(c.end)||start,from=day(m.statusFrom),to=day(m.statusTo);
  const overlaps=start&&(!from||end>=from)&&(!to||start<=to);
  if(['Booked','Unavailable','Traveling'].includes(m.availabilityStatus)){if(overlaps)excluded.push(m.availabilityStatus+' during booking dates');else if(!start||(!from&&!to))pending.push('Confirm availability dates');}
  if(!start)pending.push('Booking dates not confirmed');
- if(m.availabilityStatus==='Available'&&(from||to)&&start&&!overlaps)pending.push('Availability confirmation does not cover these dates');
+ if(m.availabilityStatus==='Available'&&start&&((from&&from>start)||(to&&to<end)))pending.push('Availability confirmation does not cover these dates');
  if(m.availabilityStatus!=='Available'&&!excluded.some(x=>x.includes('booking dates')))pending.push('Availability: '+(m.availabilityStatus||'Unknown'));
  if(c.division&&norm(c.division)!==norm(m.division)) {if(m.division)excluded.push('Different required division');else pending.push('Division unknown');}
  if(c.location&&!m.location)pending.push('Location unknown');
- if(c.location&&m.location&&norm(c.location)!==norm(m.location)){
+ if(c.location&&m.location&&locationKey(c.location)!==locationKey(m.location)){
   if(c.localOnly&&m.location)excluded.push('Local-only booking: different location');
   else if(m.canTravel===false)excluded.push('Travel required but unavailable');
   else if(m.canTravel!==true)pending.push('Location / travel needs confirmation');
@@ -46,7 +54,7 @@ function eligibility(m,c={}){
  return {status:excluded.length?'Ineligible':pending.length?'Needs confirmation':'Eligible',excluded,pending:[...new Set(pending)]};
 }
 function history(m,brand,submissions,aliases={},now=Date.now()){
- const rows=submissions.filter(s=>(s.modelIds||[]).includes(m.id)||((s.models||[]).some(n=>norm(n)===norm(m.name))));
+ const rows=submissions.filter(s=>(s.modelIds||[]).length?(s.modelIds||[]).includes(m.id):((s.models||[]).some(n=>norm(n)===norm(m.name))));
  const same=rows.filter(s=>[s.company,s.project,s.brand].some(b=>b&&key(b,aliases)===key(brand,aliases)));
  const recent=rows.filter(s=>{const t=Date.parse(s.date);return Number.isFinite(t)&&t<=now&&now-t<=30*86400000;});
  const recentSame=same.filter(s=>recent.includes(s));
@@ -75,6 +83,6 @@ function rank(models,profile,context,submissions=[],assessments={},aliases={},we
  }).sort((a,b)=>(a.eligibility.status==='Ineligible')-(b.eligibility.status==='Ineligible')||b.score-a.score||a.model.name.localeCompare(b.model.name));
 }
 function stale(p,season='',now=Date.now()){return now-Date.parse(p.researchedAt)>30*86400000||(season&&norm(season)!==norm(p.season));}
-const api={WEIGHTS,JOBS,norm,key,url,validate,measurement,eligibility,history,rank,stale};
+const api={WEIGHTS,JOBS,norm,key,locationKey,url,validate,validateContext,measurement,eligibility,history,rank,stale};
 if(typeof module==='object')module.exports=api;else root.CLMBrandIntelligence=api;
 })(typeof window==='object'?window:globalThis);
