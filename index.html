@@ -3731,11 +3731,14 @@ function generateInitialEmailHtml(){
   const followupCtaHtml=String(activeRecord?.followupCtaHtml||working.followupCtaHtml||'').trim();
   const blankBodyCopy=!useMiamiSentFormat&&!!(activeRecord?.blankBodyCopy||working.blankBodyCopy)&&!initialMessage;
   const greetingHtml=(messageHasGreeting||blankBodyCopy)?'':`<div>${greeting}</div><br>`;
-  const miamiLeadHtml=useMiamiSentFormat?`<div>I wanted to send ${esc(miamiNames)} to ${esc(identity.brand||d.brand)} for Miami Fashion week. Their materials are below.</div><br><div>Click <a href="${miamiLink}" target="_blank">HERE</a> to see the rest of our models.</div><br>`:'';
-  const leadHtml=useMiamiSentFormat?miamiLeadHtml:((!blankBodyCopy&&lead)?`<div>${lead}</div><br>`:'');
-  const miamiClosingHtml=useMiamiSentFormat?`<div>Again, you can find the rest of our models <a href="${miamiLink}" target="_blank">HERE</a>.</div><div>Let me know if you would like to see any of them for a casting or fitting.</div>`:'';
-  const signaturePhone=useMiamiSentFormat?'+1(907)317 3791':'+1(907)317-3791';
-  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${(!blankBodyCopy&&more)?`<div style="margin:0 0 24px">${more}</div>`:''}${miamiClosingHtml}${followupCtaHtml}<div>${close}</div><div>Justin</div><div><i>WhatsApp:</i></div><div><i>${signaturePhone}</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
+  const leadHtml=(!blankBodyCopy&&lead)?`<div>${lead}</div><br>`:'';
+  if(useMiamiSentFormat){
+    const brand=esc(identity.brand||d.brand);
+    const intro=`<div>${greeting}</div><div><br></div><div>I wanted to send ${esc(miamiNames)} to ${brand} for Miami Fashion week. Their materials are below.</div><div><br></div><div>Click <a href="${miamiLink}" target="_blank">HERE</a>&nbsp;to see the rest of our models.</div><div><br></div>`;
+    const closing=`<div style="margin:8px 0 0">Again, you can find the rest of our models&nbsp;<a href="${miamiLink}" target="_blank">HERE</a>.&nbsp;</div><div style="margin:8px 0 0">Let me know if you would like to see any of them for a casting or fitting.</div><div style="margin:8px 0 0"><div>Thank you,</div><div>Justin</div><div><br></div><div><i>WhatsApp:</i></div><div><i>+1(907)317 3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
+    return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${intro}${modelSection}${closing}</div>`;
+  }
+  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${(!blankBodyCopy&&more)?`<div style="margin:0 0 24px">${more}</div>`:''}${followupCtaHtml}<div>${close}</div><div>Justin</div><div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
 }
 
 /* EMAIL DRAFT BUILDER STABILITY FIX 2026-09-17 */
@@ -5086,7 +5089,7 @@ function repairMiamiSentCopy20261007(data){
   const formatNames=names=>names.length<2?(names[0]||''):(names.length===2?names[0]+' and '+names[1]:names.slice(0,-1).join(', ')+', and '+names[names.length-1]);
   const repair=draft=>{
     if(!draft||!String(draft.id||'').startsWith('miami_fashion_week_2026_')||draft.purpose!=='submission'||String(draft.initialMessage||'').trim())return;
-    let html=typeof draft.previewHtml==='string'?draft.previewHtml:'';
+    const html=typeof draft.previewHtml==='string'?draft.previewHtml:'';
     if(!html.trim())return;
     const names=(draft.modelIds||[]).map(id=>modelNameMap.get(id)).filter(Boolean);
     const fallback=Array.isArray(draft.models)?draft.models.filter(Boolean):[];
@@ -5094,25 +5097,29 @@ function repairMiamiSentCopy20261007(data){
     const brand=String(draft.brandProject||draft.company||'').trim();
     if(!brand||!miamiNames)return;
 
-    if(!/I wanted to send\s/i.test(html)){
-      const firstModel=html.search(/<div\s+data-clm-model-id=/i);
-      if(firstModel>=0){
-        const intro=`<div>Hi ${esc(brand)} Team,</div><br><div>I wanted to send ${esc(miamiNames)} to ${esc(brand)} for Miami Fashion week. Their materials are below.</div><br><div>Click <a href="${miamiLink}" target="_blank">HERE</a> to see the rest of our models.</div><br>`;
-        html=html.slice(0,firstModel)+intro+html.slice(firstModel);
-      }
-    }
+    const firstModel=html.search(/<div\s+data-clm-model-id=/i);
+    const signature=html.search(/<div[^>]*>\s*(?:Thank you,|Best,)\s*<\/div>/i);
+    if(firstModel<0||signature<=firstModel)return;
 
-    if(!/Again, you can find the rest of our models/i.test(html)){
-      const signature=html.search(/<div[^>]*>\s*(?:Thank you,|Best,)\s*<\/div>/i);
-      if(signature>=0){
-        const closing=`<div>Again, you can find the rest of our models <a href="${miamiLink}" target="_blank">HERE</a>.</div><div>Let me know if you would like to see any of them for a casting or fitting.</div>`;
-        html=html.slice(0,signature)+closing+html.slice(signature);
-      }
+    let modelHtml=html.slice(firstModel,signature);
+    const trailingText=[
+      'Again, you can see more models',
+      'Again, you can find the rest of our models',
+      'Let me know if you would like to see any of them for a casting or fitting.'
+    ];
+    let cut=modelHtml.length;
+    for(const marker of trailingText){
+      const markerIndex=modelHtml.indexOf(marker);
+      if(markerIndex<0)continue;
+      const blockStart=modelHtml.lastIndexOf('<div',markerIndex);
+      cut=Math.min(cut,blockStart>=0?blockStart:markerIndex);
     }
+    modelHtml=modelHtml.slice(0,cut);
 
-    html=html.replace(/<div([^>]*)>\s*Best,\s*<\/div>/i,'<div$1>Thank you,</div>');
-    html=html.replace(/\+1\(907\)317-3791/g,'+1(907)317 3791');
-    draft.previewHtml=html;
+    const safeBrand=esc(brand);
+    const intro=`<div>Hi ${safeBrand} Team,</div><div><br></div><div>I wanted to send ${esc(miamiNames)} to ${safeBrand} for Miami Fashion week. Their materials are below.</div><div><br></div><div>Click <a href="${miamiLink}" target="_blank">HERE</a>&nbsp;to see the rest of our models.</div><div><br></div>`;
+    const closing=`<div style="margin:8px 0 0">Again, you can find the rest of our models&nbsp;<a href="${miamiLink}" target="_blank">HERE</a>.&nbsp;</div><div style="margin:8px 0 0">Let me know if you would like to see any of them for a casting or fitting.</div><div style="margin:8px 0 0"><div>Thank you,</div><div>Justin</div><div><br></div><div><i>WhatsApp:</i></div><div><i>+1(907)317 3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
+    draft.previewHtml=`<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${intro}${modelHtml}${closing}</div>`;
   };
   repair(data.draft);
   for(const draft of data.drafts||[])repair(draft);
