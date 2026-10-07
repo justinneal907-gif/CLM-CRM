@@ -31,14 +31,16 @@ assert.match(preview.innerHTML,/data-clm-model-id="model-a"/,'A blank saved Miam
 assert.match(preview.innerHTML,/data-clm-model-id="model-b"/,'A blank saved Miami preview must not suppress the second selected model.');
 assert.notEqual(blankDraft.previewHtml,'','The regenerated Miami copy must be stored back on the saved draft.');
 
-const modelOnlyHtml='<div style="font-family:Arial,sans-serif;font-size:13px;color:#000"><div data-clm-model-id="model-a"><b>Model A</b><img src="a.jpg"></div><div data-clm-model-id="model-b"><b>Model B</b><img src="b.jpg"></div><div>Best,</div><div>Justin</div><div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div></div>';
+const modelOnlyHtml='<div style="font-family:Arial,sans-serif;font-size:13px;color:#000"><div>Below are our recommendations for Example Brand.</div><br><div data-clm-model-id="model-a"><b>Model A</b><img src="a.jpg"></div><div data-clm-model-id="model-b"><b>Model B</b><img src="b.jpg"></div><div>Again, you can see more models HERE.</div><div>Best,</div><div>Justin</div><div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div></div>';
 const modelOnly={id:'miami_fashion_week_2026_existing',purpose:'submission',brandProject:'Example Brand',recipientEmail:'client@example.com',modelIds:['model-a','model-b'],models:['Model A','Model B'],photoSelections:{'model-a':['a.jpg'],'model-b':['b.jpg']},previewHtml:modelOnlyHtml,initialMessage:''};
 const before={recipientEmail:modelOnly.recipientEmail,modelIds:structuredClone(modelOnly.modelIds),photoSelections:structuredClone(modelOnly.photoSelections)};
 ctx.repairMiamiSentCopy20261007({draft:modelOnly,drafts:[modelOnly],models:[{id:'model-a',name:'Model A'},{id:'model-b',name:'Model B'}]});
 assert.match(modelOnly.previewHtml,/Hi Example Brand Team,/);
 assert.match(modelOnly.previewHtml,/I wanted to send Model A and Model B to Example Brand for Miami Fashion week\. Their materials are below\./);
-assert.match(modelOnly.previewHtml,/Click <a href="https:\/\/canva\.link\/phxa5c71325j0qv" target="_blank">HERE<\/a> to see the rest of our models\./);
+assert.match(modelOnly.previewHtml,/Click <a href="https:\/\/canva\.link\/phxa5c71325j0qv" target="_blank">HERE<\/a>&nbsp;to see the rest of our models\./);
 assert.match(modelOnly.previewHtml,/Again, you can find the rest of our models/);
+assert.doesNotMatch(modelOnly.previewHtml,/Below are our recommendations/);
+assert.doesNotMatch(modelOnly.previewHtml,/Again, you can see more models/);
 assert.match(modelOnly.previewHtml,/Let me know if you would like to see any of them for a casting or fitting\./);
 assert.match(modelOnly.previewHtml,/<div>Thank you,<\/div>/);
 assert.match(modelOnly.previewHtml,/\+1\(907\)317 3791/);
