@@ -3701,11 +3701,17 @@ function generateInitialEmailHtml(){
   const tone=parisDraftRelationshipTone(toneDraft);
   const names=draftGreetingNames(toneDraft);
   const isBridalFollowup=['bridal-20261002','bridal-20261004-sophia'].includes(working.followupBatch)&&d.purpose==='followup';
-  const greeting=isBridalFollowup?esc(working.followupGreeting||'Hi,'):(names.length?`Hi ${esc(naturalNameList(names))},`:'Hi,');
   const picked=selectedModels();
   const identity=packageIdentity({...working,brandProject:d.brand,eventName:$('#emailEvent').value.trim()});
   const initialMessage=String(working.initialMessage||'');
   const messageHasGreeting=/^\s*Hi(?:\s|,)/.test(initialMessage);
+  const activeId=String(activeRecord?.id||db.activeDraftId||working?.id||'');
+  const isMiamiSubmission=activeId.startsWith('miami_fashion_week_2026_')&&d.purpose==='submission';
+  const useMiamiSentFormat=isMiamiSubmission&&!initialMessage;
+  const miamiLink='https://canva.link/phxa5c71325j0qv';
+  const miamiNamesSource=picked.length?picked.map(m=>m.name):((activeRecord?.models||working.models||[]).filter(Boolean));
+  const miamiNames=miamiNamesSource.length<2?(miamiNamesSource[0]||''):(miamiNamesSource.length===2?miamiNamesSource[0]+' and '+miamiNamesSource[1]:miamiNamesSource.slice(0,-1).join(', ')+', and '+miamiNamesSource[miamiNamesSource.length-1]);
+  const greeting=useMiamiSentFormat?`Hi ${esc(identity.brand||d.brand)} Team,`:(isBridalFollowup?esc(working.followupGreeting||'Hi,'):(names.length?`Hi ${esc(naturalNameList(names))},`:'Hi,'));
   const generatedLead=isBridalFollowup?bridalFollowupDefaultBody({...working,models:picked.map(m=>m.name),brandProject:d.brand}):`Below are our recommendations${identity.brand?' for '+esc(identity.brand):''}${identity.event?' for '+esc(identity.event):''}. <a href="https://canva.link/vhk73x4zncw11o7"><strong><em>HERE</em></strong></a> are additional suggestions. Please also feel free to inquire about anyone on <a href="https://www.chezlesmannequins.com/">our website</a> as many of our models travel and may be in town.`;
   const lead=initialMessage?esc(initialMessage).replace(/\r?\n/g,'<br>'):(isBridalFollowup?esc(generatedLead).replace(/\r?\n/g,'<br>'):generatedLead);
 
@@ -3715,14 +3721,16 @@ function generateInitialEmailHtml(){
     return `<div data-clm-model-id="${esc(m.id)}" style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&forcedStats?' | '+formatStats(forcedStats,d.units):''}</div>${d.sources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftExtraHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`;
   }).join('');
   const extra='';
-  const more=(isBridalFollowup||!!initialMessage)?'':'Again, you can see more models <a href="https://canva.link/vhk73x4zncw11o7"><strong><em>HERE</em></strong></a>.';
+  const more=(isBridalFollowup||!!initialMessage||useMiamiSentFormat)?'':'Again, you can see more models <a href="https://canva.link/vhk73x4zncw11o7"><strong><em>HERE</em></strong></a>.';
   const modelSection=blocks||(d.purpose==='followup'?'':'<div>[Select one or more models]</div>');
   const close=String(activeRecord?.signatureClose||working?.signatureClose||'').trim()||(tone.tone==='personal'?'Best,':'Thank you,');
   const followupCtaHtml=String(activeRecord?.followupCtaHtml||working.followupCtaHtml||'').trim();
-  const blankBodyCopy=!!(activeRecord?.blankBodyCopy||working.blankBodyCopy)&&!initialMessage;
+  const blankBodyCopy=!useMiamiSentFormat&&!!(activeRecord?.blankBodyCopy||working.blankBodyCopy)&&!initialMessage;
   const greetingHtml=(messageHasGreeting||blankBodyCopy)?'':`<div>${greeting}</div><br>`;
-  const leadHtml=(!blankBodyCopy&&lead)?`<div>${lead}</div><br>`:'';
-  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${(!blankBodyCopy&&more)?`<div style="margin:0 0 24px">${more}</div>`:''}${followupCtaHtml}<div>${close}</div><div>Justin</div><div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
+  const miamiLeadHtml=useMiamiSentFormat?`<div>I wanted to send ${esc(miamiNames)} to ${esc(identity.brand||d.brand)} for Miami Fashion week. Their materials are below.</div><br><div>Click <a href="${miamiLink}" target="_blank">HERE</a> to see the rest of our models.</div><br>`:'';
+  const leadHtml=useMiamiSentFormat?miamiLeadHtml:((!blankBodyCopy&&lead)?`<div>${lead}</div><br>`:'');
+  const miamiClosingHtml=useMiamiSentFormat?`<div>Again, you can find the rest of our models <a href="${miamiLink}" target="_blank">HERE</a>.</div><div>Let me know if you would like to see any of them for a casting or fitting.</div>`:'';
+  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${(!blankBodyCopy&&more)?`<div style="margin:0 0 24px">${more}</div>`:''}${miamiClosingHtml}${followupCtaHtml}<div>${close}</div><div>Justin</div><div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
 }
 
 /* EMAIL DRAFT BUILDER STABILITY FIX 2026-09-17 */
