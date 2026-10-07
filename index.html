@@ -3727,7 +3727,7 @@ function generateInitialEmailHtml(){
   const extra='';
   const more=(isBridalFollowup||!!initialMessage||useMiamiSentFormat)?'':'Again, you can see more models <a href="https://canva.link/vhk73x4zncw11o7"><strong><em>HERE</em></strong></a>.';
   const modelSection=blocks||(d.purpose==='followup'?'':'<div>[Select one or more models]</div>');
-  const close=String(activeRecord?.signatureClose||working?.signatureClose||'').trim()||(tone.tone==='personal'?'Best,':'Thank you,');
+  const close=useMiamiSentFormat?'Thank you,':(String(activeRecord?.signatureClose||working?.signatureClose||'').trim()||(tone.tone==='personal'?'Best,':'Thank you,'));
   const followupCtaHtml=String(activeRecord?.followupCtaHtml||working.followupCtaHtml||'').trim();
   const blankBodyCopy=!useMiamiSentFormat&&!!(activeRecord?.blankBodyCopy||working.blankBodyCopy)&&!initialMessage;
   const greetingHtml=(messageHasGreeting||blankBodyCopy)?'':`<div>${greeting}</div><br>`;
@@ -5080,6 +5080,45 @@ function addMiamiFashionWeekDrafts20261006(data){
   return data;
 }
 
+function repairMiamiSentCopy20261007(data){
+  const miamiLink='https://canva.link/phxa5c71325j0qv';
+  const modelNameMap=new Map((data.models||[]).map(model=>[model.id,model.name]));
+  const formatNames=names=>names.length<2?(names[0]||''):(names.length===2?names[0]+' and '+names[1]:names.slice(0,-1).join(', ')+', and '+names[names.length-1]);
+  const repair=draft=>{
+    if(!draft||!String(draft.id||'').startsWith('miami_fashion_week_2026_')||draft.purpose!=='submission'||String(draft.initialMessage||'').trim())return;
+    let html=typeof draft.previewHtml==='string'?draft.previewHtml:'';
+    if(!html.trim())return;
+    const names=(draft.modelIds||[]).map(id=>modelNameMap.get(id)).filter(Boolean);
+    const fallback=Array.isArray(draft.models)?draft.models.filter(Boolean):[];
+    const miamiNames=formatNames(names.length?names:fallback);
+    const brand=String(draft.brandProject||draft.company||'').trim();
+    if(!brand||!miamiNames)return;
+
+    if(!/I wanted to send\s/i.test(html)){
+      const firstModel=html.search(/<div\s+data-clm-model-id=/i);
+      if(firstModel>=0){
+        const intro=`<div>Hi ${esc(brand)} Team,</div><br><div>I wanted to send ${esc(miamiNames)} to ${esc(brand)} for Miami Fashion week. Their materials are below.</div><br><div>Click <a href="${miamiLink}" target="_blank">HERE</a> to see the rest of our models.</div><br>`;
+        html=html.slice(0,firstModel)+intro+html.slice(firstModel);
+      }
+    }
+
+    if(!/Again, you can find the rest of our models/i.test(html)){
+      const signature=html.search(/<div[^>]*>\s*(?:Thank you,|Best,)\s*<\/div>/i);
+      if(signature>=0){
+        const closing=`<div>Again, you can find the rest of our models <a href="${miamiLink}" target="_blank">HERE</a>.</div><div>Let me know if you would like to see any of them for a casting or fitting.</div>`;
+        html=html.slice(0,signature)+closing+html.slice(signature);
+      }
+    }
+
+    html=html.replace(/<div([^>]*)>\s*Best,\s*<\/div>/i,'<div$1>Thank you,</div>');
+    html=html.replace(/\+1\(907\)317-3791/g,'+1(907)317 3791');
+    draft.previewHtml=html;
+  };
+  repair(data.draft);
+  for(const draft of data.drafts||[])repair(draft);
+  return data;
+}
+
 function repairUniquePackageImageIdentifiers20261006(data){
   const byId=new Map((data.models||[]).map(m=>[m.id,m]));
   let changedAny=false;
@@ -5163,6 +5202,7 @@ async function bootstrapWorkspace(){
   db=addMiamiFashionWeekDrafts20261006(db);
   db=addWhatsAppContactToDrafts20261005(db);
   db=repairSignatureOnlyModelDraftPreviews20261006(db);
+  db=repairMiamiSentCopy20261007(db);
   db=repairSavedPackagePhotos20261005(db);
   db=applyUniformEmailPhotoSizes20261005(db);
   db=applyTrioFollowupWording20261005(db);
