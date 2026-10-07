@@ -3662,16 +3662,20 @@ function ensureFollowupCtaInHtml(html,cta){
 }
 function emailHtml(){
   const working=db.draft||{};
-  if(Object.prototype.hasOwnProperty.call(working,'previewHtml')){
+  const activeRecord=activeDraftRecord();
+  const activeId=String(activeRecord?.id||db.activeDraftId||working?.id||'');
+  const isMiamiSubmission=activeId.startsWith('miami_fashion_week_2026_')&&(activeRecord?.purpose||working?.purpose)==='submission';
+  const workingBlankMiamiPreview=isMiamiSubmission&&typeof working.previewHtml==='string'&&!working.previewHtml.trim()&&!String(working.initialMessage||'').trim();
+  if(Object.prototype.hasOwnProperty.call(working,'previewHtml')&&!workingBlankMiamiPreview){
     if(typeof working.previewHtml==='string'&&working.followupCtaHtml){
       working.previewHtml=ensureFollowupCtaInHtml(working.previewHtml,working.followupCtaHtml);
       const active=activeDraftRecord();if(active)active.previewHtml=working.previewHtml;
     }
     return working.previewHtml;
   }
-  const activeRecord=activeDraftRecord();
   const saved=activeRecord?.previewHtml;
-  if(typeof saved==='string'){
+  const savedBlankMiamiPreview=isMiamiSubmission&&typeof saved==='string'&&!saved.trim()&&!String(activeRecord?.initialMessage||'').trim();
+  if(typeof saved==='string'&&!savedBlankMiamiPreview){
     working.previewHtml=activeRecord?.followupCtaHtml?ensureFollowupCtaInHtml(saved,activeRecord.followupCtaHtml):saved;
     activeRecord.previewHtml=working.previewHtml;
     return working.previewHtml;
@@ -3730,7 +3734,8 @@ function generateInitialEmailHtml(){
   const miamiLeadHtml=useMiamiSentFormat?`<div>I wanted to send ${esc(miamiNames)} to ${esc(identity.brand||d.brand)} for Miami Fashion week. Their materials are below.</div><br><div>Click <a href="${miamiLink}" target="_blank">HERE</a> to see the rest of our models.</div><br>`:'';
   const leadHtml=useMiamiSentFormat?miamiLeadHtml:((!blankBodyCopy&&lead)?`<div>${lead}</div><br>`:'');
   const miamiClosingHtml=useMiamiSentFormat?`<div>Again, you can find the rest of our models <a href="${miamiLink}" target="_blank">HERE</a>.</div><div>Let me know if you would like to see any of them for a casting or fitting.</div>`:'';
-  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${(!blankBodyCopy&&more)?`<div style="margin:0 0 24px">${more}</div>`:''}${miamiClosingHtml}${followupCtaHtml}<div>${close}</div><div>Justin</div><div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
+  const signaturePhone=useMiamiSentFormat?'+1(907)317 3791':'+1(907)317-3791';
+  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${(!blankBodyCopy&&more)?`<div style="margin:0 0 24px">${more}</div>`:''}${miamiClosingHtml}${followupCtaHtml}<div>${close}</div><div>Justin</div><div><i>WhatsApp:</i></div><div><i>${signaturePhone}</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
 }
 
 /* EMAIL DRAFT BUILDER STABILITY FIX 2026-09-17 */
@@ -3820,7 +3825,8 @@ function currentEmailPreviewHtml(){
 function loadDraft(id){
   const d=db.drafts.find(x=>x.id===id);if(!d)return;
   if($('#emailPreview')?.dataset.manualRefreshInitialized==='1'){storeDraftPreview(currentEmailPreviewHtml(),false);persistWorkspaceSafe(true);}
-  const regenerateModelPreview=isSignatureOnlyModelDraftPreview(d)||(!Object.prototype.hasOwnProperty.call(d,'previewHtml')&&((d.modelIds||[]).length||(d.models||[]).length));
+  const regenerateBlankMiamiPreview=String(d.id||'').startsWith('miami_fashion_week_2026_')&&d.purpose==='submission'&&typeof d.previewHtml==='string'&&!d.previewHtml.trim()&&!String(d.initialMessage||'').trim();
+  const regenerateModelPreview=regenerateBlankMiamiPreview||isSignatureOnlyModelDraftPreview(d)||(!Object.prototype.hasOwnProperty.call(d,'previewHtml')&&((d.modelIds||[]).length||(d.models||[]).length));
   db.activeDraftId=id;db.draft={...structuredClone(seed.draft),...structuredClone(d),html:''};
   if(regenerateModelPreview){delete db.draft.previewHtml;delete d.previewHtml;if(d.gmailDraftId){db.draft.previewNeedsGmailUpdate=true;d.previewNeedsGmailUpdate=true;}}
   if(typeof db.draft.previewHtml==='string'&&db.draft.followupCtaHtml){
