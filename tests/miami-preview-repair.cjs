@@ -22,4 +22,13 @@ assert.match(preview.innerHTML,/data-clm-model-id="model-a"/);
 assert.match(preview.innerHTML,/data-clm-model-id="model-b"/);
 assert.equal(ctx.db.draft.blankBodyCopy,true,'Keep the intentionally blank email copy setting.');
 assert.equal(draft.previewNeedsGmailUpdate,undefined);
-console.log('Passed: Miami drafts regenerate their selected model blocks instead of treating migrated WhatsApp-only footers as complete previews.');
+
+const blankDraft={id:'miami_fashion_week_2026_blank',purpose:'submission',modelIds:['model-a','model-b'],models:['Model A','Model B'],previewHtml:'',blankBodyCopy:true,initialMessage:''};
+ctx.db={activeDraftId:'',drafts:[blankDraft],models:[{id:'model-a',name:'Model A'},{id:'model-b',name:'Model B'}]};
+preview.innerHTML='';preview.dataset.manualRefreshInitialized='';
+ctx.loadDraft(blankDraft.id);
+assert.match(preview.innerHTML,/data-clm-model-id="model-a"/,'A blank saved Miami preview must be regenerated with its selected models.');
+assert.match(preview.innerHTML,/data-clm-model-id="model-b"/,'A blank saved Miami preview must not suppress the second selected model.');
+assert.notEqual(blankDraft.previewHtml,'','The regenerated Miami copy must be stored back on the saved draft.');
+
+console.log('Passed: Miami drafts regenerate blank or signature-only previews and keep their selected model blocks.');
