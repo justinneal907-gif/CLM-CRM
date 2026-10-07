@@ -4886,6 +4886,120 @@ function addBrandFollowups20261005(data){
 }
 
 
+
+/* October 7 Bridal Week trio follow-ups.
+   CRM only. These ten brands were verified against Work Gmail sent mail:
+   none has previously been sent Iyanu, Erin, or Sophia Pippen.
+   Reuse any unsent Sophia-only CRM follow-up for the same brand instead of
+   creating a duplicate card. */
+function addTrioBridalFollowups20261007(data){
+  if(Number(data.recovery?.trioBridalFollowups20261007Version||0)>=1)return data;
+  data.drafts=Array.isArray(data.drafts)?data.drafts:[];
+
+  const iyanuId='site-women-81-iyanu';
+  const erinId='new-york-women-erin-connors';
+  const sophiaId='new-york-women-sophia-pippen';
+  const modelIds=[iyanuId,erinId,sophiaId];
+  if(modelIds.some(id=>!(data.models||[]).some(m=>m.id===id)))return data;
+
+  const publicLink='https://canva.link/vhk73x4zncw11o7';
+  const credential='Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian';
+  const entries=[
+    {brand:'Cortana',email:'press@cortana.es',greeting:'Cortana Team'},
+    {brand:'Milla Nova',email:'info@millanova.com',greeting:'Milla Nova Team'},
+    {brand:'Francesca Miranda',email:'info@francescamiranda.com',greeting:'Francesca Miranda Team'},
+    {brand:'Sareh Nouri',email:'press@sarehnouri.com',greeting:'Sareh Nouri Team'},
+    {brand:'Pnina Tornai for Kleinfeld',email:'info@pninatornai.com',greeting:'Pnina Tornai for Kleinfeld Team'},
+    {brand:'Hayley Paige',email:'press@hayleypaige.com',greeting:'Hayley Paige Team'},
+    {brand:'Verdin New York',email:'atelier@verdinnewyork.com',greeting:'Verdin New York Team'},
+    {brand:'Mark Ingram Bridal',email:'press@miatelier.com',greeting:'Mark Ingram Bridal Team'},
+    {brand:'Kaviar Gauche',email:'press@kaviargauche.com',greeting:'Kaviar Gauche Team'},
+    {brand:'Yolancris',email:'communication@yolancris.com',greeting:'Yolancris Team'}
+  ];
+  const slug=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+
+  for(const entry of entries){
+    const legacyId='nybfw_followup_20261004_'+slug(entry.brand)+'_sophia';
+    const newId='nybfw_followup_20261007_'+slug(entry.brand)+'_iyanu_erin_sophia';
+    let record=data.drafts.find(d=>d.id===newId)||data.drafts.find(d=>d.id===legacyId&&!d.gmailDraftId)||null;
+    const contact=(data.contacts||[]).find(c=>String(c.email||'').trim().toLowerCase()===entry.email.toLowerCase());
+    const existingPhotos=record?.userOverrides?.photoSelections||record?.photoSelections||record?.packagePhotos||{};
+    const photoSelections={};
+    for(const mid of modelIds){
+      const current=existingPhotos[mid];
+      if(Array.isArray(current)&&current.length){
+        photoSelections[mid]=structuredClone(current);
+        continue;
+      }
+      const model=(data.models||[]).find(m=>m.id===mid);
+      const custom=(data.customPhotos||{})[mid];
+      if(Array.isArray(custom)&&custom.length)photoSelections[mid]=structuredClone(custom);
+      else{
+        const photo=custom||model?.photo||model?.photoUrl||'';
+        if(photo)photoSelections[mid]=[photo];
+      }
+    }
+
+    const subject='New York Bridal Week | '+entry.brand;
+    const initialMessage='Hi '+entry.greeting+',\n\nI\'m following up to send Iyanu, Erin, and Sophia Pippen as additional options. Their materials are below.';
+    const followupCtaHtml='<div data-clm-bridal-followup-cta="trio-20261007" style="margin:0 0 18px"><div>Let me know if you would like to see any of them for a casting or fitting.</div><br><div>You can also view the rest of our Bridal Week package <a href="'+publicLink+'" target="_blank"><strong><em>HERE</em></strong></a>.</div></div>';
+    const previousExtras=structuredClone(record?.modelExtras||{});
+    const modelExtras={
+      ...previousExtras,
+      [sophiaId]:{...(previousExtras[sophiaId]||{}),enabled:true,text:previousExtras[sophiaId]?.text||credential}
+    };
+    const userOverrides=structuredClone(record?.userOverrides||{});
+    userOverrides.photoSelections=structuredClone(photoSelections);
+    userOverrides.modelExtras=structuredClone(modelExtras);
+
+    const next={
+      ...(record||{}),
+      id:record?.id||newId,
+      date:'2026-10-07',
+      eventName:'New York Bridal Week',
+      packageName:subject,
+      purpose:'followup',
+      followupBatch:'bridal-20261007-trio',
+      followupGreeting:'Hi '+entry.greeting+',',
+      followupTemplateIncludesGreeting:true,
+      contactId:contact?.id||record?.contactId||'',
+      contactName:entry.greeting,
+      company:entry.brand,
+      recipientEmail:entry.email,
+      cc:'agent@chezlesmannequins.com',
+      brandProject:entry.brand,
+      packageLink:publicLink,
+      brandCanvaPublicViewLink:publicLink,
+      brief:record?.brief||'',
+      initialMessage,
+      subject,
+      includeStats:true,
+      includePhotos:true,
+      includeSources:true,
+      models:['Iyanu','Erin','Sophia Pippen'],
+      modelIds:[...modelIds],
+      photoSelections,
+      packagePhotos:structuredClone(photoSelections),
+      modelExtras,
+      userOverrides,
+      blankBodyCopy:false,
+      followupCtaHtml,
+      html:'',
+      castingBriefRaw:record?.castingBriefRaw||'',
+      parsedBrief:{...(record?.parsedBrief||{}),project:entry.brand,location:'New York'},
+      signatureClose:'Thank you,',
+      source:'Work Gmail sent-mail verification October 7 2026',
+      notes:'CRM-only Bridal Week follow-up. Work Gmail verified this brand had not previously been sent Iyanu, Erin, or Sophia Pippen.'
+    };
+    delete next.previewHtml;
+    if(record)Object.assign(record,next);
+    else data.drafts.push(next);
+  }
+
+  data.recovery={...(data.recovery||{}),trioBridalFollowups20261007Version:1};
+  return data;
+}
+
 function addMiamiFashionWeekDrafts20261006(data){
   if(Number(data.recovery?.miamiFashionWeekDrafts20261006Version||0)>=1)return data;
   data.drafts=Array.isArray(data.drafts)?data.drafts:[];
@@ -5206,6 +5320,7 @@ async function bootstrapWorkspace(){
   db=addSophiaBridalFollowups20261004(db);
   db=addAlonLivneFollowup20261005(db);
   db=addBrandFollowups20261005(db);
+  db=addTrioBridalFollowups20261007(db);
   db=addMiamiFashionWeekDrafts20261006(db);
   db=addWhatsAppContactToDrafts20261005(db);
   db=repairSignatureOnlyModelDraftPreviews20261006(db);
