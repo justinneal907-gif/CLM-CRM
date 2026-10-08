@@ -1567,6 +1567,12 @@ function applyRecovered(incoming){
   if(saved?.draft)data.draft=saved.draft;
   if(saved){data.activeDraftId=saved.activeDraftId||'';data.selected=saved.selected||saved.draft?.modelIds||[];}
   data.drafts=mergeRecovered(BRIDAL_UNSEEN_FOLLOWUPS_2026_10_07,data.drafts||[]);
+  data.drafts=(data.drafts||[]).filter(d=>d?.id!=='nybfw_followup_20261004_house_of_idan_sophia');
+  if(data.activeDraftId==='nybfw_followup_20261004_house_of_idan_sophia'){
+    data.activeDraftId='';
+    data.draft=structuredClone(seed.draft);
+    data.selected=[];
+  }
   return migrateDraftPreviewDocuments(data);
 }
 /* CRM INDEXEDDB STORAGE V1 */
