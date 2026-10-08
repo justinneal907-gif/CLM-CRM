@@ -268,6 +268,7 @@ th,td{padding:8px}
 <section id="view-submissions" class="view"><div class="panel"><div class="actions" style="margin-bottom:12px;align-items:center"><button class="btn primary" onclick="openRecordModal('submissions')">New submission</button><label class="muted tiny" style="display:flex;align-items:center;gap:7px">Sort by <select id="submissionSort" style="min-width:170px"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="opens-desc">Most opened</option><option value="opens-asc">Least opened</option><option value="recent-open">Most recent open</option></select></label><button class="btn" type="button" id="refreshSubmissionOpensBtn" onclick="refreshSubmissionOpens()">Refresh opens</button><span id="submissionOpenDataStatus" class="muted tiny"></span></div><div class="table-wrap"><table><thead><tr><th><button class="table-sort-button" type="button" data-submission-sort="date">Date <span id="submissionDateSortArrow"></span></button></th><th>Contact</th><th>Project / Dates</th><th>Models</th><th>Status</th><th><button class="table-sort-button" type="button" data-submission-sort="opens">Opens <span id="submissionOpenSortArrow"></span></button></th><th></th></tr></thead><tbody id="submissionsBody"></tbody></table></div><div class="muted tiny" style="margin-top:8px">Open counts are tracking image load signals and may include privacy proxy loads or repeated image requests. Untracked historical submissions are labeled Not tracked.</div></div></section>
 <section id="view-bookings" class="view"><div class="panel"><div class="actions" style="margin-bottom:12px"><button class="btn primary" onclick="openRecordModal('bookings')">Add booking</button></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Project</th><th>Client</th><th>Model</th><th>Total</th><th>Your commission</th><th>Status</th><th></th></tr></thead><tbody id="bookingsBody"></tbody></table></div></div></section>
 <section id="view-tasks" class="view"><div class="panel"><div class="actions" style="margin-bottom:12px"><button class="btn primary" onclick="openRecordModal('tasks')">Add task</button></div><div class="table-wrap"><table><thead><tr><th>Task</th><th>Details / Notes</th><th>Due</th><th>Priority</th><th>Status</th><th></th></tr></thead><tbody id="tasksBody"></tbody></table></div></div></section>
+<section id="view-gallery" class="view"><div class="panel"><h2>Model Photo Gallery</h2><p class="muted">Photos saved here are available for future packages. Deleting a photo removes it from the CRM and saved packages.</p><div class="field"><label>Find model</label><input id="gallerySearch" type="search" placeholder="Search model names" oninput="renderModelGallery()"></div><div class="field"><label>Model</label><select id="galleryModel" onchange="renderModelGallery()"></select></div><div class="actions"><input id="galleryUrl" type="url" placeholder="Photo URL"><button class="btn" onclick="addGalleryUrl()">Add URL</button><label class="btn">Upload photos<input type="file" accept="image/*" multiple hidden onchange="addGalleryFiles(this)"></label></div><div id="galleryStatus" class="muted" role="status" style="margin:10px 0"></div><div id="galleryGrid" class="photo-library-grid"></div></div></section>
 <section id="view-email" class="view"><div class="split"><div class="panel"><h2>Model package builder</h2><div class="field"><label>Purpose</label><select id="emailPurpose"><option value="submission">Model submission</option><option value="followup">Follow-up</option><option value="availability">Availability / hold</option><option value="introduction">Introduction</option></select></div><div class="field"><label>Contact</label><select id="emailContact"></select></div><div class="field"><label>Contact name</label><input id="emailContactName" placeholder="Casting director / client"/></div><div class="field"><label>Company / brand</label><input id="emailCompany" placeholder="Company, brand or casting office"/></div><div class="field"><label>Recipient email</label><input id="emailRecipient" type="email" placeholder="name@example.com"/></div><div class="field"><label>Sending account</label><input id="emailSender" value="justin.neal.chezlesmannequins@gmail.com" readonly/><div class="muted" style="margin-top:5px">Agency Work Gmail</div></div><div class="field"><label>CC on every email</label><input id="emailCc" value="agent@chezlesmannequins.com" readonly/><div class="muted" style="margin-top:5px">Automatically included on every CRM-created Gmail draft.</div></div><div class="field" id="gmailApiPanel"><label>Gmail API connection</label><div id="gmailApiStatus" class="muted">Checking Gmail connection…</div><div class="actions" style="margin-top:7px"><button class="btn primary" type="button" id="connectGmailApiBtn">Connect Work Gmail</button><button class="btn" type="button" id="disconnectGmailApiBtn">Disconnect</button><button class="btn" type="button" id="syncGmailNowBtn">Sync sent mail now</button><button class="btn primary" type="button" id="sendTrackedDraftBtn" disabled>Send tracked draft</button><button class="btn" type="button" id="enableOpenNotificationsBtn">Enable open alerts</button><button class="btn" type="button" id="testOpenNotificationsBtn">Test alert</button><button class="btn" type="button" id="checkOpenTrackingBtn">Check opens now</button></div><div id="gmailRuntimeStatus" class="tiny muted" style="margin-top:6px">Loading Gmail sync and open-tracking tools…</div><details id="gmailApiSetup" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">One-time Google OAuth setup</summary><div class="muted tiny" style="margin:7px 0">Create a Google OAuth Web client for this CRM, enable the Gmail API, and authorize <b>https://justinneal907-gif.github.io</b> as a JavaScript origin. Paste the public Client ID below. No client secret is stored in the CRM.</div><input id="gmailOAuthClientId" type="text" autocomplete="off" placeholder="1234567890-abc123.apps.googleusercontent.com"/><div class="actions" style="margin-top:7px"><button class="btn" type="button" id="saveGmailClientIdBtn">Save Client ID</button><button class="btn danger" type="button" id="clearGmailClientIdBtn">Clear Client ID</button></div></details></div><div class="field"><label>Event</label><input id="emailEvent" placeholder="New York Bridal Week"/></div><div class="field"><label>Project / brand</label><input id="emailBrand" placeholder="Private Policy"/></div><div class="field"><label>Paste casting brief</label><textarea id="castingBriefRaw" rows="6" placeholder="Paste the full casting email or brief here. The CRM can extract dates, rate, usage, location and requirements without replacing your original text."></textarea><div class="actions" style="margin-top:7px"><button class="btn primary" type="button" id="parseBriefBtn">Parse brief</button><button class="btn" type="button" id="clearBriefBtn">Clear parsed brief</button></div><div id="briefParseSummary" class="muted" style="margin-top:7px"></div></div><div class="field"><label>Brand Intelligence</label><div id="brandLookSuggestion" class="warning" style="margin-bottom:8px">Enter a brand or project name to see the likely casting direction.</div><div class="actions"><button class="btn" type="button" id="suggestLookBtn">Suggest look</button><button class="btn" type="button" id="brandWebSearchBtn">Research current brand on web</button></div></div><div id="submissionWarning" class="warning" style="display:none;margin-bottom:11px"></div><div class="field"><label>Subject</label><input id="emailSubject" value="Model Package"/></div><div class="field"><label>Package / portfolio link</label><input id="emailLink" placeholder="https://..."/><div class="muted tiny" style="margin-top:5px">Whatever you enter here overrides the generated package link. Clear it to remove the package link from generated email copy.</div></div><div class="field"><label>Email context (optional)</label><textarea id="emailContext" rows="4" placeholder="Optional context for non-submission messages, such as availability or follow-up details."></textarea></div><div class="field private-notes-field"><label><span class="private-note-badge">INTERNAL ONLY</span> Private notes</label><textarea id="emailPrivateNotes" rows="5" placeholder="Internal package notes. Saved in the CRM and never included in the email draft."></textarea><div class="private-note-help">Visible in the CRM only · never included in preview, copied email, or Gmail compose.</div></div><div class="checkrow"><label><input type="checkbox" id="includeStats" checked/> Measurements</label><label>Units <select id="measurementUnits" aria-label="Measurement units"><option value="imperial">Imperial</option><option value="metric">Metric</option></select></label><label><input type="checkbox" id="includePhotos" checked/> Photos</label><label><input type="checkbox" id="includeSources" checked/> Portfolio links</label></div><div class="field photo-library-panel"><label>Photo library</label><div class="muted">Choose a model to browse the agency photo and any photos you save here. Library photos stay available for future packages in this browser.</div><div class="photo-library-tools"><select id="photoLibraryModel" onchange="renderPhotoLibrary()"></select><input id="photoLibraryUrl" type="url" placeholder="Add photo URL"><button class="btn" type="button" onclick="addPhotoLibraryUrl()">Add URL</button><label class="btn" style="text-align:center">Upload photos<input id="photoLibraryUpload" type="file" accept="image/*" multiple hidden onchange="addPhotoLibraryFiles(this)"></label><button class="btn" type="button" onclick="pasteClipboardImageToPhotoLibrary()">Paste copied image</button></div><div id="photoLibraryPasteZone" tabindex="0" onpaste="handlePhotoLibraryImagePaste(event)" style="margin:8px 0 10px;padding:10px;border:1px dashed #aab4ad;border-radius:8px;cursor:text" title="Click here, then press Ctrl+V"><b>Paste image here</b><span class="muted tiny"> · Copy an image, click this box, then press Ctrl+V</span></div><div id="photoLibraryGrid" class="photo-library-grid"></div></div><div class="field"><label>Find model</label><input id="emailModelSearch" placeholder="Type a model name, city or division"/></div><div id="emailModelMatches"></div><h3>Selected models</h3><div id="selectedModels"></div><div class="actions"><button class="btn" id="openWorkGmailBtn">Create formatted Gmail draft</button><button class="btn" id="saveDraftBtn">Save draft</button><button class="btn" id="recordSubmissionBtn">Record submission</button><button class="btn" id="jumpToCastingLeadsBtn" type="button">Casting leads</button></div><div id="emailStatus" class="muted" style="margin-top:10px"></div><section class="saved-packages-section" aria-labelledby="savedPackagesHeading"><h3 id="savedPackagesHeading">Saved Packages</h3><div class="package-copy-actions"><button class="btn copy-formatted-btn" id="copyEmailBtn" type="button">Copy Formatted Email</button><button class="btn copy-subject-btn" id="copySubjectBtn" type="button">Copy Subject</button><button class="btn copy-recipient-btn" id="copyRecipientBtn" type="button">Copy Recipient Email</button></div><div class="saved-package-search"><input id="draftSearch" type="search" placeholder="Search packages by brand, contact, model or date" oninput="renderDrafts()"><div id="draftSearchMeta" class="muted tiny">Only the package you are viewing stays open here. Search to switch packages.</div></div><div id="savedDrafts"></div></section></div><div class="panel"><div class="preview-title-row"><h2>Email preview</h2><div class="preview-title-actions"><button class="btn primary" type="button" id="refreshEmailPreviewBtn" onclick="refreshEmailPreview()">Refresh preview</button><button class="btn" type="button" onclick="startBlankManualEmail()">Start blank manual email</button></div></div><div class="preview-edit-note">Edit the email directly below. Your preview is saved and is the email used for Gmail. Refresh keeps your edits.</div><div id="emailPreview" class="preview" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" aria-label="Editable email preview"></div></div></div><div style="height:12px"></div><details class="casting-leads panel" id="castingLeadsPanel"><summary>Previously researched NYFW casting leads</summary><div id="castingLeadsLazy" class="muted">Archived casting research loads only when this panel is opened.</div></details></section>
 <section id="view-data" class="view"><div class="panel"><h2>Backup / transfer</h2><p class="muted">Everything remains stored locally in this browser unless you export it.</p><div class="actions"><button class="btn primary" id="exportDataBtn">Export CRM JSON</button><label class="btn">Import CRM JSON<input id="importDataInput" type="file" accept="application/json" hidden/></label><button class="btn" id="exportRosterBtn">Export roster CSV</button><button class="btn danger" id="resetWorkspaceBtn">Reset workspace data</button></div><p class="warning" style="margin-top:16px">This upgraded copy can import the previous CRM JSON format and automatically migrates prior browser data when opened in the same browser.</p><p class="muted" style="margin-top:12px"><b>Recovered history:</b> 11 model-package submissions and 2 Gmail drafts from September 11, 2026 are restored across the agency email history, including 3 submissions synced from the Work Gmail account (justin.neal.chezlesmannequins@gmail.com). The package workspace also includes the September 13–15 NYFW casting-lead research and the established agency package template. The archived first-CRM source/snapshot contains no populated task records, so no tasks were invented.</p></div></section>
 </main></div>
@@ -1566,7 +1567,9 @@ function applyRecovered(incoming){
   if(saved&&Array.isArray(saved.drafts))data.drafts=saved.drafts;
   if(saved?.draft)data.draft=saved.draft;
   if(saved){data.activeDraftId=saved.activeDraftId||'';data.selected=saved.selected||saved.draft?.modelIds||[];}
-  data.drafts=mergeRecovered(BRIDAL_UNSEEN_FOLLOWUPS_2026_10_07,data.drafts||[]);
+  if(!saved||!Array.isArray(saved.drafts))data.drafts=mergeRecovered(BRIDAL_UNSEEN_FOLLOWUPS_2026_10_07,data.drafts||[]);
+  if(saved?.models){const originals=new Map(saved.models.map(m=>[m.id,m]));data.models=data.models.map(m=>({...m,...(originals.get(m.id)||{})}));}
+  if(saved)for(const key of ['photoLibrary','deletedPhotoKeys','hiddenGalleryPhotoKeys','customPhotos'])if(saved[key])data[key]=structuredClone(saved[key]);
   data.drafts=(data.drafts||[]).filter(d=>d?.id!=='nybfw_followup_20261004_house_of_idan_sophia');
   if(data.activeDraftId==='nybfw_followup_20261004_house_of_idan_sophia'){
     data.activeDraftId='';
@@ -1655,7 +1658,7 @@ async function loadWorkspaceIndexedDB(){
         stored.recovery.quarantinedDeletedPhotoKeys20260929=structuredClone(stored.deletedPhotoKeys||{});
         stored.recovery.photoDeleteQuarantine20260929=true;
       }
-      stored.deletedPhotoKeys={};
+      // Deletion tombstones are user data; never clear them on reload.
       return applyRecovered(stored);
     }
   }catch(err){
@@ -1701,8 +1704,8 @@ function queueIndexedDBWrite(snapshot,showError=true){
 
 function save(){db.selected=selected;persistWorkspaceSafe(false);renderAll()}
 function getPhoto(m){return (db.customPhotos||{})[m.id]||m.photo||m.photoUrl||''}
-async function go(id){if(id==='email')await ensureMilanArchiveLoaded();active=id;$$('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+id));$$('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));$('#pageTitle').textContent=({today:'Today',models:'Models',contacts:'Contacts',submissions:'Submissions',bookings:'Bookings',tasks:'Tasks',email:'Packages & Leads',data:'Data'})[id]||id;if(id==='email')hydrateDraft();renderAll()}
-const views=[['today','Today'],['models','Models'],['contacts','Contacts'],['submissions','Submissions'],['bookings','Bookings'],['tasks','Tasks'],['email','Packages & Leads'],['data','Data']];
+async function go(id){if(id==='email')await ensureMilanArchiveLoaded();active=id;$$('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+id));$$('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));$('#pageTitle').textContent=({today:'Today',models:'Models',gallery:'Model Photo Gallery',contacts:'Contacts',submissions:'Submissions',bookings:'Bookings',tasks:'Tasks',email:'Packages & Leads',data:'Data'})[id]||id;if(id==='email')hydrateDraft();renderAll()}
+const views=[['today','Today'],['models','Models'],['gallery','Model Photo Gallery'],['contacts','Contacts'],['submissions','Submissions'],['bookings','Bookings'],['tasks','Tasks'],['email','Packages & Leads'],['data','Data']];
 function initNav(){$('#nav').innerHTML=views.map(([id,label])=>`<button data-view="${id}" class="${id===active?'active':''}">${label}</button>`).join('');$('#nav').onclick=e=>{const b=e.target.closest('button[data-view]');if(b)go(b.dataset.view)}}
 
 const AVAILABILITY_OPTIONS=['Available','First Hold','Second Hold','Booked','Unavailable','Traveling','Unknown'];
@@ -1881,11 +1884,11 @@ async function saveModelTexts(){
   const m=db.models.find(x=>x.id===modelTextEditor?.id);if(!m)return;
   if(modelTextEditor.options.some(o=>!o.label.trim()||!o.text.trim()))return alert('Give each option a name and text, or remove empty options.');
   const next=structuredClone(modelTextEditor.options);
-  // Preserve the last text in packages if its reusable option is removed.
+  // Removing a reusable option clears it in packages that selected that option.
   for(const d of [db.draft,...(db.drafts||[])])for(const map of [d?.modelExtras,d?.userOverrides?.modelExtras]){
     const extra=map?.[m.id];if(!extra?.textOptionId)continue;
     const old=modelTextOptions(m).find(o=>o.id===extra.textOptionId);
-    if(old&&!next.some(o=>o.id===old.id)){extra.text=old.text;delete extra.textOptionId;}
+    if(old&&!next.some(o=>o.id===old.id)){extra.text='';extra.enabled=false;delete extra.textOptionId;d.pendingModelTextUpdates=[...new Set([...(d.pendingModelTextUpdates||[]),m.id])];}
   }
   m.textOptions=next;
   for(const d of [db.draft,...(db.drafts||[])].filter(Boolean)){
@@ -1966,9 +1969,10 @@ function modelDraftExtraControlsHtml(m){
 function setDraftModelExtraField(id,field,value){
   const normalized=(field==='enabled'||field==='mediaEnabled')?!!value:String(value??'');
   db.draft=db.draft||structuredClone(seed.draft);
+  const current=draftModelExtra(db.models.find(m=>m.id===id));
   for(const target of activeDraftOverrideTargets()){
     target.modelExtras=target.modelExtras||{};
-    const next={...(target.modelExtras[id]||{}),[field]:normalized};
+    const next={...current,...(target.modelExtras[id]||{}),[field]:normalized};
     if(field==='text'){
       delete next.textOptionId;
       next.enabled=!!String(normalized).trim();
@@ -1977,7 +1981,7 @@ function setDraftModelExtraField(id,field,value){
     target.modelExtras[id]=next;
     const o=draftUserOverrides(target);
     o.modelExtras=o.modelExtras||{};
-    const userNext={...(o.modelExtras[id]||{}),[field]:normalized};
+    const userNext={...current,...(o.modelExtras[id]||{}),[field]:normalized};
     if(field==='text'){
       delete userNext.textOptionId;
       userNext.enabled=!!String(normalized).trim();
@@ -2907,7 +2911,7 @@ function exportAll(){download('justin-agency-crm-upgraded-copy.json',JSON.string
 function exportRoster(){const rows=[['Name','Location','Division','Main Niche','Secondary Niche','Hair','Eyes','Availability','Status From','Status To','Hold / Booking Project','Measurements','Profile URL','Photo URL','Active Board'],...db.models.map(m=>[m.name,m.location,m.division,m.niche||'',m.secondaryNiche||'',m.hair||'',m.eyes||'',m.availabilityStatus||'Unknown',m.statusFrom||'',m.statusTo||'',m.holdProject||'',m.stats||m.measurements,m.profile||m.profileUrl,getPhoto(m),m.activeBoard!==false])];download('chez-les-mannequins-global-roster.csv',rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv')}
 async function importAll(file){try{let data=JSON.parse(await file.text());if(data&&data.state)data=migrateLegacy(data.state);if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('Invalid CRM backup');db=applyRecovered(data);selected=[...(db.selected||[])];save();alert('CRM backup imported.')}catch(e){console.error(e);alert('Could not import that JSON file.')}}
 function resetWorkspace(){if(!confirm('Reset contacts, submissions, bookings, tasks, drafts, selected models, and custom photos in this copy? The seeded roster remains.'))return;db=structuredClone(seed);selected=[];save()}
-function renderAll(){if(maintenanceSweep())persistWorkspaceSafe(false);renderStats();if(active==='today'){renderToday();return}if(active==='models'){setupFilters();renderModels();return}if(['contacts','submissions','bookings','tasks'].includes(active)){renderTables();return}if(active==='email'){setupFilters();renderContactOptions();renderDrafts();renderEmail();return}}
+function renderAll(){if(active==='gallery'){renderModelGallery();return;}if(maintenanceSweep())persistWorkspaceSafe(false);renderStats();if(active==='today'){renderToday();return}if(active==='models'){setupFilters();renderModels();return}if(['contacts','submissions','bookings','tasks'].includes(active)){renderTables();return}if(active==='email'){setupFilters();renderContactOptions();renderDrafts();renderEmail();return}}
 function captureDraft(){db.draft={...(db.draft||{}),eventName:$('#emailEvent').value.trim(),purpose:$('#emailPurpose').value,contactId:$('#emailContact').value,contactName:$('#emailContactName').value,company:$('#emailCompany').value,recipientEmail:$('#emailRecipient').value,brandProject:$('#emailBrand').value,packageLink:$('#emailLink').value,brief:$('#emailContext').value,notes:$('#emailPrivateNotes')?.value||'',castingBriefRaw:$('#castingBriefRaw')?.value||db.draft?.castingBriefRaw||'',parsedBrief:db.draft?.parsedBrief||null,subject:$('#emailSubject').value,includeStats:$('#includeStats').checked,measurementUnits:normalizeMeasurementUnits($('#measurementUnits')?.value),includePhotos:$('#includePhotos').checked,includeSources:$('#includeSources').checked,modelIds:[...selected]}}
 function hydrateDraft(){
   const d=db.draft||seed.draft;
@@ -3847,8 +3851,8 @@ function currentEmailPreviewHtml(){
 function loadDraft(id){
   const d=db.drafts.find(x=>x.id===id);if(!d)return;
   if($('#emailPreview')?.dataset.manualRefreshInitialized==='1'){storeDraftPreview(currentEmailPreviewHtml(),false);persistWorkspaceSafe(true);}
-  const regenerateBlankMiamiPreview=String(d.id||'').startsWith('miami_fashion_week_2026_')&&d.purpose==='submission'&&typeof d.previewHtml==='string'&&!d.previewHtml.trim()&&!String(d.initialMessage||'').trim();
-  const regenerateModelPreview=regenerateBlankMiamiPreview||isSignatureOnlyModelDraftPreview(d)||(!Object.prototype.hasOwnProperty.call(d,'previewHtml')&&((d.modelIds||[]).length||(d.models||[]).length));
+  // A deliberately blank or shortened preview is a saved document too.
+  const regenerateModelPreview=!Object.prototype.hasOwnProperty.call(d,'previewHtml')&&((d.modelIds||[]).length||(d.models||[]).length);
   db.activeDraftId=id;db.draft={...structuredClone(seed.draft),...structuredClone(d),html:''};
   if(regenerateModelPreview){delete db.draft.previewHtml;delete d.previewHtml;if(d.gmailDraftId){db.draft.previewNeedsGmailUpdate=true;d.previewNeedsGmailUpdate=true;}}
   if(typeof db.draft.previewHtml==='string'&&db.draft.followupCtaHtml){
@@ -4027,27 +4031,39 @@ function deletePhotoFromWorkspace(data,id,url){
   for(const d of [data.draft,...(data.drafts||[])].filter(Boolean))if((d.modelIds||[]).includes(id))d.html='';
   return data;
 }
-function removePackagePhoto(id,i){
+async function removePackagePhoto(id,i){
   const model=db.models.find(m=>m.id===id),photo=model&&draftPhotoOptions(model)[i];if(!photo)return;
-  const library=packagePhotoLibrary(),exact=photoKey(photo.url),before=library[id]||[];
-  const saved=before.some(x=>photoKey(x)===exact);
-  if(saved)library[id]=before.filter(x=>photoKey(x)!==exact);
-  else{
-    db.hiddenGalleryPhotoKeys=db.hiddenGalleryPhotoKeys||{};
-    db.hiddenGalleryPhotoKeys[id]=[...new Set([...(db.hiddenGalleryPhotoKeys[id]||[]),galleryPhotoKey(photo.url)])];
+  const key=galleryPhotoKey(photo.url);
+  db.hiddenGalleryPhotoKeys=db.hiddenGalleryPhotoKeys||{};
+  db.hiddenGalleryPhotoKeys[id]=[...new Set([...(db.hiddenGalleryPhotoKeys[id]||[]),key])];
+  deletePhotoFromWorkspace(db,id,photo.url);
+  for(const record of [db.draft,...(db.drafts||[])].filter(Boolean)){
+    for(const map of [record.photoSelections,record.packagePhotos,record.userOverrides?.photoSelections]){
+      if(!map||!Object.prototype.hasOwnProperty.call(map,id))continue;
+      const list=Array.isArray(map[id])?map[id]:[map[id]];
+      map[id]=list.filter(url=>url&&galleryPhotoKey(url)!==key);
+    }
+    for(const field of ['previewHtml','html']){
+      if(typeof record[field]!=='string')continue;
+      const t=document.createElement('template');t.innerHTML=record[field];let changed=false;
+      for(const block of t.content.querySelectorAll('[data-clm-model-id]')){
+        if(block.getAttribute('data-clm-model-id')!==id)continue;
+        for(const img of block.querySelectorAll('img'))if(galleryPhotoKey(img.getAttribute('src')||'')===key){img.remove();changed=true;}
+      }
+      if(changed){record[field]=t.innerHTML;record.previewNeedsGmailUpdate=true;}
+    }
   }
-  const strip=value=>{
-    if(Array.isArray(value))return value.filter(url=>galleryPhotoKey(url)!==galleryPhotoKey(photo.url));
-    return value&&galleryPhotoKey(value)===galleryPhotoKey(photo.url)?'':value;
-  };
-  if(db.draft?.photoSelections&&Object.prototype.hasOwnProperty.call(db.draft.photoSelections,id))db.draft.photoSelections[id]=strip(db.draft.photoSelections[id]);
-  if(Array.isArray(db.draft?.packagePhotos?.[id]))db.draft.packagePhotos[id]=strip(db.draft.packagePhotos[id]);
-  persistWorkspaceSafe(true);renderEmail();renderPhotoLibrary();
-  setStatus('Photo removed from this gallery. Saved drafts were not changed.');
+  if(!await persistWorkspaceSafe(true))return;
+  const preview=$('#emailPreview');if(preview)preview.dataset.manualRefreshInitialized='';
+  renderEmail();renderPhotoLibrary();renderModelGallery();
+  setStatus('Photo deleted from the CRM and saved packages.');
+  const galleryStatus=$('#galleryStatus');if(galleryStatus)galleryStatus.textContent='Photo deleted and saved.';
 }
+
 function addPackagePhoto(id,url,label='Saved photo'){
   url=upgradedPhotoURL(String(url||'').trim());if(!url)return;
   if(db.deletedPhotoKeys?.[id])db.deletedPhotoKeys[id]=db.deletedPhotoKeys[id].filter(k=>k!==photoKey(url));
+  if(db.hiddenGalleryPhotoKeys?.[id])db.hiddenGalleryPhotoKeys[id]=db.hiddenGalleryPhotoKeys[id].filter(k=>k!==galleryPhotoKey(url));
   const library=packagePhotoLibrary();library[id]=library[id]||[];
   if(!library[id].some(x=>galleryPhotoKey(x)===galleryPhotoKey(url)))library[id].push({url,label});
 }
@@ -5352,6 +5368,33 @@ function applyErinPortfolioLink20261008(data){
   return data;
 }
 
+
+function renderModelGallery(){
+  const select=$('#galleryModel'),grid=$('#galleryGrid');if(!select||!grid)return;
+  const query=($('#gallerySearch')?.value||'').trim().toLowerCase();
+  const models=db.models.filter(m=>m.name.toLowerCase().includes(query)).sort((a,b)=>a.name.localeCompare(b.name));
+  const old=select.value;select.innerHTML=models.map(m=>`<option value="${esc(m.id)}">${esc(m.name)} · ${esc(m.location)}</option>`).join('');
+  select.value=models.some(m=>m.id===old)?old:(models[0]?.id||'');
+  const model=db.models.find(m=>m.id===select.value);
+  if(!model){grid.innerHTML='<p>No matching models.</p>';return;}
+  const photos=draftPhotoOptions(model);
+  grid.innerHTML=photos.map((p,i)=>`<div class="photo-library-card"><img loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(p.url))}" alt="${esc(model.name)}"><div>${esc(p.label)}</div><button class="btn" onclick="togglePackagePhoto('${model.id}',${i})">Add / remove in current package</button><button class="btn danger" onclick="removePackagePhoto('${model.id}',${i})">Delete from CRM</button></div>`).join('')||'<p>No photos. Upload photos or add a URL.</p>';
+}
+async function addGalleryUrl(){
+  const id=$('#galleryModel').value,url=$('#galleryUrl').value.trim();
+  if(!id||!/^https?:\/\//i.test(url))return $('#galleryStatus').textContent='Choose a model and enter a full photo URL.';
+  addPackagePhoto(id,url,'Saved photo');
+  if(!await persistWorkspaceSafe(true))return $('#galleryStatus').textContent='Photo could not be saved.';
+  $('#galleryUrl').value='';renderModelGallery();$('#galleryStatus').textContent='Photo saved.';
+}
+async function addGalleryFiles(input){
+  const id=$('#galleryModel').value;if(!id)return;
+  $('#galleryStatus').textContent='Saving photos…';
+  let count=0;for(const file of [...input.files]){const ref=await fileToDraftPhoto(file);if(ref){addPackagePhoto(id,ref,file.name);count++;}}
+  input.value='';if(!await persistWorkspaceSafe(true))return $('#galleryStatus').textContent='Photos could not be saved.';
+  renderModelGallery();$('#galleryStatus').textContent=count+' photos saved.';
+}
+
 async function bootstrapWorkspace(){
   try{await window.CLMMediaStore?.init?.()}catch(err){console.info('Media store init skipped',err)}
   await ensureMilanArchiveLoaded();
@@ -5361,7 +5404,9 @@ async function bootstrapWorkspace(){
       await idbWriteWorkspaceAtKey(structuredClone(raw),'backup-before-gallery-repair-20260929');
     }
   }catch(err){console.info('Pre-repair workspace backup skipped',err)}
+  const existingWorkspace=await idbReadWorkspace().catch(()=>null)||JSON.parse(localStorage.getItem(NEW_KEY)||'null');
   db=await loadWorkspaceIndexedDB();
+  if(!existingWorkspace){
   db=removeCanvaLinksFromWorkspace(db);
   db.recovery={...(db.recovery||{}),safeGallerySnapshot20260929:true};
   db=await restoreOldPhotoLibrary20260929(db);
@@ -5398,6 +5443,8 @@ async function bootstrapWorkspace(){
   db=removeIyanuCountryAndEnableSophiaText20261005(db);
   db=repairUniquePackageImageIdentifiers20261006(db);
   db=applyErinPortfolioLink20261008(db);
+  }
+  db.recovery={...(db.recovery||{}),authoritativeEdits20261008:1};
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
