@@ -275,7 +275,7 @@ th,td{padding:8px}
 <dialog id="recordDialog"><div class="modal"><h2 id="recordModalTitle"></h2><form id="recordForm"></form><div class="actions"><button class="btn primary" id="recordSave" type="button">Save</button><button class="btn" id="recordCancel" type="button">Cancel</button></div></div></dialog>
 <script src="assets/models/sophia-extra-photo-1.js"></script>
 <script src="assets/models/sophia-extra-photo-2.js"></script>
-<script src="assets/data/core-roster.js?v=20261005-iyanu-country-removed-1"></script>
+<script src="assets/data/core-roster.js?v=20261008-erin-portfolio-1"></script>
 <script src="assets/crm-media-store.js?v=20261002-reviewed-image-bytes-2"></script>
 <script src="assets/crm-bridal-materials.js?v=20261005-photo-persistence-2"></script>
 <script>
@@ -5305,6 +5305,53 @@ function repairUniquePackageImageIdentifiers20261006(data){
   return data;
 }
 
+
+function applyErinPortfolioLink20261008(data){
+  const modelId='new-york-women-erin-connors';
+  const portfolioUrl='https://www.chezlesmannequins.com/women/erin?rq=ERIN';
+  const model=(data.models||[]).find(m=>m.id===modelId);
+  if(model)model.profileUrl=portfolioUrl;
+
+  const patchHtml=html=>{
+    if(typeof html!=='string'||!html.includes(modelId))return html;
+    const t=document.createElement('template');
+    t.innerHTML=html;
+    let changed=false;
+    for(const block of t.content.querySelectorAll('[data-clm-model-id="'+modelId+'"]')){
+      let link=[...block.querySelectorAll('a')].find(a=>a.textContent.trim()==='Portfolio');
+      if(link){
+        if(link.getAttribute('href')!==portfolioUrl){link.setAttribute('href',portfolioUrl);changed=true}
+      }else{
+        const row=document.createElement('div');
+        link=document.createElement('a');
+        link.setAttribute('href',portfolioUrl);
+        link.textContent='Portfolio';
+        row.appendChild(link);
+        const firstRow=block.firstElementChild;
+        if(firstRow)firstRow.after(row);else block.prepend(row);
+        changed=true;
+      }
+    }
+    return changed?t.innerHTML:html;
+  };
+
+  for(const record of [data.draft,...(data.drafts||[])].filter(Boolean)){
+    const isErinDraft=(record.modelIds||[]).includes(modelId)
+      || String(record.previewHtml||'').includes(modelId)
+      || String(record.html||'').includes(modelId);
+    if(!isErinDraft)continue;
+    let changed=false;
+    for(const field of ['previewHtml','html']){
+      if(typeof record[field]!=='string')continue;
+      const next=patchHtml(record[field]);
+      if(next!==record[field]){record[field]=next;changed=true}
+    }
+    if(changed&&record.gmailDraftId)record.previewNeedsGmailUpdate=true;
+  }
+  data.recovery={...(data.recovery||{}),erinPortfolioLink20261008:1};
+  return data;
+}
+
 async function bootstrapWorkspace(){
   try{await window.CLMMediaStore?.init?.()}catch(err){console.info('Media store init skipped',err)}
   await ensureMilanArchiveLoaded();
@@ -5350,6 +5397,7 @@ async function bootstrapWorkspace(){
   db=putSophiaLastInTrioDrafts20261005(db);
   db=removeIyanuCountryAndEnableSophiaText20261005(db);
   db=repairUniquePackageImageIdentifiers20261006(db);
+  db=applyErinPortfolioLink20261008(db);
   selected=[...(db.selected||[])];
   initNav();
   setupFilters();
