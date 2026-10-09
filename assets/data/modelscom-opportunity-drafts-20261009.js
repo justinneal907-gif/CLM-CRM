@@ -183,8 +183,9 @@
       }else if(draft.userOverrides?.photoSelections){
         delete draft.userOverrides.photoSelections;
       }
-      // Regenerate the model blocks once from the live gallery. Text fields remain in the draft.
-      delete draft.previewHtml;
+      // Preserve edited preview copy. Only the accidental blank saved document is removed;
+      // loadDraft refreshes model image blocks from the live gallery without rewriting text.
+      if(Object.prototype.hasOwnProperty.call(draft,'previewHtml')&&!String(draft.previewHtml||'').trim())delete draft.previewHtml;
       draft.html='';
       draft.generatedPhotoMode='live-gallery';
       draft.generatedPhotoModeVersion=2;
