@@ -5556,7 +5556,7 @@ function migrateAssistantGeneratedDraftPhotos20261009(data){
 }
 
 async function restoreMainGalleryExplicit20261009(data){
-  const marker='authoritativeGalleryRepair20261009v3';
+  const marker='authoritativeGalleryRepair20261009v4';
   if(data.recovery?.[marker])return data;
   try{await idbWriteWorkspaceAtKey(structuredClone(data),'backup-before-authoritative-gallery-repair-20261009')}catch(err){console.info('Pre-repair gallery backup skipped',err)}
   data.photoLibrary=data.photoLibrary||{};
@@ -5604,7 +5604,7 @@ async function restoreMainGalleryExplicit20261009(data){
     }
   }finally{window.__clmGalleryRecoveryWrite=false}
   data=migrateAssistantGeneratedDraftPhotos20261009(data);
-  data.recovery={...(data.recovery||{}),[marker]:1,authoritativeGalleryRepair20261009At:new Date().toISOString(),authoritativeGalleryRepair20261009Count:restored,authoritativeGalleryRepairArchivedCount:archived,authoritativeGalleryRepairEmailedCount:emailed};
+  data.recovery={...(data.recovery||{}),[marker]:1,authoritativeGalleryRepair20261009At:new Date().toISOString(),authoritativeGalleryRepair20261009Count:restored,authoritativeGalleryRepairArchivedCount:archived,authoritativeGalleryRepairEmailedCount:emailed,authoritativeGalleryRepairEvidenceModels:26};
   return data;
 }
 async function bootstrapWorkspace(){
