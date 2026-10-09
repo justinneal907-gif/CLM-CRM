@@ -168,18 +168,30 @@
     data.drafts=Array.isArray(data.drafts)?data.drafts:[];
     data.recovery={...(data.recovery||{})};
 
-    // A blank previewHtml is not a harmless placeholder in this CRM: it is treated as the
-    // authoritative saved email document and prevents the generated model package from rendering.
-    // Repair only this generated Models.com batch; never touch user-authored previews.
-    const repairBlankPreview=draft=>{
+    // Generated drafts must behave exactly like manually adding models:
+    // no gallery snapshot, no package-generated photo cache, and no gallery writes.
+    // Migrate each generated draft once; preserve explicit userOverrides photo selections.
+    const migrateGeneratedDraft=draft=>{
       if(!draft||!String(draft.id||'').startsWith('modelscom-20261009-'))return;
-      if(Object.prototype.hasOwnProperty.call(draft,'previewHtml')&&!String(draft.previewHtml||'').trim()){
-        delete draft.previewHtml;
-        draft.previewNeedsGmailUpdate=true;
+      if(Number(draft.generatedPhotoModeVersion||0)>=2)return;
+      const explicit=structuredClone(draft.userOverrides?.photoSelections||{});
+      draft.photoSelections={};
+      draft.packagePhotos={};
+      if(Object.keys(explicit).length){
+        draft.userOverrides=draft.userOverrides||{};
+        draft.userOverrides.photoSelections=explicit;
+      }else if(draft.userOverrides?.photoSelections){
+        delete draft.userOverrides.photoSelections;
       }
+      // Regenerate the model blocks once from the live gallery. Text fields remain in the draft.
+      delete draft.previewHtml;
+      draft.html='';
+      draft.generatedPhotoMode='live-gallery';
+      draft.generatedPhotoModeVersion=2;
+      draft.previewNeedsGmailUpdate=true;
     };
-    for(const draft of data.drafts)repairBlankPreview(draft);
-    repairBlankPreview(data.draft);
+    for(const draft of data.drafts)migrateGeneratedDraft(draft);
+    migrateGeneratedDraft(data.draft);
 
     if(data.recovery.modelsComOpportunityDrafts20261009===1)return data;
     const models=new Map((data.models||[]).map(m=>[m.id,m]));
@@ -209,9 +221,9 @@
         includeSources:true,
         models:modelIds.map(id=>models.get(id)?.name).filter(Boolean),
         modelIds:[...modelIds],
-        photoSelections:{},
-        packagePhotos:{},
         modelExtras:{},
+        generatedPhotoMode:'live-gallery',
+        generatedPhotoModeVersion:2,
         html:'',
         castingBriefRaw:'PROACTIVE WINDOW — '+spec.window+' No public casting deadline, shoot date, rate, or usage was published in the Models.com credits reviewed on October 9, 2026.',
         parsedBrief:{
@@ -226,21 +238,10 @@
         researchStatus:'Models.com verified — proactive',
         modelsComSource:spec.sourceUrl
       };
-      for(const id of modelIds){
-        const m=models.get(id);
-        let urls=[];
-        try{
-          if(typeof defaultModelGalleryPhotos==='function')urls=defaultModelGalleryPhotos(data,m,draft)||[];
-        }catch(err){console.info('Could not read current gallery for opportunity draft',id,err)}
-        if(!urls.length)urls=fallbackGallery(data,m);
-        if(urls.length){
-          draft.photoSelections[id]=[...urls];
-          draft.packagePhotos[id]=[...urls];
-        }
-      }
+
       data.drafts.push(draft);
     }
-    data.recovery.modelsComOpportunityDrafts20261009=1;
+    data.recovery.modelsComOpportunityDrafts20261009=2;
     data.recovery.modelsComOpportunityDraftsCreatedOn='2026-10-09';
     return data;
   };
