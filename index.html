@@ -3027,7 +3027,7 @@ function hydrateDraft(){
   updateEmailPurposeUi();
   renderBriefSummary();
 }
-function packagePhotoLibrary(){return db.photoLibrary||{}}
+function packagePhotoLibrary(){db.packagePhotoLibrary=db.packagePhotoLibrary||{};return db.packagePhotoLibrary}
 function addPackagePhoto(id,url,label='Saved photo'){url=String(url||'').trim();if(!url)return;const l=packagePhotoLibrary();l[id]=l[id]||[];if(!l[id].some(x=>(typeof x==='string'?x:x.url)===url)){if(l[id].length>=8)l[id].shift();l[id].push({url,label})}}
 function draftPhotoOptions(m){const a=[],add=(x,label)=>{const u=typeof x==='string'?x:(x?.url||x?.src||'');if(u&&!a.some(y=>y.url===u))a.push({url:u,label:label||x?.label||'Photo'})};(packagePhotoLibrary()[m.id]||[]).forEach(x=>add(x,x.label||'Saved photo'));[m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(v=>Array.isArray(v)&&v.forEach(x=>add(x,'Portfolio photo')));add((db.customPhotos||{})[m.id],'Custom photo');add(m.photo||m.photoUrl,'Agency photo');return a.slice(0,16)}
 function draftPhotoForModel(m){return draftPhotoSelections()[m.id]||(db.customPhotos||{})[m.id]||m.photo||m.photoUrl||''}
@@ -4033,6 +4033,26 @@ function markPreviewNeedsGmailUpdate(){
     send.title='The email preview changed. Create or update the Gmail draft before sending.';
   }
 }
+function rememberEditedPreviewPhotos(html){
+  // Keep direct preview edits attached to this package only; never write to the main gallery.
+  if(typeof html!=='string'||!html.trim())return;
+  const template=document.createElement('template');template.innerHTML=html;
+  for(const block of template.content.querySelectorAll('[data-clm-model-id]')){
+    const id=block.getAttribute('data-clm-model-id');
+    if(!id||!(db.models||[]).some(m=>m.id===id))continue;
+    const urls=uniqueGalleryPhotoUrls([...block.querySelectorAll('img')].map(img=>upgradedPhotoURL(img.getAttribute('src')||'')).filter(Boolean));
+    if(!urls.length)continue;
+    db.draft=db.draft||structuredClone(seed.draft);
+    for(const target of activeDraftOverrideTargets()){
+      target.photoSelections=target.photoSelections||{};
+      target.packagePhotos=target.packagePhotos||{};
+      target.photoSelections[id]=[...urls];
+      target.packagePhotos[id]=[...urls];
+      const overrides=draftUserOverrides(target);
+      overrides.photoSelections[id]=[...urls];
+    }
+  }
+}
 function storeEmailPreviewEdit(showStatus=false){
   const preview=$('#emailPreview');if(!preview)return;
   const editedHtml=sanitizeEditableEmailHtml(preview.innerHTML);
@@ -4169,8 +4189,10 @@ function addMainGalleryPhoto(id,url,label='Saved photo'){
   return true;
 }
 function addPackagePhoto(id,url,label='Saved photo'){
-  if(active!=='gallery')return false;
-  return addMainGalleryPhoto(id,url,label);
+  url=upgradedPhotoURL(String(url||'').trim());if(!url)return false;
+  const library=packagePhotoLibrary();library[id]=library[id]||[];
+  if(!library[id].some(x=>galleryPhotoKey(x)===galleryPhotoKey(url)))library[id].push({url,label});
+  return true;
 }
 /* End persistent photo management. */
 
@@ -5707,7 +5729,6 @@ async function bootstrapWorkspace(){
   db=repairUniquePackageImageIdentifiers20261006(db);
   db=applyErinPortfolioLink20261008(db);
   }
-  db=await restoreMainGalleryExplicit20261009(db);
   // Main gallery is authoritative; never rebuild it from package history.
   db=addHeliKalksteinFollowup20261009(db);
   db=restoreHeliPackageGallery20261009(db);
@@ -5724,6 +5745,11 @@ async function bootstrapWorkspace(){
   window.addEventListener('clm:media-cache-updated',()=>{if(active==='models')renderModels();else if(active==='email'){renderPhotoLibrary();renderEmailSelection()}});
   persistWorkspaceSafe(false);
   window.__clmWorkspaceReady=true;
+  restoreMainGalleryExplicit20261009(db).then(restored=>{
+    db=restored;
+    persistWorkspaceSafe(false);
+    if(active==='gallery')renderModelGallery();
+  }).catch(err=>console.warn('One-time main gallery restore skipped',err));
   try{window.dispatchEvent(new CustomEvent('clm:workspace-ready'))}catch{}
   startGmailSessionKeeper();
   restoreWorkGmailSession().catch(err=>console.info('Gmail session restore skipped',err));
