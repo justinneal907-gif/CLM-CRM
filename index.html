@@ -5554,19 +5554,11 @@ function applyErinPortfolioLink20261008(data){
 
 function mainGalleryPhotoOptions(model){
   const list=[],seen=new Set();
-  const add=(value,label)=>{
-    for(const item of (Array.isArray(value)?value:[value])){
-      const url=upgradedPhotoURL(photoURL(item));if(!url)continue;
-      const key=galleryPhotoKey(url);if(seen.has(key))continue;
-      if(isDeletedPhoto(db,model.id,url)||(db.hiddenGalleryPhotoKeys?.[model.id]||[]).includes(key))continue;
-      seen.add(key);list.push({url,label:label||item?.label||'Gallery photo'});
-    }
-  };
-  add(db.photoLibrary?.[model.id],'Saved gallery photo');
-  for(const key of ['photos','photoLibrary','portfolioPhotos','images'])add(model[key],'Model gallery photo');
-  if(typeof MODEL_PHOTO_LIBRARY!=='undefined')add(MODEL_PHOTO_LIBRARY[model.id],'Agency gallery photo');
-  add(db.customPhotos?.[model.id],'Custom gallery photo');
-  add(model.photo,'Primary photo');add(model.photoUrl,'Agency photo');
+  for(const item of (db.photoLibrary?.[model.id]||[])){
+    const url=upgradedPhotoURL(photoURL(item));if(!url)continue;
+    const key=galleryPhotoKey(url);if(seen.has(key))continue;
+    seen.add(key);list.push({url,label:item?.label||'Gallery photo'});
+  }
   return list;
 }
 function renderModelGallery(){
@@ -5639,8 +5631,6 @@ async function bootstrapWorkspace(){
   if(!existingWorkspace){
   db=removeCanvaLinksFromWorkspace(db);
   db.recovery={...(db.recovery||{}),safeGallerySnapshot20260929:true};
-  db=await restoreOldPhotoLibrary20260929(db);
-  try{if(window.CLMMediaStore?.migrateWorkspace){const migrated=await window.CLMMediaStore.migrateWorkspace(db);db=migrated.data;dedupePhotoLibrary20260929(db)}}catch(err){console.warn('Legacy photo migration skipped',err)}
   try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Recovered workspace save skipped',err)}
   db=addBridalFollowups20261002(db);
   db=addLmFashionSizeMatchDraft20261002(db);
