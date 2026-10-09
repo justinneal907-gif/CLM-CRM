@@ -1,0 +1,30 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const {JSDOM}=require('jsdom');
+const html=fs.readFileSync('index.html','utf8');
+const dom=new JSDOM(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,''),{url:'https://justinneal907-gif.github.io/CLM-CRM/',runScripts:'outside-only'});
+const ctx=dom.getInternalVMContext();ctx.structuredClone=structuredClone;ctx.console=console;
+vm.runInContext(fs.readFileSync('assets/crm-bridal-materials.js','utf8'),ctx);
+const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
+vm.runInContext(script.slice(0,script.indexOf('bootstrapWorkspace();')),ctx);
+const run=s=>vm.runInContext(s,ctx),read=s=>JSON.parse(run(`JSON.stringify(${s})`));
+
+
+const cta='<div style="margin:0 0 18px">Again, you can see the rest of our models <a href="https://canva.link/vhk73x4zncw11o7"><b><i>HERE</i></b></a>.<br><br>Let me know if you would like to see any of them for a casting or fitting.</div>';
+ctx.cta=cta;
+ctx.initial='<div><p>My intro</p><div data-clm-model-id="m"><b>Model</b><img src="https://test/saved.jpg"><p>Saved model text</p></div>'+cta.repeat(25)+'<div>Thank you,</div><div>Justin</div></div>';
+run('db={draft:{previewHtml:initial,followupCtaHtml:cta},drafts:[]};repairRepeatedFollowupClosings20261009(db)');
+let fixed=read('db.draft.previewHtml');
+assert.equal((fixed.match(/Again, you can see/g)||[]).length,1);
+assert.equal((fixed.match(/Let me know if/g)||[]).length,1);
+assert.match(fixed,/saved.jpg/);assert.match(fixed,/Saved model text/);assert.match(fixed,/My intro/);assert.match(fixed,/Justin/);
+run('for(let i=0;i<100;i++)db.draft.previewHtml=ensureFollowupCtaInHtml(db.draft.previewHtml,cta)');
+assert.equal(read('db.draft.previewHtml'),fixed);
+run('db.draft=JSON.parse(JSON.stringify(db.draft));repairRepeatedFollowupClosings20261009(db)');assert.equal(read('db.draft.previewHtml'),fixed);
+assert.equal(run("ensureFollowupCtaInHtml('',cta)"),'');
+ctx.clean='<div><p>My intro</p><p>Thank you,</p></div>';
+const once=run('ensureFollowupCtaInHtml(clean,cta)');ctx.once=once;
+assert.equal(run('ensureFollowupCtaInHtml(once,cta)'),once);
+ctx.edited=once.replace('Again, you can see','Custom edited closing: see');
+assert.match(run('ensureFollowupCtaInHtml(edited,cta)'),/Custom edited closing/);
+assert.equal((run('ensureFollowupCtaInHtml(edited,cta)').match(/Let me know if/g)||[]).length,1);
+console.log('PASS: 25 duplicate closing blocks repaired; 100 repeated renders and reload are stable; images, model text, manual edits, signature and blank previews preserved.');dom.window.close();
