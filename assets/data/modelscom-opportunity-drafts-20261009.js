@@ -173,8 +173,11 @@
     // Migrate each generated draft once; preserve explicit userOverrides photo selections.
     const migrateGeneratedDraft=draft=>{
       if(!draft||!String(draft.id||'').startsWith('modelscom-20261009-'))return;
-      if(Number(draft.generatedPhotoModeVersion||0)>=2)return;
-      const explicit=structuredClone(draft.userOverrides?.photoSelections||{});
+      if(Number(draft.generatedPhotoModeVersion||0)>=3)return;
+      const explicit={};
+      for(const [id,value] of Object.entries(draft.userOverrides?.photoSelections||{})){
+        if(draft.userPhotoOverrideIds?.[id]===true)explicit[id]=structuredClone(value);
+      }
       draft.photoSelections={};
       draft.packagePhotos={};
       if(Object.keys(explicit).length){
@@ -183,12 +186,10 @@
       }else if(draft.userOverrides?.photoSelections){
         delete draft.userOverrides.photoSelections;
       }
-      // Preserve edited preview copy. Only the accidental blank saved document is removed;
-      // loadDraft refreshes model image blocks from the live gallery without rewriting text.
       if(Object.prototype.hasOwnProperty.call(draft,'previewHtml')&&!String(draft.previewHtml||'').trim())delete draft.previewHtml;
       draft.html='';
       draft.generatedPhotoMode='live-gallery';
-      draft.generatedPhotoModeVersion=2;
+      draft.generatedPhotoModeVersion=3;
       draft.previewNeedsGmailUpdate=true;
     };
     for(const draft of data.drafts)migrateGeneratedDraft(draft);
