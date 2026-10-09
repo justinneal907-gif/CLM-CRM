@@ -1614,7 +1614,35 @@ function addRemainingBridalFollowups20261009(data){
   return data;
 }
 
+function captureMainGalleryState(source){
+  if(!source||typeof source!=='object')return null;
+  const snapshot={top:{},models:{}};
+  for(const key of ['photoLibrary','customPhotos','hiddenGalleryPhotoKeys','deletedPhotoKeys']){
+    if(Object.prototype.hasOwnProperty.call(source,key))snapshot.top[key]=structuredClone(source[key]);
+  }
+  const fields=['photo','photoUrl','photoFilename','photos','photoLibrary','portfolioPhotos','images'];
+  for(const model of source.models||[]){
+    if(!model?.id)continue;
+    const state={};
+    for(const field of fields)if(Object.prototype.hasOwnProperty.call(model,field))state[field]=structuredClone(model[field]);
+    snapshot.models[model.id]=state;
+  }
+  return snapshot;
+}
+function restoreMainGalleryState(data,snapshot){
+  if(!snapshot)return data;
+  for(const [key,value] of Object.entries(snapshot.top||{}))data[key]=structuredClone(value);
+  const byId=new Map((data.models||[]).map(model=>[model.id,model]));
+  for(const [id,state] of Object.entries(snapshot.models||{})){
+    const model=byId.get(id);if(!model)continue;
+    for(const [field,value] of Object.entries(state))model[field]=structuredClone(value);
+  }
+  return data;
+}
+/* Drafts, research imports, startup recovery and package edits may read gallery media,
+   but may never change the main model gallery. */
 function applyRecovered(incoming){
+  const gallerySnapshot=captureMainGalleryState(incoming);
   const saved=incoming?structuredClone(incoming):null;
   const data=recoverWorkspaceDefaults(incoming?structuredClone(incoming):{});
   if(saved&&Array.isArray(saved.drafts))data.drafts=saved.drafts;
@@ -1632,7 +1660,7 @@ function applyRecovered(incoming){
   const withCurrentModelsComDrafts=window.addModelsComOpportunityDrafts20261009
     ? window.addModelsComOpportunityDrafts20261009(addRemainingBridalFollowups20261009(data))
     : addRemainingBridalFollowups20261009(data);
-  return migrateDraftPreviewDocuments(withCurrentModelsComDrafts);
+  return restoreMainGalleryState(migrateDraftPreviewDocuments(withCurrentModelsComDrafts),gallerySnapshot);
 }
 /* CRM INDEXEDDB STORAGE V1 */
 const IDB_DB_NAME='jn-agency-crm';
@@ -3724,7 +3752,7 @@ function storeDraftPreview(html,changed=true){
   db.draft=db.draft||structuredClone(seed.draft);
   db.draft.previewHtml=uniformEmailPhotoSizes(stripCanvaLinksText(html));
   delete db.draft.initialMessage;
-  recoverPackageGalleryPhotos(db,[db.draft]);
+  // Main gallery is never changed by package-preview saves.
   const active=activeSavedDraftRecord();
   if(active){active.previewHtml=db.draft.previewHtml;delete active.initialMessage;}
   if(changed)markPreviewNeedsGmailUpdate();
@@ -4124,40 +4152,25 @@ function deletePhotoFromWorkspace(data,id,url){
   return data;
 }
 async function removePackagePhoto(id,i){
-  const model=db.models.find(m=>m.id===id),photo=model&&draftPhotoOptions(model)[i];if(!photo)return;
+  const model=db.models.find(m=>m.id===id),photo=model&&draftPhotoOptions(model)[i];if(!model||!photo)return;
   const key=galleryPhotoKey(photo.url);
-  db.hiddenGalleryPhotoKeys=db.hiddenGalleryPhotoKeys||{};
-  db.hiddenGalleryPhotoKeys[id]=[...new Set([...(db.hiddenGalleryPhotoKeys[id]||[]),key])];
-  deletePhotoFromWorkspace(db,id,photo.url);
-  for(const record of [db.draft,...(db.drafts||[])].filter(Boolean)){
-    for(const map of [record.photoSelections,record.packagePhotos,record.userOverrides?.photoSelections]){
-      if(!map||!Object.prototype.hasOwnProperty.call(map,id))continue;
-      const list=Array.isArray(map[id])?map[id]:[map[id]];
-      map[id]=list.filter(url=>url&&galleryPhotoKey(url)!==key);
-    }
-    for(const field of ['previewHtml','html']){
-      if(typeof record[field]!=='string')continue;
-      const t=document.createElement('template');t.innerHTML=record[field];let changed=false;
-      for(const block of t.content.querySelectorAll('[data-clm-model-id]')){
-        if(block.getAttribute('data-clm-model-id')!==id)continue;
-        for(const img of block.querySelectorAll('img'))if(galleryPhotoKey(img.getAttribute('src')||'')===key){img.remove();changed=true;}
-      }
-      if(changed){record[field]=t.innerHTML;record.previewNeedsGmailUpdate=true;}
-    }
-  }
+  const current=draftPhotosForModel(model);
+  setDraftPhotosForModel(id,current.filter(url=>galleryPhotoKey(url)!==key));
+  persistDraftPresentation(id);
+  renderEmail();renderPhotoLibrary();
   if(!await persistWorkspaceSafe(true))return;
-  const preview=$('#emailPreview');if(preview)preview.dataset.manualRefreshInitialized='';
-  renderEmail();renderPhotoLibrary();renderModelGallery();
-  setStatus('Photo deleted from the CRM and saved packages.');
-  const galleryStatus=$('#galleryStatus');if(galleryStatus)galleryStatus.textContent='Photo deleted and saved.';
+  setStatus('Photo removed from this package only. Main gallery unchanged.');
 }
 
-function addPackagePhoto(id,url,label='Saved photo'){
-  url=upgradedPhotoURL(String(url||'').trim());if(!url)return;
-  if(db.deletedPhotoKeys?.[id])db.deletedPhotoKeys[id]=db.deletedPhotoKeys[id].filter(k=>k!==photoKey(url));
-  if(db.hiddenGalleryPhotoKeys?.[id])db.hiddenGalleryPhotoKeys[id]=db.hiddenGalleryPhotoKeys[id].filter(k=>k!==galleryPhotoKey(url));
+function addMainGalleryPhoto(id,url,label='Saved photo'){
+  url=upgradedPhotoURL(String(url||'').trim());if(!url)return false;
   const library=packagePhotoLibrary();library[id]=library[id]||[];
   if(!library[id].some(x=>galleryPhotoKey(x)===galleryPhotoKey(url)))library[id].push({url,label});
+  return true;
+}
+function addPackagePhoto(id,url,label='Saved photo'){
+  if(active!=='gallery')return false;
+  return addMainGalleryPhoto(id,url,label);
 }
 /* End persistent photo management. */
 
@@ -5656,8 +5669,7 @@ async function bootstrapWorkspace(){
   db=repairUniquePackageImageIdentifiers20261006(db);
   db=applyErinPortfolioLink20261008(db);
   }
-  db=await collectAllPreviousModelPhotos20261009(db);
-  db=recoverPackageGalleryPhotos(db);
+  // Main gallery is authoritative; never rebuild it from package history.
   db=addHeliKalksteinFollowup20261009(db);
   db=restoreHeliPackageGallery20261009(db);
   db=repairRepeatedFollowupClosings20261009(db);
