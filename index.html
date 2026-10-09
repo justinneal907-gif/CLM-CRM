@@ -277,10 +277,10 @@ th,td{padding:8px}
 <script src="assets/models/sophia-extra-photo-1.js"></script>
 <script src="assets/models/sophia-extra-photo-2.js"></script>
 <script src="assets/data/core-roster.js?v=20261008-erin-portfolio-1"></script>
-<script src="assets/data/modelscom-opportunity-drafts-20261009.js?v=20261009-live-gallery-3"></script>
+<script src="assets/data/modelscom-opportunity-drafts-20261009.js?v=20261009-live-gallery-4"></script>
 <script src="assets/crm-media-store.js?v=20261009-gallery-hash-recovery-1"></script>
 <script src="assets/crm-bridal-materials.js?v=20261005-photo-persistence-2"></script>
-<script src="assets/data/gallery-gmail-recovery-20261009.js?v=1"></script>
+<script src="assets/data/gallery-gmail-recovery-20261009.js?v=2"></script>
 <script>
 const SOURCE_DATE='2026-09-14';
 const BASE_ROSTER=window.CLM_CORE_ROSTER?.BASE_ROSTER||[];
@@ -4072,7 +4072,7 @@ function storeEmailPreviewEdit(showStatus=false){
   const preview=$('#emailPreview');if(!preview)return;
   const editedHtml=sanitizeEditableEmailHtml(preview.innerHTML);
   storeDraftPreview(editedHtml);
-  rememberEditedPreviewPhotos(editedHtml);
+  // Text/HTML preview edits never create photo overrides. Use the explicit package photo controls for photo changes.
   for(const target of activeDraftOverrideTargets())delete target.pendingModelTextUpdates;
   clearTimeout(emailPreviewEditTimer);
   persistWorkspaceSafe(true);
@@ -4207,12 +4207,16 @@ async function collectAllPreviousModelPhotos20261009(data){return data;}
 function restoreHeliPackageGallery20261009(data){
   const id='nybfw_followup_20261009_heli_kalkstein_sophia_ambre_iyanu';
   for(const draft of [data.draft,...(data.drafts||[])].filter(d=>d?.id===id)){
-    const explicit=structuredClone(draft.userOverrides?.photoSelections||{});
+    const explicit={};
+    for(const [mid,value] of Object.entries(draft.userOverrides?.photoSelections||{})){
+      if(draft.userPhotoOverrideIds?.[mid]===true)explicit[mid]=structuredClone(value);
+    }
     draft.photoSelections={};draft.packagePhotos={};
     if(Object.keys(explicit).length){draft.userOverrides=draft.userOverrides||{};draft.userOverrides.photoSelections=explicit;}
-    draft.generatedPhotoMode='live-gallery';draft.generatedPhotoModeVersion=2;
+    else if(draft.userOverrides?.photoSelections)delete draft.userOverrides.photoSelections;
+    draft.generatedPhotoMode='live-gallery';draft.generatedPhotoModeVersion=3;
   }
-  data.recovery={...(data.recovery||{}),heliGalleryRestored20261009:3};return data;
+  data.recovery={...(data.recovery||{}),heliGalleryRestored20261009:4};return data;
 }
 function draftPhotosForModel(m){
   const manual=db.draft?.userOverrides?.photoSelections;
@@ -4240,6 +4244,8 @@ function setDraftPhotosForModel(id,urls){
   for(const target of activeDraftOverrideTargets()){
     target.photoSelections=target.photoSelections||{};
     target.packagePhotos=target.packagePhotos||{};
+    target.userPhotoOverrideIds=target.userPhotoOverrideIds||{};
+    target.userPhotoOverrideIds[id]=true;
     target.photoSelections[id]=[...clean];
     target.packagePhotos[id]=[...clean];
     const o=draftUserOverrides(target);
@@ -4262,6 +4268,7 @@ async function resetDraftPhoto(id){
     if(target.photoSelections)delete target.photoSelections[id];
     if(target.packagePhotos)delete target.packagePhotos[id];
     if(target.userOverrides?.photoSelections)delete target.userOverrides.photoSelections[id];
+    if(target.userPhotoOverrideIds)delete target.userPhotoOverrideIds[id];
   }
   persistDraftPresentation(id);renderEmail();if(!await persistWorkspaceSafe(true))return;
   setStatus('Draft photos reset to the model default.');
@@ -5531,18 +5538,25 @@ function migrateAssistantGeneratedDraftPhotos20261009(data){
   };
   for(const d of [data.draft,...(data.drafts||[])].filter(Boolean)){
     if(!isGenerated(d))continue;
-    const explicit=structuredClone(d.userOverrides?.photoSelections||{});
+    const explicit={};
+    for(const [id,value] of Object.entries(d.userOverrides?.photoSelections||{})){
+      if(d.userPhotoOverrideIds?.[id]===true)explicit[id]=structuredClone(value);
+    }
     d.photoSelections={};d.packagePhotos={};
-    if(Object.keys(explicit).length){d.userOverrides=d.userOverrides||{};d.userOverrides.photoSelections=explicit;}
-    else if(d.userOverrides?.photoSelections)delete d.userOverrides.photoSelections;
-    d.generatedPhotoMode='live-gallery';d.generatedPhotoModeVersion=2;
+    if(Object.keys(explicit).length){
+      d.userOverrides=d.userOverrides||{};
+      d.userOverrides.photoSelections=explicit;
+    }else if(d.userOverrides?.photoSelections){
+      delete d.userOverrides.photoSelections;
+    }
+    d.generatedPhotoMode='live-gallery';d.generatedPhotoModeVersion=3;
   }
-  data.recovery={...(data.recovery||{}),assistantGeneratedDraftLiveGallery20261009:2};
+  data.recovery={...(data.recovery||{}),assistantGeneratedDraftLiveGallery20261009:3};
   return data;
 }
 
 async function restoreMainGalleryExplicit20261009(data){
-  const marker='authoritativeGalleryRepair20261009v2';
+  const marker='authoritativeGalleryRepair20261009v3';
   if(data.recovery?.[marker])return data;
   try{await idbWriteWorkspaceAtKey(structuredClone(data),'backup-before-authoritative-gallery-repair-20261009')}catch(err){console.info('Pre-repair gallery backup skipped',err)}
   data.photoLibrary=data.photoLibrary||{};
