@@ -1084,22 +1084,7 @@ function stripLegacySophiaAutoAdd(record){
   return out;
 }
 function maintainSophiaProfileWithoutAutoAdd(data){
-  const model=(data.models||[]).find(m=>m.id===SOPHIA_ALL_DRAFTS_ID||normalizeName(m.name)==='sophia pippen');
-  if(model){
-    model.photo=SOPHIA_PACKAGE_PHOTOS[0];
-    model.photoUrl=SOPHIA_PACKAGE_PHOTOS[0];
-    model.photoFilename='sophia-pippen-1.jpg';
-    model.photos=[...SOPHIA_PACKAGE_PHOTOS];
-  }
-  data.photoLibrary={...(data.photoLibrary||{})};
-  const current=Array.isArray(data.photoLibrary[SOPHIA_ALL_DRAFTS_ID])?data.photoLibrary[SOPHIA_ALL_DRAFTS_ID]:[];
-  const urls=new Set(current.map(x=>typeof x==='string'?x:x?.url).filter(Boolean));
-  const merged=[...current];
-  SOPHIA_PACKAGE_PHOTOS.forEach(url=>{if(!urls.has(url))merged.push({url,label:clmPackageImageIdentifier(SOPHIA_ALL_DRAFTS_ID,url)})});
-  data.photoLibrary[SOPHIA_ALL_DRAFTS_ID]=merged;
-
-  // The Sep 17 build forced Sophia into every package on each load. Clean that
-  // legacy injection once, then leave future/manual Sophia selections untouched.
+  // Legacy package cleanup only. Never alter Sophia's model photos or main gallery.
   const legacyInjected=Number(data.recovery?.sophiaAllDraftsVersion||0)>0;
   const alreadyCleaned=Number(data.recovery?.sophiaAutoAddDisabledVersion||0)>0;
   if(legacyInjected&&!alreadyCleaned){
@@ -1108,7 +1093,7 @@ function maintainSophiaProfileWithoutAutoAdd(data){
     data.selected=(data.selected||[]).filter(id=>id!==SOPHIA_ALL_DRAFTS_ID);
     if(data.draftPhotoSelections&&typeof data.draftPhotoSelections==='object')delete data.draftPhotoSelections[SOPHIA_ALL_DRAFTS_ID];
   }
-  data.recovery={...(data.recovery||{}),sophiaAutoAddDisabledVersion:1,sophiaAutoAddDisabledOn:'2026-09-24'};
+  data.recovery={...(data.recovery||{}),sophiaAutoAddDisabledVersion:2,sophiaAutoAddDisabledOn:'2026-10-09'};
   return data;
 }
 function modelDraftPhotosHtml(m){
@@ -5389,22 +5374,10 @@ function repairMiamiSentCopy20261007(data){
 }
 
 function repairUniquePackageImageIdentifiers20261006(data){
+  // Repair package HTML metadata only. Main gallery labels/entries are immutable here.
   const byId=new Map((data.models||[]).map(m=>[m.id,m]));
   let changedAny=false;
   const genericLabel=value=>clmLegacyGenericImageIdentifier(String(value||''))||/^photo\s+\d+$/i.test(String(value||'').trim());
-  for(const [modelId,list] of Object.entries(data.photoLibrary||{})){
-    if(!Array.isArray(list))continue;
-    data.photoLibrary[modelId]=list.map(item=>{
-      if(typeof item==='string')return item;
-      if(!item||typeof item!=='object')return item;
-      const url=item.url||item.src||'';
-      if(!genericLabel(item.label||item.title||''))return item;
-      changedAny=true;
-      const next={...item,label:clmPackageImageIdentifier(modelId,url)};
-      if(genericLabel(next.title||''))delete next.title;
-      return next;
-    });
-  }
   const patchHtml=(record,field)=>{
     const raw=record?.[field];if(typeof raw!=='string'||!raw.trim())return false;
     const t=document.createElement('template');t.innerHTML=raw;let changed=false;
@@ -5426,11 +5399,8 @@ function repairUniquePackageImageIdentifiers20261006(data){
     if(changed){record[field]=t.innerHTML;record.previewNeedsGmailUpdate=true;changedAny=true}
     return changed;
   };
-  for(const record of [data.draft,...(data.drafts||[])].filter(Boolean)){
-    patchHtml(record,'previewHtml');
-    patchHtml(record,'html');
-  }
-  data.recovery={...(data.recovery||{}),uniquePackageImageIdentifiersVersion:1,uniquePackageImageIdentifiersUpdatedOn:'2026-10-06'};
+  for(const record of [data.draft,...(data.drafts||[])].filter(Boolean)){patchHtml(record,'previewHtml');patchHtml(record,'html')}
+  data.recovery={...(data.recovery||{}),uniquePackageImageIdentifiersVersion:2,uniquePackageImageIdentifiersUpdatedOn:'2026-10-09'};
   return data;
 }
 
