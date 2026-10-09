@@ -277,7 +277,7 @@ th,td{padding:8px}
 <script src="assets/models/sophia-extra-photo-1.js"></script>
 <script src="assets/models/sophia-extra-photo-2.js"></script>
 <script src="assets/data/core-roster.js?v=20261008-erin-portfolio-1"></script>
-<script src="assets/data/modelscom-opportunity-drafts-20261009.js?v=1"></script>
+<script src="assets/data/modelscom-opportunity-drafts-20261009.js?v=20261009-preview-fix-2"></script>
 <script src="assets/crm-media-store.js?v=20261002-reviewed-image-bytes-2"></script>
 <script src="assets/crm-bridal-materials.js?v=20261005-photo-persistence-2"></script>
 <script>
@@ -3971,6 +3971,12 @@ function currentEmailPreviewHtml(){
 function loadDraft(id){
   const d=db.drafts.find(x=>x.id===id);if(!d)return;
   if($('#emailPreview')?.dataset.manualRefreshInitialized==='1'){storeDraftPreview(currentEmailPreviewHtml(),false);persistWorkspaceSafe(true);}
+  // Generated Models.com drafts accidentally shipped with previewHtml:'' on October 9.
+  // Repair only that generated batch. User-authored blank previews remain authoritative.
+  if(String(d.id||'').startsWith('modelscom-20261009-')&&Object.prototype.hasOwnProperty.call(d,'previewHtml')&&!String(d.previewHtml||'').trim()){
+    delete d.previewHtml;
+    d.previewNeedsGmailUpdate=true;
+  }
   // A deliberately blank or shortened preview is a saved document too.
   const regenerateModelPreview=!Object.prototype.hasOwnProperty.call(d,'previewHtml')&&((d.modelIds||[]).length||(d.models||[]).length);
   db.activeDraftId=id;db.draft={...structuredClone(seed.draft),...structuredClone(d),html:''};
