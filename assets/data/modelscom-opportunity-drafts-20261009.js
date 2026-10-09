@@ -38,7 +38,7 @@
     },
     {
       id:'modelscom-20261009-fendi-campaign',
-      priority:3,
+      priority:6,
       brand:'Fendi',
       contactName:'Julia, Tess, Mathilde',
       recipientEmail:'julia.lange@me.com',
@@ -53,7 +53,7 @@
     },
     {
       id:'modelscom-20261009-max-mara-campaign',
-      priority:4,
+      priority:9,
       brand:'Max Mara',
       contactName:'Piergiorgio',
       recipientEmail:'pg@dmfashionstudio.com',
@@ -67,7 +67,7 @@
     },
     {
       id:'modelscom-20261009-acne-studios-campaign',
-      priority:5,
+      priority:7,
       brand:'Acne Studios',
       contactName:'Piergiorgio',
       recipientEmail:'pg@dmfashionstudio.com',
@@ -81,7 +81,7 @@
     },
     {
       id:'modelscom-20261009-loewe-campaign',
-      priority:6,
+      priority:3,
       brand:'Loewe',
       contactName:'Ashley',
       recipientEmail:'ashleybrokaw@me.com',
@@ -95,7 +95,7 @@
     },
     {
       id:'modelscom-20261009-chanel-campaign',
-      priority:7,
+      priority:8,
       brand:'Chanel',
       contactName:'Anita',
       recipientEmail:'anita@establishmentnewyork.com',
@@ -109,7 +109,7 @@
     },
     {
       id:'modelscom-20261009-miu-miu-campaign',
-      priority:8,
+      priority:10,
       brand:'Miu Miu',
       contactName:'Ashley',
       recipientEmail:'ashleybrokaw@me.com',
@@ -123,7 +123,7 @@
     },
     {
       id:'modelscom-20261009-prada-campaign',
-      priority:9,
+      priority:4,
       brand:'Prada',
       contactName:'Ashley',
       recipientEmail:'ashleybrokaw@me.com',
@@ -137,7 +137,7 @@
     },
     {
       id:'modelscom-20261009-lacoste-campaign',
-      priority:10,
+      priority:5,
       brand:'Lacoste',
       contactName:'William',
       recipientEmail:'info@wl-casting.com',
