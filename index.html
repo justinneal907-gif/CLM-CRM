@@ -5408,6 +5408,36 @@ async function addGalleryFiles(input){
   renderModelGallery();$('#galleryStatus').textContent=count+' photos saved.';
 }
 
+// User-requested CRM-only package. Append once without rewriting existing drafts.
+function addHeliKalksteinFollowup20261009(data){
+  const key='heliKalksteinFollowup20261009';
+  if(data.recovery?.[key])return data;
+  const id='nybfw_followup_20261009_heli_kalkstein_sophia_ambre_iyanu';
+  const modelIds=['new-york-women-sophia-pippen','london-women-ambre-prognitz','site-women-81-iyanu'];
+  if(modelIds.some(mid=>!(data.models||[]).some(m=>m.id===mid)))return data;
+  data.drafts=Array.isArray(data.drafts)?data.drafts:[];
+  if(!data.drafts.some(d=>d.id===id)){
+    const previous=[...data.drafts].reverse().find(d=>/heli[ _-]*kalkstein/i.test([d.company,d.brandProject,d.packageName].join(' ')));
+    const recipientEmail=previous?.recipientEmail||'cococasting@yahoo.fr';
+    const link='https://canva.link/vhk73x4zncw11o7';
+    data.drafts.push({
+      id,date:'2026-10-09',eventName:'New York Bridal Week',packageName:'New York Bridal Week | Heli Kalkstein — Follow-up',
+      purpose:'followup',contactId:previous?.contactId||'',contactName:'Heli Kalkstein Team',company:'Heli Kalkstein',
+      recipientEmail,cc:previous?.cc||'agent@chezlesmannequins.com',brandProject:'Heli Kalkstein',
+      subject:'New York Bridal Week | Heli Kalkstein',packageLink:link,brandCanvaPublicViewLink:link,
+      modelIds,models:['Sophia Pippen','Ambre','Iyanu'],includePhotos:true,includeStats:true,includeSources:true,
+      initialMessage:'Hi Heli Kalkstein Team,\n\nI wanted to follow up and send Sophia Pippen, Ambre, and Iyanu as additional options. Their materials are below.',
+      followupTemplateIncludesGreeting:true,
+      followupCtaHtml:'<div style="margin:0 0 18px">Again, you can see the rest of our models <a href="'+link+'"><strong><em>HERE</em></strong></a>.<br><br>Let me know if you would like to see any of them for a casting or fitting.</div>',
+      photoSelections:{},modelExtras:{},html:'',signatureClose:'Thank you,',
+      source:'User-requested CRM follow-up October 9, 2026',
+      notes:'CRM only. Uses saved model gallery photos and text defaults; no email sent.'
+    });
+  }
+  data.recovery={...(data.recovery||{}),[key]:1};
+  return data;
+}
+
 async function bootstrapWorkspace(){
   try{await window.CLMMediaStore?.init?.()}catch(err){console.info('Media store init skipped',err)}
   await ensureMilanArchiveLoaded();
@@ -5457,6 +5487,7 @@ async function bootstrapWorkspace(){
   db=repairUniquePackageImageIdentifiers20261006(db);
   db=applyErinPortfolioLink20261008(db);
   }
+  db=addHeliKalksteinFollowup20261009(db);
   db.recovery={...(db.recovery||{}),authoritativeEdits20261008:1};
   selected=[...(db.selected||[])];
   initNav();
