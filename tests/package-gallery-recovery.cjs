@@ -37,6 +37,13 @@ assert.ok(!read('db.draft.previewHtml').includes('other.jpg'));
 assert.ok(!read('db.draft.previewHtml').includes('deleted.jpg'));
 assert.equal(read('db.drafts[0].previewHtml'),JSON.parse(read('window.originalDrafts'))[0].previewHtml);
 const before=read('JSON.stringify(db)');run('restoreHeliPackageGallery20261009(db)');assert.equal(read('JSON.stringify(db)'),before);
+
+run(`db.recovery.allPreviousModelPhotos20261009=0;db.bridalMaterialsBackups20261004=[{record:{modelIds:['m'],previewHtml:'<div data-clm-model-id="m"><img src="https://test/backup-preview.jpg"></div>'}}];idbReadWorkspaceAtKey=async()=>({photoLibrary:{m:[{url:'https://test/snapshot.jpg'}]}});window.archiveReads=0;fetch=async()=>{window.archiveReads++;return {ok:true,json:async()=>({photoLibrary:{m:[{url:'https://test/archive.jpg'}]}})}};`);
+await run('collectAllPreviousModelPhotos20261009(db)');
+for(const url of ['https://test/backup-preview.jpg','https://test/snapshot.jpg','https://test/archive.jpg'])assert.ok(read('db.photoLibrary.m').some(p=>p.url===url));
+assert.equal(read('window.archiveReads'),7);
+await run('collectAllPreviousModelPhotos20261009(db)');assert.equal(read('window.archiveReads'),7);
+assert.equal(read('db.photoLibrary.m.filter(p=>p.url==="https://test/archive.jpg").length'),1);
 console.log('PASS: historical preview/selection/memory recovery; Bridal gallery union; add/toggle retain existing photos; reload; Heli repair; model identity; deletion and original preview preservation.');
 dom.window.close();
 })().catch(e=>{console.error(e);dom.window.close();process.exitCode=1});
