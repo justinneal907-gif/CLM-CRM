@@ -4127,6 +4127,9 @@ function recoverPackageGalleryPhotos(data,records=[...(data.drafts||[]),data.dra
   const add=(id,value)=>{
     if(!models.has(id))return;
     const url=upgradedPhotoURL(photoURL(value));
+    // Preserve the verified Erin/Callie correction while recovering old records.
+    if(id==='new-york-women-erin-connors'&&(/erin-bridal-20261003\.jpg|f062c9b9-5ac7-4304-a07d-15dfec50d878|callie-recovered-bridal-20261004/.test(url)||window.CLMMediaStore?.contentKey?.(url)==='sha256:2044ea74a16a3bf29639960f22f2331a3c3d56617cc560605cd4a03e11f70d1e'))id='new-york-women-callie-steg';
+    if(!models.has(id))return;
     if(!url||/^(blob:|cid:|file:)/i.test(url)||isDeletedPhoto(data,id,url)||(data.hiddenGalleryPhotoKeys?.[id]||[]).includes(galleryPhotoKey(url)))return;
     if(!seen.has(id))seen.set(id,new Set());
     const key=galleryPhotoKey(url);if(seen.get(id).has(key))return;
@@ -4138,6 +4141,7 @@ function recoverPackageGalleryPhotos(data,records=[...(data.drafts||[]),data.dra
     const t=document.createElement('template');t.innerHTML=record.previewHtml||record.html||'';
     // Associate images only with an exact model block, never their position.
     const ids=new Set([...(record.modelIds||[]),...[...t.content.querySelectorAll('[data-clm-model-id]')].map(el=>el.getAttribute('data-clm-model-id'))]);
+    for(const name of record.models||[]){const matches=[...models.values()].filter(m=>[m.name,m.originalName].some(n=>n&&normalizeName(n)===normalizeName(name)));if(matches.length===1)ids.add(matches[0].id);}
     for(const id of ids){
       const m=models.get(id);if(!m)continue;
       const block=bridalMaterialBlock(t.content,id,m,data.models);
@@ -4147,8 +4151,33 @@ function recoverPackageGalleryPhotos(data,records=[...(data.drafts||[]),data.dra
   for(const map of Object.values(data.savedModelPackagePhotos||{}))for(const [id,values] of Object.entries(map||{}))for(const value of (Array.isArray(values)?values:[values]))add(id,value);
   return data;
 }
+async function collectAllPreviousModelPhotos20261009(data){
+  if(data.recovery?.allPreviousModelPhotos20261009)return data;
+  const records=[];
+  const collect=source=>{
+    if(!source)return;
+    records.push(...(source.drafts||[]),source.draft);
+    for(const key of ['packageSelectionBackups20261003','bridalClosingLinkBackups20261004','bridalMaterialsBackups20261004','erinDraftBackups20261004','savedPackagePhotosBackups20261005'])for(const item of source[key]||[])records.push(item.record||item);
+    records.push({photoSelections:source.photoLibrary||{}},{photoSelections:source.customPhotos||{}});
+    for(const map of Object.values(source.savedModelPackagePhotos||{}))records.push({photoSelections:map});
+    for(const m of source.models||[])records.push({photoSelections:{[m.id]:[m.photo,m.photoUrl,...['photos','photoLibrary','portfolioPhotos','images'].flatMap(k=>Array.isArray(m[k])?m[k]:[])]}});
+  };
+  collect(data);
+  let complete=true;
+  try{collect(await idbReadWorkspaceAtKey('backup-before-gallery-repair-20260929'));}catch(err){complete=false;console.info('Previous gallery snapshot unavailable',err)}
+  for(let i=1;i<=7;i++){
+    try{
+      const response=await fetch('assets/data/photo-library-restore-20260918-part-'+String(i).padStart(2,'0')+'.json?v=2',{cache:'force-cache'});
+      if(!response.ok)throw new Error('Photo archive unavailable');
+      collect(await response.json());
+    }catch(err){complete=false;console.info('Previous photo archive unavailable',err)}
+  }
+  recoverPackageGalleryPhotos(data,records);
+  data.recovery={...(data.recovery||{}),allPreviousModelPhotos20261009:complete?1:0};
+  return data;
+}
 function restoreHeliPackageGallery20261009(data){
-  if(data.recovery?.heliGalleryRestored20261009)return data;
+  if(Number(data.recovery?.heliGalleryRestored20261009||0)>=2)return data;
   const id='nybfw_followup_20261009_heli_kalkstein_sophia_ambre_iyanu';
   const targets=[...(data.drafts||[]),data.activeDraftId===id?data.draft:null].filter(d=>d?.id===id);
   for(const d of targets){
@@ -4171,7 +4200,7 @@ function restoreHeliPackageGallery20261009(data){
     }
     if(d.previewHtml){d.previewHtml=uniformEmailPhotoSizes(t.innerHTML);d.previewNeedsGmailUpdate=true;}
   }
-  data.recovery={...(data.recovery||{}),heliGalleryRestored20261009:1};
+  data.recovery={...(data.recovery||{}),heliGalleryRestored20261009:2};
   return data;
 }
 function draftPhotosForModel(m){
@@ -5544,6 +5573,7 @@ async function bootstrapWorkspace(){
   db=repairUniquePackageImageIdentifiers20261006(db);
   db=applyErinPortfolioLink20261008(db);
   }
+  db=await collectAllPreviousModelPhotos20261009(db);
   db=recoverPackageGalleryPhotos(db);
   db=addHeliKalksteinFollowup20261009(db);
   db=restoreHeliPackageGallery20261009(db);
