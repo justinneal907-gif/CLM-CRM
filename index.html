@@ -3668,6 +3668,7 @@ function storeDraftPreview(html,changed=true){
   db.draft=db.draft||structuredClone(seed.draft);
   db.draft.previewHtml=uniformEmailPhotoSizes(stripCanvaLinksText(html));
   delete db.draft.initialMessage;
+  recoverPackageGalleryPhotos(db,[db.draft]);
   const active=activeSavedDraftRecord();
   if(active){active.previewHtml=db.draft.previewHtml;delete active.initialMessage;}
   if(changed)markPreviewNeedsGmailUpdate();
@@ -4108,6 +4109,71 @@ function draftHasExplicitPhotoSelection(id){
   if(db.draft?.packagePhotos&&Object.prototype.hasOwnProperty.call(db.draft.packagePhotos,id))return true;
   return false;
 }
+function defaultModelGalleryPhotos(data,m,draft={}){
+  const photos=[];
+  const add=value=>(Array.isArray(value)?value:[value]).forEach(x=>photos.push(photoURL(x)));
+  add(data.photoLibrary?.[m.id]);
+  [m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(add);
+  if(typeof MODEL_PHOTO_LIBRARY!=='undefined')add(MODEL_PHOTO_LIBRARY[m.id]);
+  if(isBridalMaterialsDraft(draft))add(m.bridalMaterials?.photos);
+  add(savedModelPackagePhotos(data,m.id,draft));
+  add(data.customPhotos?.[m.id]);add(m.photo);add(m.photoUrl);
+  return uniqueGalleryPhotoUrls(photos.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(data,m.id,url)&&!(data.hiddenGalleryPhotoKeys?.[m.id]||[]).includes(galleryPhotoKey(url))));
+}
+function recoverPackageGalleryPhotos(data,records=[...(data.drafts||[]),data.draft]){
+  data.photoLibrary=data.photoLibrary||{};
+  const models=new Map((data.models||[]).map(m=>[m.id,m]));
+  const seen=new Map(Object.entries(data.photoLibrary).map(([id,list])=>[id,new Set((list||[]).map(galleryPhotoKey))]));
+  const add=(id,value)=>{
+    if(!models.has(id))return;
+    const url=upgradedPhotoURL(photoURL(value));
+    if(!url||/^(blob:|cid:|file:)/i.test(url)||isDeletedPhoto(data,id,url)||(data.hiddenGalleryPhotoKeys?.[id]||[]).includes(galleryPhotoKey(url)))return;
+    if(!seen.has(id))seen.set(id,new Set());
+    const key=galleryPhotoKey(url);if(seen.get(id).has(key))return;
+    seen.get(id).add(key);
+    (data.photoLibrary[id]||(data.photoLibrary[id]=[])).push({url,label:'Saved package photo'});
+  };
+  for(const record of records.filter(Boolean)){
+    for(const map of [record.photoSelections,record.packagePhotos,record.userOverrides?.photoSelections])for(const [id,values] of Object.entries(map||{}))for(const value of (Array.isArray(values)?values:[values]))add(id,value);
+    const t=document.createElement('template');t.innerHTML=record.previewHtml||record.html||'';
+    // Associate images only with an exact model block, never their position.
+    const ids=new Set([...(record.modelIds||[]),...[...t.content.querySelectorAll('[data-clm-model-id]')].map(el=>el.getAttribute('data-clm-model-id'))]);
+    for(const id of ids){
+      const m=models.get(id);if(!m)continue;
+      const block=bridalMaterialBlock(t.content,id,m,data.models);
+      if(block)for(const img of block.querySelectorAll('img'))add(id,img.getAttribute('src'));
+    }
+  }
+  for(const map of Object.values(data.savedModelPackagePhotos||{}))for(const [id,values] of Object.entries(map||{}))for(const value of (Array.isArray(values)?values:[values]))add(id,value);
+  return data;
+}
+function restoreHeliPackageGallery20261009(data){
+  if(data.recovery?.heliGalleryRestored20261009)return data;
+  const id='nybfw_followup_20261009_heli_kalkstein_sophia_ambre_iyanu';
+  const targets=[...(data.drafts||[]),data.activeDraftId===id?data.draft:null].filter(d=>d?.id===id);
+  for(const d of targets){
+    const t=document.createElement('template');t.innerHTML=d.previewHtml||'';
+    for(const mid of d.modelIds||[]){
+      const m=data.models.find(m=>m.id===mid);if(!m)continue;
+      // Respect a deliberate empty package selection.
+      const manual=d.userOverrides?.photoSelections?.[mid];
+      if(Array.isArray(manual)&&manual.length===0)continue;
+      const block=bridalMaterialBlock(t.content,mid,m,data.models);
+      const current=[...(Array.isArray(d.photoSelections?.[mid])?d.photoSelections[mid]:[]),...(Array.isArray(manual)?manual:[]),...(block?[...block.querySelectorAll('img')].map(img=>img.getAttribute('src')):[])];
+      const urls=uniqueGalleryPhotoUrls([...current,...defaultModelGalleryPhotos(data,m,d)].filter(Boolean));
+      d.photoSelections={...(d.photoSelections||{}),[mid]:urls};
+      d.packagePhotos={...(d.packagePhotos||{}),[mid]:[...urls]};
+      if(manual)d.userOverrides.photoSelections[mid]=[...urls];
+      if(block&&d.includePhotos!==false){
+        const existing=new Set([...block.querySelectorAll('img')].map(img=>galleryPhotoKey(img.getAttribute('src'))));
+        for(const url of urls)if(!existing.has(galleryPhotoKey(url))){const row=document.createElement('div'),img=document.createElement('img');img.src=url;img.alt=m.name;img.width=440;img.style.cssText='display:block;max-width:100%;height:auto';row.appendChild(img);block.appendChild(row);}
+      }
+    }
+    if(d.previewHtml){d.previewHtml=uniformEmailPhotoSizes(t.innerHTML);d.previewNeedsGmailUpdate=true;}
+  }
+  data.recovery={...(data.recovery||{}),heliGalleryRestored20261009:1};
+  return data;
+}
 function draftPhotosForModel(m){
   const manual=db.draft?.userOverrides?.photoSelections;
   if(manual&&Object.prototype.hasOwnProperty.call(manual,m.id)){
@@ -4124,16 +4190,7 @@ function draftPhotosForModel(m){
   if(Array.isArray(legacy)){
     return uniqueGalleryPhotoUrls(legacy.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)));
   }
-  const reusable=savedModelPackagePhotos(db,m.id,db.draft);
-  if(reusable)return uniqueGalleryPhotoUrls(reusable.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)));
-  if(isBridalMaterialsDraft(db.draft)&&Array.isArray(m.bridalMaterials?.photos))return uniqueGalleryPhotoUrls(m.bridalMaterials.photos);
-  // Default to this model's saved gallery, never another package's selections.
-  const portfolio=[];
-  (db.photoLibrary?.[m.id]||[]).forEach(x=>portfolio.push(photoURL(x)));
-  [m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(a=>Array.isArray(a)&&a.forEach(x=>portfolio.push(photoURL(x))));
-  if(typeof MODEL_PHOTO_LIBRARY!=='undefined')(MODEL_PHOTO_LIBRARY[m.id]||[]).forEach(x=>portfolio.push(photoURL(x)));
-  portfolio.push(db.customPhotos?.[m.id],m.photo,m.photoUrl);
-  return uniqueGalleryPhotoUrls(portfolio.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)&&!isGalleryHidden(m.id,url)));
+  return defaultModelGalleryPhotos(db,m,db.draft);
 }
 function draftPhotoForModel(m){return draftPhotosForModel(m)[0]||''}
 function setDraftPhotosForModel(id,urls){
@@ -4153,7 +4210,7 @@ async function togglePackagePhoto(id,i){
   const m=db.models.find(x=>x.id===id),p=m&&draftPhotoOptions(m)[i];if(!p)return;
   if(!selected.includes(id))selected.push(id);
   const explicit=draftHasExplicitPhotoSelection(id);
-  const current=explicit?draftPhotosForModel(m):[],key=galleryPhotoKey(p.url);
+  const current=draftPhotosForModel(m),key=galleryPhotoKey(p.url);
   const exists=current.some(url=>galleryPhotoKey(url)===key);
   setDraftPhotosForModel(id,exists?current.filter(url=>galleryPhotoKey(url)!==key):[...current,p.url]);
   persistDraftPresentation(id);renderEmail();if(!await persistWorkspaceSafe(true))return;
@@ -4172,7 +4229,7 @@ async function resetDraftPhoto(id){
 async function setDraftPhotoUrl(id,url){
   url=String(url||'').trim();if(!url)return;
   addPackagePhoto(id,url,'Saved URL');
-  const m=db.models.find(x=>x.id===id),current=(m&&draftHasExplicitPhotoSelection(id))?draftPhotosForModel(m):[];
+  const m=db.models.find(x=>x.id===id),current=m?draftPhotosForModel(m):[];
   setDraftPhotosForModel(id,[...current,url]);
   persistDraftPresentation(id);renderEmail();if(!await persistWorkspaceSafe(true))return;
   setStatus('Photo saved to the library and added to this package.');
@@ -4216,7 +4273,7 @@ async function addClipboardImagesToModel(id,files,{addToPackage=true}={}){
   if(!added.length)return setStatus('No image was found on the clipboard.');
   if((db.activeDraftId||'')!==packageId){persistWorkspaceSafe(true);return setStatus('Photos saved to the model library. The open package changed during upload; add them to the intended package.');}
   if(addToPackage){
-    const current=draftHasExplicitPhotoSelection(id)?draftPhotosForModel(model):[];
+    const current=draftPhotosForModel(model);
     setDraftPhotosForModel(id,[...current,...added]);
     persistDraftPresentation(id);
     renderEmail();
@@ -4274,7 +4331,7 @@ async function setDraftPhotoFile(id,input){
   input.value='';
   if(!added.length)return setStatus('Could not read those images.');
   if((db.activeDraftId||'')!==packageId){persistWorkspaceSafe(true);return setStatus('Photos saved to the model library. The open package changed during upload; add them to the intended package.');}
-  const m=db.models.find(x=>x.id===id),current=(m&&draftHasExplicitPhotoSelection(id))?draftPhotosForModel(m):[];
+  const m=db.models.find(x=>x.id===id),current=m?draftPhotosForModel(m):[];
   setDraftPhotosForModel(id,[...current,...added]);
   persistDraftPresentation(id);renderEmail();if(!await persistWorkspaceSafe(true))return;
   setStatus(added.length===1?'Uploaded photo added to this package.':`${added.length} uploaded photos added to this package.`);
@@ -5487,7 +5544,9 @@ async function bootstrapWorkspace(){
   db=repairUniquePackageImageIdentifiers20261006(db);
   db=applyErinPortfolioLink20261008(db);
   }
+  db=recoverPackageGalleryPhotos(db);
   db=addHeliKalksteinFollowup20261009(db);
+  db=restoreHeliPackageGallery20261009(db);
   db.recovery={...(db.recovery||{}),authoritativeEdits20261008:1};
   selected=[...(db.selected||[])];
   initNav();
