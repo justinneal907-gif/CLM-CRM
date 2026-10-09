@@ -1600,6 +1600,129 @@ function addRemainingBridalFollowups20261009(data){
   return data;
 }
 
+
+function addHighFashionFollowups20261009(data){
+  data.drafts=Array.isArray(data.drafts)?data.drafts:[];
+  const bridalLink='https://canva.link/vhk73x4zncw11o7';
+  const miamiLink='https://canva.link/phxa5c71325j0qv';
+  const entries=[
+    {
+      slug:'ese-azenabor',brand:'Esé Azénabor',eventName:'New York Bridal Week',
+      recipientEmail:'assistNY@eseazenabor.com',contactName:'Esé Azénabor Team',packageLink:bridalLink,
+      models:['Ambre','Maja Stockwell','Rachel'],
+      modelIds:['london-women-ambre-prognitz','new-york-women-maja-stockwell','new-york-women-rachel-stone']
+    },
+    {
+      slug:'vero-diaz',brand:'Vero Diaz',eventName:'Miami Fashion Week',
+      recipientEmail:'colecciones@verodiaz.mx',contactName:'Vero Diaz Team',packageLink:miamiLink,
+      models:['Rachel','Agang','Ambre'],
+      modelIds:['new-york-women-rachel-stone','new-york-women-agang','london-women-ambre-prognitz']
+    },
+    {
+      slug:'sitka-semsch',brand:'Sitka Semsch',eventName:'Miami Fashion Week',
+      recipientEmail:'service@sitkasemsch.com',contactName:'Sitka Semsch Team',packageLink:miamiLink,
+      models:['Rachel','Maja Stockwell','Agang'],
+      modelIds:['new-york-women-rachel-stone','new-york-women-maja-stockwell','new-york-women-agang']
+    },
+    {
+      slug:'beatriz-de-la-camara',brand:'Beatriz de la Cámara',eventName:'Miami Fashion Week',
+      recipientEmail:'info@beatrizdelacamara.com',contactName:'Beatriz de la Cámara Team',packageLink:miamiLink,
+      models:['Rachel','Maja Stockwell','Agang'],
+      modelIds:['new-york-women-rachel-stone','new-york-women-maja-stockwell','new-york-women-agang']
+    },
+    {
+      slug:'jenny-polanco',brand:'Jenny Polanco',eventName:'Miami Fashion Week',
+      recipientEmail:'info@jennypolanco.com.do',contactName:'Jenny Polanco Team',packageLink:miamiLink,
+      models:['Rachel','Mary','Seven'],
+      modelIds:['new-york-women-rachel-stone','new-york-women-mary-timms','new-york-women-seven-wright']
+    },
+    {
+      slug:'giannina-azar',brand:'Giannina Azar',eventName:'Miami Fashion Week',
+      recipientEmail:'gianninaazaratelier@gmail.com',contactName:'Giannina Azar Team',packageLink:miamiLink,
+      models:['Ambre','Agang','Maja Stockwell'],
+      modelIds:['london-women-ambre-prognitz','new-york-women-agang','new-york-women-maja-stockwell']
+    },
+    {
+      slug:'andres-otalora',brand:'Andres Otalora',eventName:'Miami Fashion Week',
+      recipientEmail:'costumerservice@andresotalora.com',contactName:'Andres Otalora Team',packageLink:miamiLink,
+      models:['Maja Stockwell','Rachel','Agang'],
+      modelIds:['new-york-women-maja-stockwell','new-york-women-rachel-stone','new-york-women-agang']
+    },
+    {
+      slug:'yenny-bastida',brand:'Yenny Bastida',eventName:'Miami Fashion Week',
+      recipientEmail:'ybpretaporterboutique@gmail.com',contactName:'Yenny Bastida Team',packageLink:miamiLink,
+      models:['Ambre','Mary','Maja Stockwell'],
+      modelIds:['london-women-ambre-prognitz','new-york-women-mary-timms','new-york-women-maja-stockwell']
+    },
+    {
+      slug:'efrain-mogollon',brand:'Efrain Mogollon',eventName:'Miami Fashion Week',
+      recipientEmail:'contact@byefrainmogollon.com',contactName:'Efrain Mogollon Team',packageLink:miamiLink,
+      models:['Maja Stockwell','Rachel','Ambre'],
+      modelIds:['new-york-women-maja-stockwell','new-york-women-rachel-stone','london-women-ambre-prognitz']
+    },
+    {
+      slug:'jhoan-sebastian-grey',brand:'Jhoan Sebastian Grey',eventName:'Miami Fashion Week',
+      recipientEmail:'iam@jhoansebastiangrey.com',contactName:'Jhoan Sebastian Grey Team',packageLink:miamiLink,
+      models:['Maja Stockwell','Agang','Rachel'],
+      modelIds:['new-york-women-maja-stockwell','new-york-women-agang','new-york-women-rachel-stone']
+    }
+  ];
+  const list=names=>names.length===1?names[0]:names.length===2?names.join(' and '):names.slice(0,-1).join(', ')+', and '+names.at(-1);
+  const modelById=new Map((data.models||[]).map(model=>[model.id,model]));
+  for(const entry of entries){
+    const id='fashion_followup_20261009_'+entry.slug;
+    if(data.drafts.some(d=>d.id===id))continue;
+    if(entry.modelIds.some(modelId=>!modelById.has(modelId)))continue;
+    const photoSelections={};
+    for(const modelId of entry.modelIds){
+      const model=modelById.get(modelId);
+      const custom=(data.customPhotos||{})[modelId];
+      if(Array.isArray(custom)&&custom.length)photoSelections[modelId]=structuredClone(custom);
+      else{
+        const modelPhotos=Array.isArray(model?.photos)?model.photos.filter(Boolean):[];
+        const fallback=modelPhotos.length?modelPhotos:(model?.photo||model?.photoUrl?[model.photo||model.photoUrl]:[]);
+        if(fallback.length)photoSelections[modelId]=structuredClone(fallback);
+      }
+    }
+    const subject=entry.eventName+' | '+entry.brand;
+    const initialMessage='Hi '+entry.contactName+',\n\nI wanted to follow up and send '+list(entry.models)+' as additional options for '+entry.eventName+'. Their materials are below.';
+    const followupCtaHtml='<div data-clm-fashion-followup-cta="'+entry.slug+'-20261009" style="margin:0 0 18px"><div>Click <a href="'+entry.packageLink+'" target="_blank"><strong><em>HERE</em></strong></a> to see the rest of our models.</div><br><div>Again, you can find the rest of our models <a href="'+entry.packageLink+'" target="_blank"><strong><em>HERE</em></strong></a>.</div><br><div>Let me know if you would like to see any of them for a casting or fitting. If you are not interested in this selection, please let me know and I can send others.</div></div>';
+    data.drafts.push({
+      id,
+      date:'2026-10-09',
+      eventName:entry.eventName,
+      packageName:subject,
+      purpose:'followup',
+      contactId:'',
+      contactName:entry.contactName,
+      company:entry.brand,
+      recipientEmail:entry.recipientEmail,
+      cc:'agent@chezlesmannequins.com',
+      brandProject:entry.brand,
+      packageLink:entry.packageLink,
+      brandCanvaPublicViewLink:entry.packageLink,
+      subject,
+      includeStats:true,
+      includePhotos:true,
+      includeSources:true,
+      models:[...entry.models],
+      modelIds:[...entry.modelIds],
+      photoSelections,
+      packagePhotos:structuredClone(photoSelections),
+      userOverrides:{photoSelections:structuredClone(photoSelections)},
+      initialMessage,
+      followupTemplateIncludesGreeting:true,
+      followupCtaHtml,
+      html:'',
+      signatureClose:'Thank you,',
+      source:'User-requested high-fashion follow-up batch · 2026-10-09',
+      notes:'CRM-only follow-up. Claudia excluded. Models were selected to avoid repeating the original direct package for this brand. Existing saved model gallery media remains authoritative.'
+    });
+  }
+  data.recovery={...(data.recovery||{}),highFashionFollowups20261009:1};
+  return data;
+}
+
 function captureMainGalleryState(source){
   if(!source||typeof source!=='object')return null;
   const snapshot={top:{},models:{}};
@@ -1643,9 +1766,10 @@ function applyRecovered(incoming){
     data.draft=structuredClone(seed.draft);
     data.selected=[];
   }
+  const withFollowupDrafts=addHighFashionFollowups20261009(addRemainingBridalFollowups20261009(data));
   const withCurrentModelsComDrafts=window.addModelsComOpportunityDrafts20261009
-    ? window.addModelsComOpportunityDrafts20261009(addRemainingBridalFollowups20261009(data))
-    : addRemainingBridalFollowups20261009(data);
+    ? window.addModelsComOpportunityDrafts20261009(withFollowupDrafts)
+    : withFollowupDrafts;
   return restoreMainGalleryState(migrateDraftPreviewDocuments(withCurrentModelsComDrafts),gallerySnapshot);
 }
 /* CRM INDEXEDDB STORAGE V1 */
