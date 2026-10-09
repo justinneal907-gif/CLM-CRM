@@ -3987,7 +3987,12 @@ function currentEmailPreviewHtml(){
     preview?.dataset.manualRefreshInitialized==='1'?preview.innerHTML:emailHtml()
   );
 }
-function loadDraft(id){
+function refreshLiveGalleryDraftPhotos(){
+  if(db.draft?.generatedPhotoMode!=='live-gallery'||typeof db.draft?.previewHtml!=='string')return;
+  const ids=[...selected];
+  for(const id of ids)editPreviewModels(ids,id);
+}
+async function loadDraft(id){
   const d=db.drafts.find(x=>x.id===id);if(!d)return;
   if($('#emailPreview')?.dataset.manualRefreshInitialized==='1'){storeDraftPreview(currentEmailPreviewHtml(),false);persistWorkspaceSafe(true);}
   // Generated Models.com drafts accidentally shipped with previewHtml:'' on October 9.
@@ -4005,7 +4010,7 @@ function loadDraft(id){
     d.previewHtml=db.draft.previewHtml;
   }
   selected=(d.modelIds||[]).filter(modelId=>db.models.some(m=>m.id===modelId));if(!selected.length&&Array.isArray(d.models))for(const name of d.models){const m=db.models.find(x=>normalizeName(x.name)===normalizeName(name)||(normalizeName(name)==='anhelina'&&x.id==='site-women-anhelina'));if(m&&!selected.includes(m.id))selected.push(m.id)}
-  db.selected=[...selected];const draftSearch=$('#draftSearch');if(draftSearch)draftSearch.value='';resetDraftUtilityControls();persistWorkspaceSafe(false);const preview=$('#emailPreview');if(preview)preview.dataset.manualRefreshInitialized='';go('email');setStatus(`Loaded ${d.brandProject||d.company||d.subject||'saved package'}.`)
+  db.selected=[...selected];const draftSearch=$('#draftSearch');if(draftSearch)draftSearch.value='';resetDraftUtilityControls();persistWorkspaceSafe(false);const preview=$('#emailPreview');if(preview)preview.dataset.manualRefreshInitialized='';await go('email');if(db.draft?.generatedPhotoMode==='live-gallery'){refreshLiveGalleryDraftPhotos();persistWorkspaceSafe(false);}setStatus(`Loaded ${d.brandProject||d.company||d.subject||'saved package'}.`)
 }
 async function copyFormattedPreview(){
   const button=$('#copyEmailBtn');
@@ -5542,47 +5547,80 @@ function addHeliKalksteinFollowup20261009(data){
   return data;
 }
 
+function migrateAssistantGeneratedDraftPhotos20261009(data){
+  const isGenerated=d=>{
+    const id=String(d?.id||''),source=String(d?.source||'');
+    return id.startsWith('modelscom-20261009-')
+      || id==='nybfw_followup_20261009_heli_kalkstein_sophia_ambre_iyanu'
+      || id.startsWith('miami_fashion_week_2026_')
+      || id.startsWith('nybfw_followup_20261002_')
+      || id.startsWith('nybfw_followup_20261004_')
+      || id.startsWith('nybfw_followup_20261007_')
+      || id==='lm_fashion_size_match_20261002'
+      || /Parallel Search research|Work Gmail sent mail review|User-requested CRM follow-up|Models\.com/i.test(source);
+  };
+  for(const d of [data.draft,...(data.drafts||[])].filter(Boolean)){
+    if(!isGenerated(d))continue;
+    const explicit=structuredClone(d.userOverrides?.photoSelections||{});
+    d.photoSelections={};d.packagePhotos={};
+    if(Object.keys(explicit).length){d.userOverrides=d.userOverrides||{};d.userOverrides.photoSelections=explicit;}
+    else if(d.userOverrides?.photoSelections)delete d.userOverrides.photoSelections;
+    d.generatedPhotoMode='live-gallery';d.generatedPhotoModeVersion=2;
+  }
+  data.recovery={...(data.recovery||{}),assistantGeneratedDraftLiveGallery20261009:2};
+  return data;
+}
+
 async function restoreMainGalleryExplicit20261009(data){
-  const marker='mainGalleryExplicitRestore20261009v1';
+  const marker='authoritativeGalleryRepair20261009v2';
   if(data.recovery?.[marker])return data;
-  try{await idbWriteWorkspaceAtKey(structuredClone(data),'backup-before-main-gallery-restore-20261009')}catch(err){console.info('Pre-restore gallery backup skipped',err)}
+  try{await idbWriteWorkspaceAtKey(structuredClone(data),'backup-before-authoritative-gallery-repair-20261009')}catch(err){console.info('Pre-repair gallery backup skipped',err)}
   data.photoLibrary=data.photoLibrary||{};
   data.hiddenGalleryPhotoKeys=data.hiddenGalleryPhotoKeys||{};
   data.deletedPhotoKeys=data.deletedPhotoKeys||{};
-  let restored=0;
-  const seenByModel=new Map();
-  const seen=id=>{
-    if(!seenByModel.has(id))seenByModel.set(id,new Set((data.photoLibrary[id]||[]).map(item=>galleryPhotoKey(photoURL(item)))));
-    return seenByModel.get(id);
+  let restored=0,archived=0,emailed=0;
+  const seen=new Map();
+  const known=id=>{
+    if(!seen.has(id))seen.set(id,new Set((data.photoLibrary[id]||[]).map(item=>galleryPhotoKey(photoURL(item)))));
+    return seen.get(id);
   };
-  const restore=(id,item,label)=>{
-    const raw=typeof item==='string'?item:(item?.url||item?.src||'');
+  const restore=(id,value,label,source)=>{
+    if(!(data.models||[]).some(m=>m.id===id))return false;
+    const raw=typeof value==='string'?value:(value?.url||value?.src||'');
     const url=upgradedPhotoURL(String(raw||'').trim());
-    if(!id||!url||/^(blob:|cid:|file:)/i.test(url))return;
-    const key=galleryPhotoKey(url),known=seen(id);
-    if(!known.has(key)){
+    if(!url||/^(blob:|cid:|file:)/i.test(url))return false;
+    const key=galleryPhotoKey(url),set=known(id);
+    if(!set.has(key)){
       data.photoLibrary[id]=data.photoLibrary[id]||[];
-      data.photoLibrary[id].push(typeof item==='object'&&item?{...item,url,label:item.label||label}:{url,label});
-      known.add(key);restored++;
+      data.photoLibrary[id].push({url,label:label||value?.label||'Recovered gallery photo'});
+      set.add(key);restored++;if(source==='gmail')emailed++;else archived++;
     }
     if(Array.isArray(data.hiddenGalleryPhotoKeys[id]))data.hiddenGalleryPhotoKeys[id]=data.hiddenGalleryPhotoKeys[id].filter(k=>k!==key);
-    const deletedKey=photoKey(url);
-    if(Array.isArray(data.deletedPhotoKeys[id]))data.deletedPhotoKeys[id]=data.deletedPhotoKeys[id].filter(k=>k!==deletedKey);
+    const pk=photoKey(url);
+    if(Array.isArray(data.deletedPhotoKeys[id]))data.deletedPhotoKeys[id]=data.deletedPhotoKeys[id].filter(k=>k!==pk);
+    return true;
   };
+  window.__clmGalleryRecoveryWrite=true;
   try{
-    const backup=await idbReadWorkspaceAtKey('backup-before-gallery-repair-20260929');
-    for(const [id,list] of Object.entries(backup?.photoLibrary||{}))for(const item of list||[])restore(id,item,'Restored from pre-repair gallery backup');
-  }catch(err){console.info('Pre-repair gallery backup unavailable',err)}
-  for(let i=1;i<=7;i++){
-    const part=String(i).padStart(2,'0');
-    try{
-      const response=await fetch('assets/data/photo-library-restore-20260918-part-'+part+'.json?v=3',{cache:'reload'});
-      if(!response.ok)continue;
-      const payload=await response.json();
-      for(const [id,list] of Object.entries(payload.photoLibrary||{}))for(const item of list||[])restore(id,item,'Restored archived gallery photo');
-    }catch(err){console.info('Gallery archive part '+part+' unavailable',err)}
-  }
-  data.recovery={...(data.recovery||{}),[marker]:1,mainGalleryExplicitRestore20261009At:new Date().toISOString(),mainGalleryExplicitRestore20261009Count:restored};
+    for(let i=1;i<=7;i++){
+      const part=String(i).padStart(2,'0');
+      try{
+        const response=await fetch('assets/data/photo-library-restore-20260918-part-'+part+'.json?v=4',{cache:'reload'});
+        if(!response.ok)continue;
+        const payload=await response.json();
+        for(const [id,list] of Object.entries(payload.photoLibrary||{}))for(const item of list||[])restore(id,item,item?.label||'Recovered archived gallery photo','archive');
+      }catch(err){console.info('Gallery archive '+part+' unavailable',err)}
+    }
+    const manifest=window.CLM_GMAIL_GALLERY_RECOVERY_20261009?.models||{};
+    for(const [id,groups] of Object.entries(manifest)){
+      for(const group of groups||[]){
+        const ref=window.CLMMediaStore?.findRefByHashes?.(group.hashes||[]);
+        if(ref)restore(id,ref,group.label||'Recovered emailed photo','gmail');
+      }
+    }
+  }finally{window.__clmGalleryRecoveryWrite=false}
+  data=migrateAssistantGeneratedDraftPhotos20261009(data);
+  data.recovery={...(data.recovery||{}),[marker]:1,authoritativeGalleryRepair20261009At:new Date().toISOString(),authoritativeGalleryRepair20261009Count:restored,authoritativeGalleryRepairArchivedCount:archived,authoritativeGalleryRepairEmailedCount:emailed};
   return data;
 }
 async function bootstrapWorkspace(){
@@ -5596,6 +5634,7 @@ async function bootstrapWorkspace(){
   }catch(err){console.info('Pre-repair workspace backup skipped',err)}
   const existingWorkspace=await idbReadWorkspace().catch(()=>null)||JSON.parse(localStorage.getItem(NEW_KEY)||'null');
   db=await loadWorkspaceIndexedDB();
+  const mainGalleryBeforeAutomaticSetup=captureMainGalleryState(db);
   if(!existingWorkspace){
   db=removeCanvaLinksFromWorkspace(db);
   db.recovery={...(db.recovery||{}),safeGallerySnapshot20260929:true};
@@ -5632,10 +5671,15 @@ async function bootstrapWorkspace(){
   db=repairUniquePackageImageIdentifiers20261006(db);
   db=applyErinPortfolioLink20261008(db);
   }
+  // Restore the exact loaded gallery after all legacy automatic setup. Automatic setup is read-only for gallery data.
+  db=restoreMainGalleryState(db,mainGalleryBeforeAutomaticSetup);
   // Main gallery is authoritative; never rebuild it from package history.
   db=addHeliKalksteinFollowup20261009(db);
   db=restoreHeliPackageGallery20261009(db);
   db=repairRepeatedFollowupClosings20261009(db);
+  db=migrateAssistantGeneratedDraftPhotos20261009(db);
+  db=await restoreMainGalleryExplicit20261009(db);
+  try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Authoritative gallery repair save skipped',err)}
   db.recovery={...(db.recovery||{}),authoritativeEdits20261008:1};
   selected=[...(db.selected||[])];
   initNav();
@@ -5648,11 +5692,6 @@ async function bootstrapWorkspace(){
   window.addEventListener('clm:media-cache-updated',()=>{if(active==='models')renderModels();else if(active==='email'){renderPhotoLibrary();renderEmailSelection()}});
   persistWorkspaceSafe(false);
   window.__clmWorkspaceReady=true;
-  restoreMainGalleryExplicit20261009(db).then(restored=>{
-    db=restored;
-    persistWorkspaceSafe(false);
-    if(active==='gallery')renderModelGallery();
-  }).catch(err=>console.warn('One-time main gallery restore skipped',err));
   try{window.dispatchEvent(new CustomEvent('clm:workspace-ready'))}catch{}
   startGmailSessionKeeper();
   restoreWorkGmailSession().catch(err=>console.info('Gmail session restore skipped',err));
