@@ -3027,7 +3027,7 @@ function hydrateDraft(){
   updateEmailPurposeUi();
   renderBriefSummary();
 }
-function packagePhotoLibrary(){return db.photoLibrary||(db.photoLibrary={})}
+function packagePhotoLibrary(){return db.photoLibrary||{}}
 function addPackagePhoto(id,url,label='Saved photo'){url=String(url||'').trim();if(!url)return;const l=packagePhotoLibrary();l[id]=l[id]||[];if(!l[id].some(x=>(typeof x==='string'?x:x.url)===url)){if(l[id].length>=8)l[id].shift();l[id].push({url,label})}}
 function draftPhotoOptions(m){const a=[],add=(x,label)=>{const u=typeof x==='string'?x:(x?.url||x?.src||'');if(u&&!a.some(y=>y.url===u))a.push({url:u,label:label||x?.label||'Photo'})};(packagePhotoLibrary()[m.id]||[]).forEach(x=>add(x,x.label||'Saved photo'));[m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(v=>Array.isArray(v)&&v.forEach(x=>add(x,'Portfolio photo')));add((db.customPhotos||{})[m.id],'Custom photo');add(m.photo||m.photoUrl,'Agency photo');return a.slice(0,16)}
 function draftPhotoForModel(m){return draftPhotoSelections()[m.id]||(db.customPhotos||{})[m.id]||m.photo||m.photoUrl||''}
@@ -3035,9 +3035,9 @@ async function setDraftPhotoUrl(id,url){url=String(url||'').trim();if(url){addPa
 async function setDraftPhotoFile(id,input){const f=input?.files?.[0];if(!f)return;const data=await fileToDraftPhoto(f);if(!data)return setStatus('Could not read that image.');addPackagePhoto(id,data,f.name||'Uploaded photo');draftPhotoSelections()[id]=data;persistDraftPresentation(id);renderEmail();setStatus('Uploaded photo saved to library and selected.')}
 function choosePackagePhoto(id,i){const m=db.models.find(x=>x.id===id),p=m&&draftPhotoOptions(m)[i];if(!p)return;if(!selected.includes(id))selected.push(id);draftPhotoSelections()[id]=p.url;persistDraftPresentation(id);renderEmail();setStatus('Library photo selected.')}
 function removePackagePhoto(id,i){const m=db.models.find(x=>x.id===id),p=m&&draftPhotoOptions(m)[i],l=packagePhotoLibrary();if(!p||!(l[id]||[]).some(x=>(typeof x==='string'?x:x.url)===p.url))return;l[id]=l[id].filter(x=>(typeof x==='string'?x:x.url)!==p.url);if(draftPhotoSelections()[id]===p.url)delete draftPhotoSelections()[id];persistDraftPresentation(id);renderEmail()}
-function renderPhotoLibrary(){const s=$('#photoLibraryModel'),g=$('#photoLibraryGrid');if(!s||!g)return;const cur=s.value;s.innerHTML=db.models.map(m=>`<option value="${esc(m.id)}">${esc(m.name)} · ${esc(m.location)}</option>`).join('');s.value=db.models.some(m=>m.id===cur)?cur:(selected[0]||db.models[0]?.id||'');const m=db.models.find(x=>x.id===s.value);if(!m)return g.innerHTML='<div class="photo-library-empty">Choose a model.</div>';const p=draftPhotoOptions(m),pick=draftPhotoForModel(m),saved=packagePhotoLibrary()[m.id]||[];g.innerHTML=p.length?p.map((x,i)=>`<div class="photo-library-card ${pick===x.url?'active':''}"><img loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(x.url))}" alt="${esc(m.name)} photo"><div class="tiny"><b>${esc(x.label)}</b></div><button class="btn ${pick===x.url?'primary':''}" type="button" onclick="choosePackagePhoto('${m.id}',${i})">${pick===x.url?'Selected':'Use in draft'}</button><button class="btn danger" type="button" onclick="removePackagePhoto('${m.id}',${i})">Delete from CRM</button></div>`).join(''):'<div class="photo-library-empty">No photos yet. Add a URL or upload photos.</div>'}
-async function addPhotoLibraryUrl(){const id=$('#photoLibraryModel')?.value,u=$('#photoLibraryUrl')?.value.trim();if(!id||!u)return setStatus('Choose a model and enter a photo URL.');addPackagePhoto(id,u,'Saved URL');$('#photoLibraryUrl').value='';if(!await persistWorkspaceSafe(true))return;renderPhotoLibrary();setStatus('Photo added to library.')}
-async function addPhotoLibraryFiles(input){const id=$('#photoLibraryModel')?.value;if(!id)return;for(const f of [...(input?.files||[])]){const d=await fileToDraftPhoto(f);if(d)addPackagePhoto(id,d,f.name||'Uploaded photo')}input.value='';if(!await persistWorkspaceSafe(true))return;renderPhotoLibrary();setStatus('Photos added to library.')}
+function renderPhotoLibrary(){const s=$('#photoLibraryModel'),g=$('#photoLibraryGrid');if(!s||!g)return;const cur=s.value;s.innerHTML=db.models.map(m=>`<option value="${esc(m.id)}">${esc(m.name)} · ${esc(m.location)}</option>`).join('');s.value=db.models.some(m=>m.id===cur)?cur:(selected[0]||db.models[0]?.id||'');const m=db.models.find(x=>x.id===s.value);if(!m)return g.innerHTML='<div class="photo-library-empty">Choose a model.</div>';const p=draftPhotoOptions(m),pick=draftPhotoForModel(m),saved=packagePhotoLibrary()[m.id]||[];g.innerHTML=p.length?p.map((x,i)=>`<div class="photo-library-card ${pick===x.url?'active':''}"><img loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(x.url))}" alt="${esc(m.name)} photo"><div class="tiny"><b>${esc(x.label)}</b></div><button class="btn ${pick===x.url?'primary':''}" type="button" onclick="choosePackagePhoto('${m.id}',${i})">${pick===x.url?'Selected':'Use in draft'}</button></div>`).join(''):'<div class="photo-library-empty">No photos yet. Add a URL or upload photos.</div>'}
+async function addPhotoLibraryUrl(){const id=$('#photoLibraryModel')?.value,u=$('#photoLibraryUrl')?.value.trim();if(!id||!u)return setStatus('Choose a model and enter a photo URL.');const m=db.models.find(x=>x.id===id),current=m?draftPhotosForModel(m):[];setDraftPhotosForModel(id,[...current,u]);$('#photoLibraryUrl').value='';if(!await persistWorkspaceSafe(true))return;renderPhotoLibrary();renderEmail();setStatus('Photo added to this package only. Main gallery unchanged.')}
+async function addPhotoLibraryFiles(input){const id=$('#photoLibraryModel')?.value;if(!id)return;const added=[];for(const f of [...(input?.files||[])]){const d=await fileToDraftPhoto(f);if(d)added.push(d)}input.value='';const m=db.models.find(x=>x.id===id),current=m?draftPhotosForModel(m):[];setDraftPhotosForModel(id,[...current,...added]);if(!await persistWorkspaceSafe(true))return;renderPhotoLibrary();renderEmail();setStatus('Photos added to this package only. Main gallery unchanged.')}
 function modelDraftCredentialHtml(m,ui=false){let body='';if(m?.id==='new-york-women-sophia-pippen')body='<b>(Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian)</b>';else if(m?.id==='new-york-women-maja-stockwell')body=`<b><a href="https://www.instagram.com/maddestockwell?stkn=MXdqbnhzd2R3dnlkMw=="${ui?' target="_blank" rel="noopener"':''}>Mom</a></b> is famous 90s model from Sweden`;else if(m?.id==='new-york-women-mary-timms')body='<b>Partook in Vogue World with DVF, Former Miss Nigeria, over 1M followers on Instagram.</b>';else if(m?.id==='new-york-women-claudia-lucchini')body='<b>Walked for Mugler and Rick Owens.</b>';else return'';return ui?`<div class="credential-note" style="color:#ff0000">${body}</div>`:`<div style="color:#ff0000;margin:2px 0 8px">${body}</div>`}
 function modelPositionOptions(current,count){return Array.from({length:count},(_,i)=>`<option value="${i+1}" ${i===current?'selected':''}>#${i+1}</option>`).join('')}
 function renderEmailSelection(){
@@ -4164,7 +4164,7 @@ async function removePackagePhoto(id,i){
 
 function addMainGalleryPhoto(id,url,label='Saved photo'){
   url=upgradedPhotoURL(String(url||'').trim());if(!url)return false;
-  const library=packagePhotoLibrary();library[id]=library[id]||[];
+  db.photoLibrary=db.photoLibrary||{};const library=db.photoLibrary;library[id]=library[id]||[];
   if(!library[id].some(x=>galleryPhotoKey(x)===galleryPhotoKey(url)))library[id].push({url,label});
   return true;
 }
@@ -4353,11 +4353,10 @@ async function resetDraftPhoto(id){
 }
 async function setDraftPhotoUrl(id,url){
   url=String(url||'').trim();if(!url)return;
-  addPackagePhoto(id,url,'Saved URL');
   const m=db.models.find(x=>x.id===id),current=m?draftPhotosForModel(m):[];
   setDraftPhotosForModel(id,[...current,url]);
   persistDraftPresentation(id);renderEmail();if(!await persistWorkspaceSafe(true))return;
-  setStatus('Photo saved to the library and added to this package.');
+  setStatus('Photo added to this package only. Main gallery unchanged.');
 }
 function clipboardImageFilesFromPasteEvent(event){
   const files=[];
@@ -4391,24 +4390,16 @@ async function addClipboardImagesToModel(id,files,{addToPackage=true}={}){
   for(const file of files||[]){
     if(!String(file?.type||'').startsWith('image/'))continue;
     const data=await fileToDraftPhoto(file);
-    if(!data)continue;
-    addPackagePhoto(id,data,file.name||'Pasted image');
-    added.push(data);
+    if(data)added.push(data);
   }
   if(!added.length)return setStatus('No image was found on the clipboard.');
-  if((db.activeDraftId||'')!==packageId){persistWorkspaceSafe(true);return setStatus('Photos saved to the model library. The open package changed during upload; add them to the intended package.');}
-  if(addToPackage){
-    const current=draftPhotosForModel(model);
-    setDraftPhotosForModel(id,[...current,...added]);
-    persistDraftPresentation(id);
-    renderEmail();
-    if(!await persistWorkspaceSafe(true))return;
-    setStatus(added.length===1?'Copied image saved to the CRM and added to this package.':`${added.length} copied images saved to the CRM and added to this package.`);
-  }else{
-    if(!await persistWorkspaceSafe(true))return;
-    renderPhotoLibrary();
-    setStatus(added.length===1?'Copied image saved to this model’s CRM photo library.':`${added.length} copied images saved to this model’s CRM photo library.`);
-  }
+  if((db.activeDraftId||'')!==packageId)return setStatus('The open package changed. Main gallery unchanged.');
+  const current=draftPhotosForModel(model);
+  setDraftPhotosForModel(id,[...current,...added]);
+  persistDraftPresentation(id);renderEmail();
+  if(!await persistWorkspaceSafe(true))return;
+  renderPhotoLibrary();
+  setStatus(added.length===1?'Photo added to this package only. Main gallery unchanged.':added.length+' photos added to this package only. Main gallery unchanged.');
 }
 async function pasteClipboardImageToModel(id){
   try{
@@ -4449,17 +4440,14 @@ async function setDraftPhotoFile(id,input){
   const packageId=db.activeDraftId||'';
   const files=[...(input?.files||[])];if(!files.length)return;
   const added=[];
-  for(const f of files){
-    const data=await fileToDraftPhoto(f);
-    if(data){addPackagePhoto(id,data,f.name||'Uploaded photo');added.push(data)}
-  }
+  for(const f of files){const data=await fileToDraftPhoto(f);if(data)added.push(data)}
   input.value='';
   if(!added.length)return setStatus('Could not read those images.');
-  if((db.activeDraftId||'')!==packageId){persistWorkspaceSafe(true);return setStatus('Photos saved to the model library. The open package changed during upload; add them to the intended package.');}
+  if((db.activeDraftId||'')!==packageId)return setStatus('The open package changed. Main gallery unchanged.');
   const m=db.models.find(x=>x.id===id),current=m?draftPhotosForModel(m):[];
   setDraftPhotosForModel(id,[...current,...added]);
   persistDraftPresentation(id);renderEmail();if(!await persistWorkspaceSafe(true))return;
-  setStatus(added.length===1?'Uploaded photo added to this package.':`${added.length} uploaded photos added to this package.`);
+  setStatus(added.length===1?'Uploaded photo added to this package only. Main gallery unchanged.':added.length+' uploaded photos added to this package only. Main gallery unchanged.');
 }
 function modelDraftPhotosHtml(m){
   const urls=typeof draftPhotosForModel==='function'?draftPhotosForModel(m):[draftPhotoForModel(m)].filter(Boolean);
@@ -4477,7 +4465,7 @@ function renderPhotoLibrary(){
   const p=draftPhotoOptions(m),selectedUrls=draftPhotosForModel(m),selectedKeys=new Set(selectedUrls.map(galleryPhotoKey));
   g.innerHTML=p.length?p.map((x,i)=>{
     const active=selectedKeys.has(galleryPhotoKey(x.url));
-    return `<div class="photo-library-card ${active?'active':''}"><img loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(x.url))}" alt="${esc(m.name)} photo"><div class="tiny"><b>${esc(x.label)}</b></div><button class="btn ${active?'primary':''}" type="button" onclick="togglePackagePhoto('${m.id}',${i})">${active?'Remove from package':'Add to package'}</button><button class="btn danger" type="button" onclick="removePackagePhoto('${m.id}',${i})">Delete from CRM</button></div>`;
+    return `<div class="photo-library-card ${active?'active':''}"><img loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(x.url))}" alt="${esc(m.name)} photo"><div class="tiny"><b>${esc(x.label)}</b></div><button class="btn ${active?'primary':''}" type="button" onclick="togglePackagePhoto('${m.id}',${i})">${active?'Remove from package':'Add to package'}</button></div>`;
   }).join(''):'<div class="photo-library-empty">No photos yet. Add a URL or upload photos.</div>';
 }
 function renderEmailSelection(){
@@ -5564,28 +5552,45 @@ function applyErinPortfolioLink20261008(data){
 }
 
 
+function mainGalleryPhotoOptions(model){
+  const list=[],seen=new Set();
+  const add=(value,label)=>{
+    for(const item of (Array.isArray(value)?value:[value])){
+      const url=upgradedPhotoURL(photoURL(item));if(!url)continue;
+      const key=galleryPhotoKey(url);if(seen.has(key))continue;
+      if(isDeletedPhoto(db,model.id,url)||(db.hiddenGalleryPhotoKeys?.[model.id]||[]).includes(key))continue;
+      seen.add(key);list.push({url,label:label||item?.label||'Gallery photo'});
+    }
+  };
+  add(db.photoLibrary?.[model.id],'Saved gallery photo');
+  for(const key of ['photos','photoLibrary','portfolioPhotos','images'])add(model[key],'Model gallery photo');
+  if(typeof MODEL_PHOTO_LIBRARY!=='undefined')add(MODEL_PHOTO_LIBRARY[model.id],'Agency gallery photo');
+  add(db.customPhotos?.[model.id],'Custom gallery photo');
+  add(model.photo,'Primary photo');add(model.photoUrl,'Agency photo');
+  return list;
+}
 function renderModelGallery(){
   const select=$('#galleryModel'),grid=$('#galleryGrid');if(!select||!grid)return;
   const query=($('#gallerySearch')?.value||'').trim().toLowerCase();
   const models=db.models.filter(m=>m.name.toLowerCase().includes(query)).sort((a,b)=>a.name.localeCompare(b.name));
-  const old=select.value;select.innerHTML=models.map(m=>`<option value="${esc(m.id)}">${esc(m.name)} · ${esc(m.location)}</option>`).join('');
+  const old=select.value;select.innerHTML=models.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.name)+' · '+esc(m.location)+'</option>').join('');
   select.value=models.some(m=>m.id===old)?old:(models[0]?.id||'');
   const model=db.models.find(m=>m.id===select.value);
   if(!model){grid.innerHTML='<p>No matching models.</p>';return;}
-  const photos=draftPhotoOptions(model);
-  grid.innerHTML=photos.map((p,i)=>`<div class="photo-library-card"><img loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(p.url))}" alt="${esc(model.name)}"><div>${esc(p.label)}</div><button class="btn" onclick="togglePackagePhoto('${model.id}',${i})">Add / remove in current package</button><button class="btn danger" onclick="removePackagePhoto('${model.id}',${i})">Delete from CRM</button></div>`).join('')||'<p>No photos. Upload photos or add a URL.</p>';
+  const photos=mainGalleryPhotoOptions(model);
+  grid.innerHTML=photos.map(p=>'<div class="photo-library-card"><img loading="lazy" decoding="async" src="'+esc(packageThumbnailUrl(p.url))+'" alt="'+esc(model.name)+'"><div>'+esc(p.label)+'</div></div>').join('')||'<p>No photos. Upload photos or add a URL.</p>';
 }
 async function addGalleryUrl(){
   const id=$('#galleryModel').value,url=$('#galleryUrl').value.trim();
   if(!id||!/^https?:\/\//i.test(url))return $('#galleryStatus').textContent='Choose a model and enter a full photo URL.';
-  addPackagePhoto(id,url,'Saved photo');
+  addMainGalleryPhoto(id,url,'Saved photo');
   if(!await persistWorkspaceSafe(true))return $('#galleryStatus').textContent='Photo could not be saved.';
   $('#galleryUrl').value='';renderModelGallery();$('#galleryStatus').textContent='Photo saved.';
 }
 async function addGalleryFiles(input){
   const id=$('#galleryModel').value;if(!id)return;
   $('#galleryStatus').textContent='Saving photos…';
-  let count=0;for(const file of [...input.files]){const ref=await fileToDraftPhoto(file);if(ref){addPackagePhoto(id,ref,file.name);count++;}}
+  let count=0;for(const file of [...input.files]){const ref=await fileToDraftPhoto(file);if(ref){addMainGalleryPhoto(id,ref,file.name);count++;}}
   input.value='';if(!await persistWorkspaceSafe(true))return $('#galleryStatus').textContent='Photos could not be saved.';
   renderModelGallery();$('#galleryStatus').textContent=count+' photos saved.';
 }
