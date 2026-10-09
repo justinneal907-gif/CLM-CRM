@@ -3675,14 +3675,41 @@ function storeDraftPreview(html,changed=true){
   return db.draft.previewHtml;
 }
 function ensureFollowupCtaInHtml(html,cta){
-  if(typeof html!=='string'||!cta)return html;
+  if(typeof html!=='string'||!html.trim()||!cta)return html;
   const t=document.createElement('template');t.innerHTML=html;
-  t.content.querySelectorAll('[data-clm-bridal-followup-cta]').forEach(el=>el.remove());
   const fresh=document.createElement('template');fresh.innerHTML=cta;
+  const normalize=value=>String(value||'').replace(/\s+/g,' ').trim();
+  const text=normalize(fresh.content.textContent);
+  const links=root=>JSON.stringify([...root.querySelectorAll('a')].map(a=>a.getAttribute('href')));
+  const expectedLinks=links(fresh.content);
+  const marked=[...t.content.querySelectorAll('[data-clm-bridal-followup-cta]')];
+  const matches=[...t.content.querySelectorAll('div,p')].filter(el=>!el.querySelector('img,[data-clm-model-id]')&&!el.closest('[data-clm-model-id]')&&normalize(el.textContent)===text&&links(el)===expectedLinks);
+  // Prefer the innermost exact block, preserving its parent and surrounding copy.
+  const exact=matches.filter(el=>!matches.some(other=>other!==el&&el.contains(other)));
+  const candidates=[...new Set([...marked,...exact])];
+  const keep=candidates[0];
+  if(keep){
+    keep.setAttribute('data-clm-bridal-followup-cta',keep.getAttribute('data-clm-bridal-followup-cta')||'saved');
+    for(const el of candidates.slice(1))if(!el.contains(keep)&&!keep.contains(el))el.remove();
+    return t.innerHTML;
+  }
+  const wrapper=document.createElement('div');wrapper.setAttribute('data-clm-bridal-followup-cta','saved');wrapper.appendChild(fresh.content);
   const signature=[...t.content.querySelectorAll('div,p')].find(el=>/^(Thank you,|Best,)$/.test(el.textContent.trim())&&!el.querySelector('div,p'));
-  if(signature)signature.before(fresh.content);else (t.content.firstElementChild||t.content).appendChild(fresh.content);
+  if(signature)signature.before(wrapper);else (t.content.firstElementChild||t.content).appendChild(wrapper);
   return t.innerHTML;
 }
+function repairRepeatedFollowupClosings20261009(data){
+  for(const record of [data.draft,...(data.drafts||[])].filter(Boolean)){
+    if(!record.followupCtaHtml)continue;
+    for(const field of ['previewHtml','html']){
+      if(typeof record[field]!=='string'||!record[field].trim())continue;
+      const before=record[field];record[field]=ensureFollowupCtaInHtml(before,record.followupCtaHtml);
+      if(before!==record[field])record.previewNeedsGmailUpdate=true;
+    }
+  }
+  return data;
+}
+
 function emailHtml(){
   const working=db.draft||{};
   const activeRecord=activeDraftRecord();
@@ -5514,7 +5541,7 @@ function addHeliKalksteinFollowup20261009(data){
       modelIds,models:['Sophia Pippen','Ambre','Iyanu'],includePhotos:true,includeStats:true,includeSources:true,
       initialMessage:'Hi Heli Kalkstein Team,\n\nI wanted to follow up and send Sophia Pippen, Ambre, and Iyanu as additional options. Their materials are below.',
       followupTemplateIncludesGreeting:true,
-      followupCtaHtml:'<div style="margin:0 0 18px">Again, you can see the rest of our models <a href="'+link+'"><strong><em>HERE</em></strong></a>.<br><br>Let me know if you would like to see any of them for a casting or fitting.</div>',
+      followupCtaHtml:'<div data-clm-bridal-followup-cta="heli-20261009" style="margin:0 0 18px">Again, you can see the rest of our models <a href="'+link+'"><strong><em>HERE</em></strong></a>.<br><br>Let me know if you would like to see any of them for a casting or fitting.</div>',
       photoSelections:{},modelExtras:{},html:'',signatureClose:'Thank you,',
       source:'User-requested CRM follow-up October 9, 2026',
       notes:'CRM only. Uses saved model gallery photos and text defaults; no email sent.'
@@ -5577,6 +5604,7 @@ async function bootstrapWorkspace(){
   db=recoverPackageGalleryPhotos(db);
   db=addHeliKalksteinFollowup20261009(db);
   db=restoreHeliPackageGallery20261009(db);
+  db=repairRepeatedFollowupClosings20261009(db);
   db.recovery={...(db.recovery||{}),authoritativeEdits20261008:1};
   selected=[...(db.selected||[])];
   initNav();
