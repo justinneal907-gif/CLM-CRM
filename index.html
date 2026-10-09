@@ -1811,9 +1811,12 @@ function defaultModelDraftExtra(m){
   const base=m?MODEL_DRAFT_CREDENTIALS[m.id]||{}:{};
   const isSophia=m?.id==='new-york-women-sophia-pippen';
   const description=String(m?.description||'').trim();
+  const option=Array.isArray(m?.textOptions)?m.textOptions.find(o=>String(o.text||'').trim()):null;
+  const text=option?String(option.text):String(isSophia?'Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian':base.text||description||'');
   return {
-    enabled:isSophia||!!base.text,
-    text:String(isSophia?'Daughter of Scottie and Larsa Pippen, Goddaughter of Kim Kardashian':base.text||description||''),
+    enabled:!!text,
+    text,
+    ...(option?{textOptionId:option.id}:{}),
     bold:!!base.bold,
     mediaEnabled:!!base.link,
     mediaUrl:String(base.link||''),
@@ -1832,7 +1835,12 @@ function draftModelExtra(m){
   const saved=typeof activeSavedDraftRecord==='function'?activeSavedDraftRecord():null;
   for(const source of [db?.draft,saved]){
     const override=source?.userOverrides?.modelExtras?.[m.id]||source?.modelExtras?.[m.id];
-    if(override){extra={...defaults,...override};break;}
+    if(override){
+      extra={...defaults,...override};
+      // Package text owns its value unless it explicitly selects a reusable option.
+      if(Object.prototype.hasOwnProperty.call(override,'text')&&!Object.prototype.hasOwnProperty.call(override,'textOptionId'))delete extra.textOptionId;
+      break;
+    }
   }
   const option=modelTextOptions(m).find(x=>x.id===extra.textOptionId);
   return option?{...extra,text:option.text}:extra;
@@ -4119,8 +4127,13 @@ function draftPhotosForModel(m){
   const reusable=savedModelPackagePhotos(db,m.id,db.draft);
   if(reusable)return uniqueGalleryPhotoUrls(reusable.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)));
   if(isBridalMaterialsDraft(db.draft)&&Array.isArray(m.bridalMaterials?.photos))return uniqueGalleryPhotoUrls(m.bridalMaterials.photos);
-  const fallback=getPhoto(m);
-  return fallback?[fallback]:[];
+  // Default to this model's saved gallery, never another package's selections.
+  const portfolio=[];
+  (db.photoLibrary?.[m.id]||[]).forEach(x=>portfolio.push(photoURL(x)));
+  [m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(a=>Array.isArray(a)&&a.forEach(x=>portfolio.push(photoURL(x))));
+  if(typeof MODEL_PHOTO_LIBRARY!=='undefined')(MODEL_PHOTO_LIBRARY[m.id]||[]).forEach(x=>portfolio.push(photoURL(x)));
+  portfolio.push(db.customPhotos?.[m.id],m.photo,m.photoUrl);
+  return uniqueGalleryPhotoUrls(portfolio.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(db,m.id,url)&&!isGalleryHidden(m.id,url)));
 }
 function draftPhotoForModel(m){return draftPhotosForModel(m)[0]||''}
 function setDraftPhotosForModel(id,urls){
