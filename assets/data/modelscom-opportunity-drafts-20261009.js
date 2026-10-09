@@ -167,6 +167,20 @@
     data=data||{};
     data.drafts=Array.isArray(data.drafts)?data.drafts:[];
     data.recovery={...(data.recovery||{})};
+
+    // A blank previewHtml is not a harmless placeholder in this CRM: it is treated as the
+    // authoritative saved email document and prevents the generated model package from rendering.
+    // Repair only this generated Models.com batch; never touch user-authored previews.
+    const repairBlankPreview=draft=>{
+      if(!draft||!String(draft.id||'').startsWith('modelscom-20261009-'))return;
+      if(Object.prototype.hasOwnProperty.call(draft,'previewHtml')&&!String(draft.previewHtml||'').trim()){
+        delete draft.previewHtml;
+        draft.previewNeedsGmailUpdate=true;
+      }
+    };
+    for(const draft of data.drafts)repairBlankPreview(draft);
+    repairBlankPreview(data.draft);
+
     if(data.recovery.modelsComOpportunityDrafts20261009===1)return data;
     const models=new Map((data.models||[]).map(m=>[m.id,m]));
 
@@ -198,7 +212,6 @@
         photoSelections:{},
         packagePhotos:{},
         modelExtras:{},
-        previewHtml:'',
         html:'',
         castingBriefRaw:'PROACTIVE WINDOW — '+spec.window+' No public casting deadline, shoot date, rate, or usage was published in the Models.com credits reviewed on October 9, 2026.',
         parsedBrief:{
