@@ -148,11 +148,23 @@
     }
     return {data,changed};
   }
+  function findRefByHashes(hashes){
+    const wanted=new Set((hashes||[]).map(x=>String(x||'').replace(/^sha256:/i,'').toLowerCase()).filter(Boolean));
+    if(!wanted.size)return'';
+    for(const [id,meta] of metadata.entries()){
+      const hash=String(meta?.contentHash||'').toLowerCase();
+      if(hash&&wanted.has(hash))return makeRef(id);
+    }
+    return'';
+  }
+  function mediaMeta(value){
+    const id=idFromRef(value);return id?{...(metadata.get(id)||{})}:null;
+  }
   async function remove(value){
     const id=idFromRef(value);if(!id)return;
     objectUrls.delete(id);metadata.delete(id);contentKeys.delete(id);
     await tx('readwrite',store=>store.delete(id));
   }
-  window.CLMMediaStore={init,storeFile,putBlob,displayUrl,toDataUrl,migrateWorkspace,isGif,contentKey,isMediaRef:v=>!!idFromRef(v),remove};
+  window.CLMMediaStore={init,storeFile,putBlob,displayUrl,toDataUrl,migrateWorkspace,isGif,contentKey,findRefByHashes,mediaMeta,isMediaRef:v=>!!idFromRef(v),remove};
 })();
 
