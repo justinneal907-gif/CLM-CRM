@@ -277,6 +277,7 @@ th,td{padding:8px}
 <script src="assets/models/sophia-extra-photo-1.js"></script>
 <script src="assets/models/sophia-extra-photo-2.js"></script>
 <script src="assets/data/core-roster.js?v=20261008-erin-portfolio-1"></script>
+<script src="assets/data/modelscom-opportunity-drafts-20261009.js?v=1"></script>
 <script src="assets/crm-media-store.js?v=20261002-reviewed-image-bytes-2"></script>
 <script src="assets/crm-bridal-materials.js?v=20261005-photo-persistence-2"></script>
 <script>
@@ -1628,7 +1629,10 @@ function applyRecovered(incoming){
     data.draft=structuredClone(seed.draft);
     data.selected=[];
   }
-  return migrateDraftPreviewDocuments(addRemainingBridalFollowups20261009(data));
+  const withCurrentModelsComDrafts=window.addModelsComOpportunityDrafts20261009
+    ? window.addModelsComOpportunityDrafts20261009(addRemainingBridalFollowups20261009(data))
+    : addRemainingBridalFollowups20261009(data);
+  return migrateDraftPreviewDocuments(withCurrentModelsComDrafts);
 }
 /* CRM INDEXEDDB STORAGE V1 */
 const IDB_DB_NAME='jn-agency-crm';
