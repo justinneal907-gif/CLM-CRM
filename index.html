@@ -5617,6 +5617,49 @@ function addHeliKalksteinFollowup20261009(data){
   return data;
 }
 
+async function restoreMainGalleryExplicit20261009(data){
+  const marker='mainGalleryExplicitRestore20261009v1';
+  if(data.recovery?.[marker])return data;
+  try{await idbWriteWorkspaceAtKey(structuredClone(data),'backup-before-main-gallery-restore-20261009')}catch(err){console.info('Pre-restore gallery backup skipped',err)}
+  data.photoLibrary=data.photoLibrary||{};
+  data.hiddenGalleryPhotoKeys=data.hiddenGalleryPhotoKeys||{};
+  data.deletedPhotoKeys=data.deletedPhotoKeys||{};
+  let restored=0;
+  const seenByModel=new Map();
+  const seen=id=>{
+    if(!seenByModel.has(id))seenByModel.set(id,new Set((data.photoLibrary[id]||[]).map(item=>galleryPhotoKey(photoURL(item)))));
+    return seenByModel.get(id);
+  };
+  const restore=(id,item,label)=>{
+    const raw=typeof item==='string'?item:(item?.url||item?.src||'');
+    const url=upgradedPhotoURL(String(raw||'').trim());
+    if(!id||!url||/^(blob:|cid:|file:)/i.test(url))return;
+    const key=galleryPhotoKey(url),known=seen(id);
+    if(!known.has(key)){
+      data.photoLibrary[id]=data.photoLibrary[id]||[];
+      data.photoLibrary[id].push(typeof item==='object'&&item?{...item,url,label:item.label||label}:{url,label});
+      known.add(key);restored++;
+    }
+    if(Array.isArray(data.hiddenGalleryPhotoKeys[id]))data.hiddenGalleryPhotoKeys[id]=data.hiddenGalleryPhotoKeys[id].filter(k=>k!==key);
+    const deletedKey=photoKey(url);
+    if(Array.isArray(data.deletedPhotoKeys[id]))data.deletedPhotoKeys[id]=data.deletedPhotoKeys[id].filter(k=>k!==deletedKey);
+  };
+  try{
+    const backup=await idbReadWorkspaceAtKey('backup-before-gallery-repair-20260929');
+    for(const [id,list] of Object.entries(backup?.photoLibrary||{}))for(const item of list||[])restore(id,item,'Restored from pre-repair gallery backup');
+  }catch(err){console.info('Pre-repair gallery backup unavailable',err)}
+  for(let i=1;i<=7;i++){
+    const part=String(i).padStart(2,'0');
+    try{
+      const response=await fetch('assets/data/photo-library-restore-20260918-part-'+part+'.json?v=3',{cache:'reload'});
+      if(!response.ok)continue;
+      const payload=await response.json();
+      for(const [id,list] of Object.entries(payload.photoLibrary||{}))for(const item of list||[])restore(id,item,'Restored archived gallery photo');
+    }catch(err){console.info('Gallery archive part '+part+' unavailable',err)}
+  }
+  data.recovery={...(data.recovery||{}),[marker]:1,mainGalleryExplicitRestore20261009At:new Date().toISOString(),mainGalleryExplicitRestore20261009Count:restored};
+  return data;
+}
 async function bootstrapWorkspace(){
   try{await window.CLMMediaStore?.init?.()}catch(err){console.info('Media store init skipped',err)}
   await ensureMilanArchiveLoaded();
@@ -5664,6 +5707,7 @@ async function bootstrapWorkspace(){
   db=repairUniquePackageImageIdentifiers20261006(db);
   db=applyErinPortfolioLink20261008(db);
   }
+  db=await restoreMainGalleryExplicit20261009(db);
   // Main gallery is authoritative; never rebuild it from package history.
   db=addHeliKalksteinFollowup20261009(db);
   db=restoreHeliPackageGallery20261009(db);
