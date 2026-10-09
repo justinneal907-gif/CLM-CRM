@@ -44,12 +44,12 @@
       recipientEmail:'julia.lange@me.com',
       cc:'tess.wilcox@gmail.com, mathilde@jl-casting.com',
       subject:'Fendi | Upcoming Campaign / Lookbook Models',
-      modelIds:['new-york-women-agang','new-york-women-claudia-lucchini','new-york-women-erin-connors'],
+      modelIds:['new-york-women-erin-connors','new-york-women-agang','new-york-women-claudia-lucchini'],
       sourceUrl:'https://models.com/client/fendi',
       window:'Proactive now — post-S/S 27 campaign/lookbook pipeline.',
       evidence:'Models.com shows Fendi S/S 27, My Peekaboo, Very Colibrì, Qixi, F/W 2026 Campaign and Resort 2027 Lookbook. Julia Lange and Tess Wilcox cast the F/W 2026 campaign and couture show.',
-      match:'STRONG: recent Fendi casting is tall, sample-size, directional and diverse. Agang (5\'11, 30-25-33) and Claudia (5\'10, 30-23-32) fit that narrow high-fashion proportion; Erin adds a 5\'11, 32-23-35 option.',
-      intro:'Hi Julia, Tess, Mathilde,\n\nI wanted to follow up with Agang, Claudia, and Erin for upcoming Fendi campaign, lookbook, or special-project casting. Their materials are below.'
+      match:'STRONG: Erin (5\'11, 32-23-35) is the closest measured CLM comparison to recent Fendi model Faith Johnson (5\'11.5, 35-inch hip; bust/waist not public). Agang and Claudia add narrower directional sample-size options.',
+      intro:'Hi Julia, Tess, Mathilde,\n\nI wanted to follow up with Erin, Agang, and Claudia for upcoming Fendi campaign, lookbook, or special-project casting. Their materials are below.'
     },
     {
       id:'modelscom-20261009-max-mara-campaign',
@@ -58,12 +58,12 @@
       contactName:'Piergiorgio',
       recipientEmail:'pg@dmfashionstudio.com',
       subject:'Max Mara | Upcoming Campaign / Lookbook Models',
-      modelIds:['new-york-women-rachel-stone','new-york-women-erin-connors','london-women-ambre-prognitz'],
+      modelIds:['new-york-women-erin-connors','new-york-women-rachel-stone','london-women-ambre-prognitz'],
       sourceUrl:'https://models.com/client/maxmara',
       window:'Proactive now — Max Mara posted September 2026 campaign, lookbook and fragrance work immediately around S/S 27.',
       evidence:'Models.com lists the S/S 27 show, F/W 2026 campaign, F/W 2026 lookbook and fragrance campaign in September 2026. Piergiorgio Del Moro casts mainline runway; Barbara Nicoli & Leila Ananna recur on Weekend Max Mara.',
-      match:'STRONG: Rachel is 5\'10, 32-24.5-33.5 with a polished blonde/blue-eyed book; Erin is 5\'11, 32-23-35; Ambre is 5\'11, 32-25-35. All sit close to Max Mara\'s recurring long, classic sample-size proportions.',
-      intro:'Hi Piergiorgio,\n\nI wanted to follow up with Rachel, Erin, and Ambre for upcoming Max Mara campaign or lookbook opportunities. Their materials are below.'
+      match:'STRONG: Erin (5\'11, 32-23-35) is closest overall to recent Max Mara lookbook model Sandra Murray (5\'11, 29.5-22.5-34.5), especially height, waist and hip. Rachel and Ambre remain strong polished sample-size alternatives.',
+      intro:'Hi Piergiorgio,\n\nI wanted to follow up with Erin, Rachel, and Ambre for upcoming Max Mara campaign or lookbook opportunities. Their materials are below.'
     },
     {
       id:'modelscom-20261009-acne-studios-campaign',
@@ -128,12 +128,12 @@
       contactName:'Ashley',
       recipientEmail:'ashleybrokaw@me.com',
       subject:'Prada | Upcoming Campaign / Product Models',
-      modelIds:['new-york-women-claudia-lucchini','new-york-women-agang','new-york-women-mary-timms'],
+      modelIds:['new-york-women-erin-connors','new-york-women-claudia-lucchini','new-york-women-agang'],
       sourceUrl:'https://models.com/client/prada',
       window:'Proactive now — Prada maintains recurring campaign, leather-goods, eyewear and seasonal casting.',
       evidence:'Models.com lists current 2026 Prada campaigns and product work; Ashley Brokaw cast the Prada Galleria 2026 campaign and current seasonal fashion work.',
-      match:'STRONG/POSSIBLE: Claudia (5\'10, 30-23-32), Agang (5\'11, 30-25-33) and Mary (5\'10, 30-20-33) are all sample-size and visually directional. Recent Galleria model Evelina Dragic is 5\'11 with a 23-inch waist and 34.5-inch hip, confirming a tall narrow baseline.',
-      intro:'Hi Ashley,\n\nI wanted to follow up with Claudia, Agang, and Mary for upcoming Prada campaign or product-story casting. Their materials are below.'
+      match:'STRONG: Erin (5\'11, 32-23-35) is the closest current CLM proportion match to recent Prada Galleria model Evelina Dragic (5\'11, 34.5-23-34.5). Claudia and Agang remain directional sample-size alternatives.',
+      intro:'Hi Ashley,\n\nI wanted to follow up with Erin, Claudia, and Agang for upcoming Prada campaign or product-story casting. Their materials are below.'
     },
     {
       id:'modelscom-20261009-lacoste-campaign',
@@ -142,12 +142,12 @@
       contactName:'William',
       recipientEmail:'info@wl-casting.com',
       subject:'Lacoste | Upcoming Campaign / E-commerce Models',
-      modelIds:['new-york-women-callie-steg','new-york-women-june-ramadhan','new-york-women-agang','new-york-men-matt-rossi'],
+      modelIds:['new-york-women-june-ramadhan','new-york-women-callie-steg','new-york-women-agang','new-york-men-matt-rossi'],
       sourceUrl:'https://models.com/client/lacoste',
       window:'Proactive now — Lacoste has recent 2026 advertising, e-commerce, lookbook and sport-category work.',
       evidence:'Models.com lists Back to School (September), Slam Break (August), Alpine, S/S 26 campaign, underwear, key looks and e-commerce. William Lhoest repeatedly cast 2026 Lacoste projects.',
-      match:'STRONG: Callie has a tall athletic/lifestyle frame; June and Agang provide lean fashion-commercial options; Matt provides a 6\'1 mens athletic/lifestyle option. Lacoste\'s recent casting spans women and men and mixes sport with fashion.',
-      intro:'Hi William,\n\nI wanted to follow up with Callie, June, Agang, and Matt for upcoming Lacoste campaign, e-commerce, or lookbook casting. Their materials are below.'
+      match:'STRONG: June (5\'9, 30-23-33) is the closest measured CLM woman to recent Lacoste/Acne crossover model Asako Sato at 5\'9.5; Callie and Agang add taller sport-fashion options, and Matt is a 6\'1 mens athletic/lifestyle option.',
+      intro:'Hi William,\n\nI wanted to follow up with June, Callie, Agang, and Matt for upcoming Lacoste campaign, e-commerce, or lookbook casting. Their materials are below.'
     }
   ];
 
