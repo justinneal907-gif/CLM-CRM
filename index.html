@@ -1555,8 +1555,8 @@ function addRemainingBridalFollowups20261009(data){
   const link='https://canva.link/vhk73x4zncw11o7';
   const entries=[
     ['vivienne_westwood_bridal','Vivienne Westwood Bridal','Holly','studio@hollycullen.com',['Claudia','Erin','Iyanu'],['new-york-women-claudia-lucchini','new-york-women-erin-connors','site-women-81-iyanu']],
-    ['rebecca_schoneveld','Rebecca Schoneveld','Rebecca Schoneveld Team','connect@rebeccaschoneveld.com',['Erin','Rachel','Sophia Pippen'],['new-york-women-erin-connors','new-york-women-rachel-stone','new-york-women-sophia-pippen']],
-    ['watters_designs','Watters Designs','Watters Designs Team','Media@watters.com',['Erin','Rachel','Sophia Pippen'],['new-york-women-erin-connors','new-york-women-rachel-stone','new-york-women-sophia-pippen']],
+    ['rebecca_schoneveld','Rebecca Schoneveld','Rebecca Schoneveld Team','connect@rebeccaschoneveld.com',['Erin','Maja Stockwell','Sophia Pippen'],['new-york-women-erin-connors','new-york-women-maja-stockwell','new-york-women-sophia-pippen']],
+    ['watters_designs','Watters Designs','Watters Designs Team','Media@watters.com',['Erin','Iyanu','Sophia Pippen'],['new-york-women-erin-connors','site-women-81-iyanu','new-york-women-sophia-pippen']],
     ['augusta_jones','Augusta Jones','Augusta Jones Team','admin@augustajones.com',['Erin','Iyanu','Maja Stockwell'],['new-york-women-erin-connors','site-women-81-iyanu','new-york-women-maja-stockwell']],
     ['marrow','Marrow','Marrow Team','hello@lohobride.com',['Erin','Iyanu','Sal'],['new-york-women-erin-connors','site-women-81-iyanu','new-york-women-sal-soliman']],
     ['ricca_sposa','Ricca Sposa','Ricca Sposa Team','info@riccasposa.com',['Ambre','Erin','Iyanu'],['london-women-ambre-prognitz','new-york-women-erin-connors','site-women-81-iyanu']],
@@ -1609,8 +1609,8 @@ function addHighFashionFollowups20261009(data){
     {
       slug:'ese-azenabor',brand:'Esé Azénabor',eventName:'New York Bridal Week',
       recipientEmail:'assistNY@eseazenabor.com',contactName:'Esé Azénabor Team',packageLink:bridalLink,
-      models:['Ambre','Maja Stockwell','Rachel'],
-      modelIds:['london-women-ambre-prognitz','new-york-women-maja-stockwell','new-york-women-rachel-stone']
+      models:['Ambre','Maja Stockwell','Agang'],
+      modelIds:['london-women-ambre-prognitz','new-york-women-maja-stockwell','new-york-women-agang']
     },
     {
       slug:'vero-diaz',brand:'Vero Diaz',eventName:'Miami Fashion Week',
@@ -1723,6 +1723,140 @@ function addHighFashionFollowups20261009(data){
   return data;
 }
 
+
+function removeRachelFromBridalPackages20261009(data){
+  const rachelId='new-york-women-rachel-stone';
+  const replacementsById={
+    'nybfw-oct26-elie-saab':'new-york-women-maja-stockwell',
+    'nybfw-oct26-zuhair-murad':'london-women-ambre-prognitz',
+    'nybfw-oct26-galia-lahav':'new-york-women-maja-stockwell',
+    'nybfw-oct26-jenny-yoo':'new-york-women-erin-connors',
+    'nybfw-more-lihi-hod':'new-york-women-maja-stockwell',
+    'nybfw-more-justin-alexander-signature':'new-york-women-erin-connors',
+    'nybfw-more-ricca-sposa':'london-women-ambre-prognitz',
+    'nybfw-more-yolancris':'new-york-women-maja-stockwell',
+    'nybfw-more-augusta-jones':'new-york-women-erin-connors',
+    'nybfw-more-berta':'london-women-ambre-prognitz',
+    'nybfw-more-cortana':'london-women-ambre-prognitz',
+    'nybfw-more-sophie-et-voila':'london-women-ambre-prognitz',
+    'nybfw-more-blanche-bridal':'new-york-women-erin-connors',
+    'nybfw-more-michela-ferriero':'new-york-women-erin-connors',
+    'nybfw-more-valentini-spose':'new-york-women-maja-stockwell',
+    'nybfw-remaining-20261003-elie-saab':'new-york-women-maja-stockwell',
+    'nybfw-remaining-20261003-paulette-v-n-cleghorn':'new-york-women-callie-steg',
+    'nybfw-remaining-20261003-rita-vinieris':'new-york-women-maja-stockwell',
+    'nybfw-remaining-20261003-jaclyn-whyte':'new-york-women-sophia-pippen',
+    'nybfw-remaining-20261003-mark-ingram-bride':'new-york-women-erin-connors',
+    'nybfw-remaining-20261003-ines-di-santo':'london-women-ambre-prognitz',
+    'nybfw_followup_20261009_rebecca_schoneveld':'new-york-women-maja-stockwell',
+    'nybfw_followup_20261009_watters_designs':'site-women-81-iyanu',
+    'fashion_followup_20261009_ese-azenabor':'new-york-women-agang'
+  };
+  const displayNames={
+    'new-york-women-maja-stockwell':'Maja Stockwell',
+    'london-women-ambre-prognitz':'Ambre',
+    'new-york-women-erin-connors':'Erin',
+    'new-york-women-callie-steg':'Callie',
+    'new-york-women-sophia-pippen':'Sophia Pippen',
+    'site-women-81-iyanu':'Iyanu',
+    'new-york-women-agang':'Agang'
+  };
+  const modelById=new Map((data.models||[]).map(model=>[model.id,model]));
+  const isBridal=record=>/bridal/i.test([
+    record?.eventName,record?.packageName,record?.subject,record?.brandProject,
+    record?.parsedBrief?.event,record?.parsedBrief?.project
+  ].filter(Boolean).join(' '));
+  const modelPhoto=(modelId,record)=>{
+    const selected=record?.photoSelections?.[modelId]||record?.packagePhotos?.[modelId];
+    if(Array.isArray(selected)&&selected.length)return structuredClone(selected);
+    const custom=(data.customPhotos||{})[modelId];
+    if(Array.isArray(custom)&&custom.length)return structuredClone(custom);
+    const model=modelById.get(modelId);
+    if(Array.isArray(model?.photos)&&model.photos.filter(Boolean).length)return model.photos.filter(Boolean);
+    const photo=custom||model?.photo||model?.photoUrl||'';
+    return photo?[photo]:[];
+  };
+  const blockFor=(modelId,photos)=>{
+    const model=modelById.get(modelId);if(!model)return '';
+    const name=displayNames[modelId]||model.name||'';
+    const stats=model.measurements||model.stats||'';
+    const link=model.profileUrl||model.profile||'';
+    const photo=(photos||[])[0]||'';
+    return '<div data-clm-model-id="'+esc(modelId)+'" style="margin:24px 0"><div><b>'+esc(name)+'</b>'+(stats?' | '+esc(stats):'')+'</div>'+(link?'<div><a href="'+esc(link)+'">Portfolio</a></div>':'')+(photo?'<div style="margin-top:8px"><img src="'+esc(photo)+'" alt="'+esc(name)+'" width="360" style="display:block;width:360px;max-width:100%;height:auto"></div>':'')+'</div>';
+  };
+  const patch=record=>{
+    if(!record||!isBridal(record)||!(record.modelIds||[]).includes(rachelId))return record;
+    const oldIds=[...(record.modelIds||[])];
+    const oldNames=[...(record.models||[])];
+    const replacementId=replacementsById[record.id]||'';
+    const newIds=oldIds.filter(id=>id!==rachelId);
+    if(replacementId&&modelById.has(replacementId)&&!newIds.includes(replacementId))newIds.push(replacementId);
+    const oldNameById=new Map(oldIds.map((id,index)=>[id,oldNames[index]]));
+    const newNames=newIds.map(id=>oldNameById.get(id)||displayNames[id]||modelById.get(id)?.name||id);
+
+    const replacementPhotos=replacementId&&newIds.includes(replacementId)?modelPhoto(replacementId,record):[];
+    const blocks={};
+    if(replacementId&&newIds.includes(replacementId))blocks[replacementId]=blockFor(replacementId,replacementPhotos);
+
+    if(typeof record.previewHtml==='string'&&record.previewHtml.trim()){
+      const hasTaggedRachel=new RegExp('data-clm-model-id=["\\\']'+rachelId+'["\\\']','i').test(record.previewHtml);
+      if(hasTaggedRachel)record.previewHtml=replaceBridalModelBlocks20261003(record.previewHtml,oldIds,newIds,blocks);
+      else delete record.previewHtml;
+    }
+    record.html='';
+
+    record.modelIds=newIds;
+    record.models=newNames;
+    const nextPhotos={};
+    for(const id of newIds){
+      const photos=id===replacementId?replacementPhotos:modelPhoto(id,record);
+      if(photos.length)nextPhotos[id]=structuredClone(photos);
+    }
+    record.photoSelections=nextPhotos;
+    record.packagePhotos=structuredClone(nextPhotos);
+    if(record.userOverrides?.photoSelections)record.userOverrides.photoSelections=structuredClone(nextPhotos);
+    if(record.modelExtras){
+      const nextExtras={};
+      for(const id of newIds)if(record.modelExtras[id])nextExtras[id]=structuredClone(record.modelExtras[id]);
+      record.modelExtras=nextExtras;
+      if(record.userOverrides?.modelExtras)record.userOverrides.modelExtras=structuredClone(nextExtras);
+    }
+
+    if(typeof record.initialMessage==='string'&&/\bRachel(?: Stone)?\b/.test(record.initialMessage)){
+      if(replacementId&&newIds.includes(replacementId)){
+        record.initialMessage=record.initialMessage.replace(/\bRachel(?: Stone)?\b/g,displayNames[replacementId]||modelById.get(replacementId)?.name||'');
+      }else{
+        record.initialMessage=record.initialMessage
+          .replace(/,\s*Rachel(?: Stone)?(?=\s*,|\s+and\b)/g,'')
+          .replace(/\bRachel(?: Stone)?\s*,\s*/g,'')
+          .replace(/\s+and\s+Rachel(?: Stone)?\b/g,'')
+          .replace(/\bRachel(?: Stone)?\s+and\s+/g,'');
+      }
+    }
+    if(Object.prototype.hasOwnProperty.call(record,'selectionRationale')){
+      record.selectionRationale=replacementId&&newIds.includes(replacementId)
+        ?'Updated October 9, 2026: Rachel was removed from this Bridal Week package because her book is positioned more alternative. '+(displayNames[replacementId]||modelById.get(replacementId)?.name||'A replacement model')+' was added as the stronger bridal fit.'
+        :'Updated October 9, 2026: Rachel was removed from this Bridal Week package because her book is positioned more alternative. No replacement was added.';
+    }
+    record.notes=((record.notes||'').replace(/\s+$/,'')+(record.notes?'\n':'')+
+      'October 9, 2026: Rachel removed from Bridal Week selection.'+
+      (replacementId&&newIds.includes(replacementId)?' Replaced with '+(displayNames[replacementId]||modelById.get(replacementId)?.name||replacementId)+'.':' No replacement added.')).trim();
+    return record;
+  };
+
+  data.drafts=(data.drafts||[]).map(patch);
+  if(data.draft)patch(data.draft);
+  if(data.activeDraftId){
+    const active=(data.drafts||[]).find(d=>d.id===data.activeDraftId);
+    if(active){
+      data.draft=structuredClone(active);
+      data.selected=[...(active.modelIds||[])];
+    }
+  }
+  data.recovery={...(data.recovery||{}),rachelRemovedFromBridalPackages20261009:1};
+  return data;
+}
+
 function captureMainGalleryState(source){
   if(!source||typeof source!=='object')return null;
   const snapshot={top:{},models:{}};
@@ -1776,7 +1910,8 @@ function applyRecovered(incoming){
   const withCurrentModelsComDrafts=window.addModelsComOpportunityDrafts20261009
     ? window.addModelsComOpportunityDrafts20261009(withFollowupDrafts)
     : withFollowupDrafts;
-  return restoreMainGalleryState(migrateDraftPreviewDocuments(withCurrentModelsComDrafts),gallerySnapshot);
+  const withoutRachelBridal=removeRachelFromBridalPackages20261009(withCurrentModelsComDrafts);
+  return restoreMainGalleryState(migrateDraftPreviewDocuments(withoutRachelBridal),gallerySnapshot);
 }
 /* CRM INDEXEDDB STORAGE V1 */
 const IDB_DB_NAME='jn-agency-crm';
