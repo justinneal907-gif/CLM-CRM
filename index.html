@@ -277,9 +277,10 @@ th,td{padding:8px}
 <script src="assets/models/sophia-extra-photo-1.js"></script>
 <script src="assets/models/sophia-extra-photo-2.js"></script>
 <script src="assets/data/core-roster.js?v=20261008-erin-portfolio-1"></script>
-<script src="assets/data/modelscom-opportunity-drafts-20261009.js?v=20261009-preview-fix-2"></script>
-<script src="assets/crm-media-store.js?v=20261002-reviewed-image-bytes-2"></script>
+<script src="assets/data/modelscom-opportunity-drafts-20261009.js?v=20261009-live-gallery-3"></script>
+<script src="assets/crm-media-store.js?v=20261009-gallery-hash-recovery-1"></script>
 <script src="assets/crm-bridal-materials.js?v=20261005-photo-persistence-2"></script>
+<script src="assets/data/gallery-gmail-recovery-20261009.js?v=1"></script>
 <script>
 const SOURCE_DATE='2026-09-14';
 const BASE_ROSTER=window.CLM_CORE_ROSTER?.BASE_ROSTER||[];
@@ -1867,7 +1868,16 @@ function createPackage(id){const m=db.models.find(x=>x.id===id);startBlankPackag
 function selectedModels(){return [...new Set(selected)].map(id=>db.models.find(m=>m.id===id)).filter(Boolean)}
 function draftPhotoSelections(){db.draft=db.draft||structuredClone(seed.draft);db.draft.photoSelections=db.draft.photoSelections||{};return db.draft.photoSelections}
 function draftPhotoForModel(m){return draftPhotoSelections()[m.id]||(db.customPhotos||{})[m.id]||m.photo||m.photoUrl||''}
-function draftPhotoOptions(m){const out=[];const add=x=>{if(!x)return;const url=typeof x==='string'?x:(x.url||x.src||'');if(url&&!out.some(y=>y.url===url))out.push({url,label:typeof x==='string'?'Portfolio photo':(x.label||x.title||'Portfolio photo')})};if(typeof MODEL_PHOTO_LIBRARY!=='undefined'&&MODEL_PHOTO_LIBRARY[m.id])MODEL_PHOTO_LIBRARY[m.id].forEach(add);[m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(a=>Array.isArray(a)&&a.forEach(add));add((db.customPhotos||{})[m.id]);add(m.photo);add(m.photoUrl);return out.slice(0,12)}
+function draftPhotoOptions(m){
+  const list=[],seen=new Set();
+  const add=(value,label)=>{const url=upgradedPhotoURL(photoURL(value));if(!url)return;const key=galleryPhotoKey(url);if(seen.has(key))return;seen.add(key);list.push({url,label:label||value?.label||'Photo'});};
+  for(const item of (db.photoLibrary?.[m.id]||[]))add(item,item?.label||'Gallery photo');
+  if(list.length)return list;
+  for(const key of ['photos','photoLibrary','portfolioPhotos','images'])for(const item of (Array.isArray(m?.[key])?m[key]:[]))add(item,'Portfolio photo');
+  if(typeof MODEL_PHOTO_LIBRARY!=='undefined')for(const item of (MODEL_PHOTO_LIBRARY[m.id]||[]))add(item,'Agency photo');
+  add(db.customPhotos?.[m.id],'Custom photo');add(m.photo,'Primary photo');add(m.photoUrl,'Agency photo');
+  return list;
+}
 async function setDraftPhotoUrl(id,url){const v=String(url||'').trim(),photos=draftPhotoSelections();if(v)photos[id]=v;else delete photos[id];persistDraftPresentation(id);renderEmail();if(!await persistWorkspaceSafe(true))return;setStatus(v?'Draft photo updated. Click Update draft to save it to the package.':'Draft photo reset to the model default.')}
 async function resetDraftPhoto(id){const photos=draftPhotoSelections();delete photos[id];persistDraftPresentation(id);renderEmail();if(!await persistWorkspaceSafe(true))return;setStatus('Draft photo reset to the model default. Click Update draft to save the package.')}
 async function fileToDraftPhoto(file){if(!file)return'';try{if(window.CLMMediaStore?.storeFile)return await window.CLMMediaStore.storeFile(file);return await fileToDataUrl(file)}catch(err){console.error('Photo upload failed',err);return''}}
@@ -3029,7 +3039,16 @@ function hydrateDraft(){
 }
 function packagePhotoLibrary(){db.packagePhotoLibrary=db.packagePhotoLibrary||{};return db.packagePhotoLibrary}
 function addPackagePhoto(id,url,label='Saved photo'){url=String(url||'').trim();if(!url)return;const l=packagePhotoLibrary();l[id]=l[id]||[];if(!l[id].some(x=>(typeof x==='string'?x:x.url)===url)){if(l[id].length>=8)l[id].shift();l[id].push({url,label})}}
-function draftPhotoOptions(m){const a=[],add=(x,label)=>{const u=typeof x==='string'?x:(x?.url||x?.src||'');if(u&&!a.some(y=>y.url===u))a.push({url:u,label:label||x?.label||'Photo'})};(packagePhotoLibrary()[m.id]||[]).forEach(x=>add(x,x.label||'Saved photo'));[m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(v=>Array.isArray(v)&&v.forEach(x=>add(x,'Portfolio photo')));add((db.customPhotos||{})[m.id],'Custom photo');add(m.photo||m.photoUrl,'Agency photo');return a.slice(0,16)}
+function draftPhotoOptions(m){
+  const list=[],seen=new Set();
+  const add=(value,label)=>{const url=upgradedPhotoURL(photoURL(value));if(!url)return;const key=galleryPhotoKey(url);if(seen.has(key))return;seen.add(key);list.push({url,label:label||value?.label||'Photo'});};
+  for(const item of (db.photoLibrary?.[m.id]||[]))add(item,item?.label||'Gallery photo');
+  if(list.length)return list;
+  for(const key of ['photos','photoLibrary','portfolioPhotos','images'])for(const item of (Array.isArray(m?.[key])?m[key]:[]))add(item,'Portfolio photo');
+  if(typeof MODEL_PHOTO_LIBRARY!=='undefined')for(const item of (MODEL_PHOTO_LIBRARY[m.id]||[]))add(item,'Agency photo');
+  add(db.customPhotos?.[m.id],'Custom photo');add(m.photo,'Primary photo');add(m.photoUrl,'Agency photo');
+  return list;
+}
 function draftPhotoForModel(m){return draftPhotoSelections()[m.id]||(db.customPhotos||{})[m.id]||m.photo||m.photoUrl||''}
 async function setDraftPhotoUrl(id,url){url=String(url||'').trim();if(url){addPackagePhoto(id,url,'Saved URL');draftPhotoSelections()[id]=url}else delete draftPhotoSelections()[id];persistDraftPresentation(id);renderEmail();setStatus(url?'Photo saved to library and selected.':'Using the default photo.')}
 async function setDraftPhotoFile(id,input){const f=input?.files?.[0];if(!f)return;const data=await fileToDraftPhoto(f);if(!data)return setStatus('Could not read that image.');addPackagePhoto(id,data,f.name||'Uploaded photo');draftPhotoSelections()[id]=data;persistDraftPresentation(id);renderEmail();setStatus('Uploaded photo saved to library and selected.')}
@@ -4118,45 +4137,15 @@ function upgradedPhotoURL(url){
   if(typeof url!=='string')return url;
   return url.replace(/(https:\/\/raw\.githubusercontent\.com\/justinneal907-gif\/CLM-CRM\/main\/assets\/models\/sophia-pippen-[12]\.jpg)(?:\?[^#]*)?$/,'$1?v=2');
 }
-function applyPhotoManagement(data){
-  const upgrade=x=>typeof x==='string'?upgradedPhotoURL(x):x&&typeof x==='object'?{...x,...(x.url?{url:upgradedPhotoURL(x.url)}:{}),...(x.src?{src:upgradedPhotoURL(x.src)}:{})}:x;
-  for(const m of data.models||[]){
-    for(const k of ['photo','photoUrl']){m[k]=upgradedPhotoURL(m[k]);if(isDeletedPhoto(data,m.id,m[k]))m[k]=''}
-    for(const k of ['photos','photoLibrary','portfolioPhotos','images'])if(Array.isArray(m[k]))m[k]=m[k].map(upgrade).filter(x=>!isDeletedPhoto(data,m.id,photoURL(x)));
-  }
-  for(const [id,list] of Object.entries(data.photoLibrary||{}))if(Array.isArray(list))data.photoLibrary[id]=list.map(upgrade).filter(x=>!isDeletedPhoto(data,id,photoURL(x)));
-  for(const [id,url] of Object.entries(data.customPhotos||{})){data.customPhotos[id]=upgradedPhotoURL(url);if(isDeletedPhoto(data,id,url))delete data.customPhotos[id]}
-  for(const d of [data.draft,...(data.drafts||[])].filter(Boolean)){
-    for(const [id,url] of Object.entries(d.photoSelections||{})){
-      const single=Array.isArray(url)?url[0]:url;
-      d.photoSelections[id]=isDeletedPhoto(data,id,single)?'':upgradedPhotoURL(single);
-    }
-    for(const [id,list] of Object.entries(d.packagePhotos||{}))if(Array.isArray(list)){
-      d.packagePhotos[id]=list.map(upgradedPhotoURL).filter(url=>!isDeletedPhoto(data,id,url));
-      if(id===SOPHIA_ALL_DRAFTS_ID)d.packagePhotos[id]=d.packagePhotos[id].slice(0,1);
-    }
-    // The email preview always rebuilds from the model selection, never from stale multi-image HTML.
-    if((d.modelIds||[]).includes(SOPHIA_ALL_DRAFTS_ID))d.html='';
-  }
-  return data;
-}
+function applyPhotoManagement(data){return data;}
 function draftPhotoOptions(m){
-  const list=[],add=(x,label)=>{
-    const url=upgradedPhotoURL(photoURL(x));
-    if(!url||isDeletedPhoto(db,m.id,url)||isGalleryHidden(m.id,url))return;
-    const key=galleryPhotoKey(url);
-    if(list.some(p=>galleryPhotoKey(p.url)===key))return;
-    list.push({url,label:label||x?.label||'Photo'});
-  };
-  (db.photoLibrary?.[m.id]||[]).forEach(x=>add(x,x.label||'Saved photo'));
-  [m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(a=>Array.isArray(a)&&a.forEach(x=>add(x,'Portfolio photo')));
-  if(typeof MODEL_PHOTO_LIBRARY!=='undefined')(MODEL_PHOTO_LIBRARY[m.id]||[]).forEach(x=>add(x,'Agency photo'));
+  const list=[],seen=new Set();
+  const add=(value,label)=>{const url=upgradedPhotoURL(photoURL(value));if(!url)return;const key=galleryPhotoKey(url);if(seen.has(key))return;seen.add(key);list.push({url,label:label||value?.label||'Photo'});};
+  for(const item of (db.photoLibrary?.[m.id]||[]))add(item,item?.label||'Gallery photo');
+  if(list.length)return list;
+  for(const key of ['photos','photoLibrary','portfolioPhotos','images'])for(const item of (Array.isArray(m?.[key])?m[key]:[]))add(item,'Portfolio photo');
+  if(typeof MODEL_PHOTO_LIBRARY!=='undefined')for(const item of (MODEL_PHOTO_LIBRARY[m.id]||[]))add(item,'Agency photo');
   add(db.customPhotos?.[m.id],'Custom photo');add(m.photo,'Primary photo');add(m.photoUrl,'Agency photo');
-  for(const d of [db.draft,...(db.drafts||[])].filter(Boolean)){
-    const chosen=d.photoSelections?.[m.id];
-    (Array.isArray(chosen)?chosen:[chosen]).forEach(x=>add(x,d===db.draft?'Current draft photo':'Saved draft photo'));
-    (d.packagePhotos?.[m.id]||[]).forEach(x=>add(x,d===db.draft?'Current draft photo':'Saved draft photo'));
-  }
   return list;
 }
 function getPhoto(m){return [db.customPhotos?.[m.id],m.photo,m.photoUrl].map(upgradedPhotoURL).find(url=>url&&!isDeletedPhoto(db,m.id,url))||''}
@@ -4189,9 +4178,10 @@ async function removePackagePhoto(id,i){
 }
 
 function addMainGalleryPhoto(id,url,label='Saved photo'){
+  if(active!=='gallery'&&!window.__clmGalleryRecoveryWrite)return false;
   url=upgradedPhotoURL(String(url||'').trim());if(!url)return false;
   db.photoLibrary=db.photoLibrary||{};const library=db.photoLibrary;library[id]=library[id]||[];
-  if(!library[id].some(x=>galleryPhotoKey(x)===galleryPhotoKey(url)))library[id].push({url,label});
+  const key=galleryPhotoKey(url);if(!library[id].some(x=>galleryPhotoKey(x)===key))library[id].push({url,label});
   return true;
 }
 function addPackagePhoto(id,url,label='Saved photo'){
@@ -4204,28 +4194,7 @@ function addPackagePhoto(id,url,label='Saved photo'){
 
 
 /* MULTI-IMAGE DRAFT PACKAGE SUPPORT 2026-09-18 */
-function applyPhotoManagement(data){
-  const upgrade=x=>typeof x==='string'?upgradedPhotoURL(x):x&&typeof x==='object'?{...x,...(x.url?{url:upgradedPhotoURL(x.url)}:{}),...(x.src?{src:upgradedPhotoURL(x.src)}:{})}:x;
-  for(const m of data.models||[]){
-    for(const k of ['photo','photoUrl']){m[k]=upgradedPhotoURL(m[k]);if(isDeletedPhoto(data,m.id,m[k]))m[k]=''}
-    for(const k of ['photos','photoLibrary','portfolioPhotos','images'])if(Array.isArray(m[k]))m[k]=m[k].map(upgrade).filter(x=>!isDeletedPhoto(data,m.id,photoURL(x)));
-  }
-  for(const [id,list] of Object.entries(data.photoLibrary||{}))if(Array.isArray(list))data.photoLibrary[id]=list.map(upgrade).filter(x=>!isDeletedPhoto(data,id,photoURL(x)));
-  for(const [id,url] of Object.entries(data.customPhotos||{})){data.customPhotos[id]=upgradedPhotoURL(url);if(isDeletedPhoto(data,id,url))delete data.customPhotos[id]}
-  for(const d of [data.draft,...(data.drafts||[])].filter(Boolean)){
-    d.photoSelections=d.photoSelections||{};
-    for(const [id,value] of Object.entries(d.photoSelections)){
-      const list=(Array.isArray(value)?value:[value]).map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(data,id,url));
-      if(Array.isArray(value))d.photoSelections[id]=[...new Set(list)];
-      else d.photoSelections[id]=list[0]||'';
-    }
-    for(const [id,list] of Object.entries(d.packagePhotos||{}))if(Array.isArray(list)){
-      d.packagePhotos[id]=[...new Set(list.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(data,id,url)))];
-    }
-    d.html='';
-  }
-  return data;
-}
+function applyPhotoManagement(data){return data;}
 function draftHasExplicitPhotoSelection(id){
   const manual=db.draft?.userOverrides?.photoSelections;
   if(manual&&Object.prototype.hasOwnProperty.call(manual,id))return true;
@@ -4234,98 +4203,26 @@ function draftHasExplicitPhotoSelection(id){
   return false;
 }
 function defaultModelGalleryPhotos(data,m,draft={}){
-  const photos=[];
-  const add=value=>(Array.isArray(value)?value:[value]).forEach(x=>photos.push(photoURL(x)));
-  add(data.photoLibrary?.[m.id]);
-  [m.photos,m.photoLibrary,m.portfolioPhotos,m.images].forEach(add);
+  const clean=values=>uniqueGalleryPhotoUrls((values||[]).map(photoURL).map(upgradedPhotoURL).filter(Boolean));
+  const gallery=clean(data.photoLibrary?.[m.id]||[]);
+  if(gallery.length)return gallery;
+  const fallback=[];const add=value=>(Array.isArray(value)?value:[value]).forEach(x=>{const url=photoURL(x);if(url)fallback.push(url)});
+  for(const key of ['photos','photoLibrary','portfolioPhotos','images'])add(m?.[key]);
   if(typeof MODEL_PHOTO_LIBRARY!=='undefined')add(MODEL_PHOTO_LIBRARY[m.id]);
-  if(isBridalMaterialsDraft(draft))add(m.bridalMaterials?.photos);
-  add(savedModelPackagePhotos(data,m.id,draft));
   add(data.customPhotos?.[m.id]);add(m.photo);add(m.photoUrl);
-  return uniqueGalleryPhotoUrls(photos.map(upgradedPhotoURL).filter(url=>url&&!isDeletedPhoto(data,m.id,url)&&!(data.hiddenGalleryPhotoKeys?.[m.id]||[]).includes(galleryPhotoKey(url))));
+  return clean(fallback);
 }
-function recoverPackageGalleryPhotos(data,records=[...(data.drafts||[]),data.draft]){
-  data.photoLibrary=data.photoLibrary||{};
-  const models=new Map((data.models||[]).map(m=>[m.id,m]));
-  const seen=new Map(Object.entries(data.photoLibrary).map(([id,list])=>[id,new Set((list||[]).map(galleryPhotoKey))]));
-  const add=(id,value)=>{
-    if(!models.has(id))return;
-    const url=upgradedPhotoURL(photoURL(value));
-    // Preserve the verified Erin/Callie correction while recovering old records.
-    if(id==='new-york-women-erin-connors'&&(/erin-bridal-20261003\.jpg|f062c9b9-5ac7-4304-a07d-15dfec50d878|callie-recovered-bridal-20261004/.test(url)||window.CLMMediaStore?.contentKey?.(url)==='sha256:2044ea74a16a3bf29639960f22f2331a3c3d56617cc560605cd4a03e11f70d1e'))id='new-york-women-callie-steg';
-    if(!models.has(id))return;
-    if(!url||/^(blob:|cid:|file:)/i.test(url)||isDeletedPhoto(data,id,url)||(data.hiddenGalleryPhotoKeys?.[id]||[]).includes(galleryPhotoKey(url)))return;
-    if(!seen.has(id))seen.set(id,new Set());
-    const key=galleryPhotoKey(url);if(seen.get(id).has(key))return;
-    seen.get(id).add(key);
-    (data.photoLibrary[id]||(data.photoLibrary[id]=[])).push({url,label:'Saved package photo'});
-  };
-  for(const record of records.filter(Boolean)){
-    for(const map of [record.photoSelections,record.packagePhotos,record.userOverrides?.photoSelections])for(const [id,values] of Object.entries(map||{}))for(const value of (Array.isArray(values)?values:[values]))add(id,value);
-    const t=document.createElement('template');t.innerHTML=record.previewHtml||record.html||'';
-    // Associate images only with an exact model block, never their position.
-    const ids=new Set([...(record.modelIds||[]),...[...t.content.querySelectorAll('[data-clm-model-id]')].map(el=>el.getAttribute('data-clm-model-id'))]);
-    for(const name of record.models||[]){const matches=[...models.values()].filter(m=>[m.name,m.originalName].some(n=>n&&normalizeName(n)===normalizeName(name)));if(matches.length===1)ids.add(matches[0].id);}
-    for(const id of ids){
-      const m=models.get(id);if(!m)continue;
-      const block=bridalMaterialBlock(t.content,id,m,data.models);
-      if(block)for(const img of block.querySelectorAll('img'))add(id,img.getAttribute('src'));
-    }
-  }
-  for(const map of Object.values(data.savedModelPackagePhotos||{}))for(const [id,values] of Object.entries(map||{}))for(const value of (Array.isArray(values)?values:[values]))add(id,value);
-  return data;
-}
-async function collectAllPreviousModelPhotos20261009(data){
-  if(data.recovery?.allPreviousModelPhotos20261009)return data;
-  const records=[];
-  const collect=source=>{
-    if(!source)return;
-    records.push(...(source.drafts||[]),source.draft);
-    for(const key of ['packageSelectionBackups20261003','bridalClosingLinkBackups20261004','bridalMaterialsBackups20261004','erinDraftBackups20261004','savedPackagePhotosBackups20261005'])for(const item of source[key]||[])records.push(item.record||item);
-    records.push({photoSelections:source.photoLibrary||{}},{photoSelections:source.customPhotos||{}});
-    for(const map of Object.values(source.savedModelPackagePhotos||{}))records.push({photoSelections:map});
-    for(const m of source.models||[])records.push({photoSelections:{[m.id]:[m.photo,m.photoUrl,...['photos','photoLibrary','portfolioPhotos','images'].flatMap(k=>Array.isArray(m[k])?m[k]:[])]}});
-  };
-  collect(data);
-  let complete=true;
-  try{collect(await idbReadWorkspaceAtKey('backup-before-gallery-repair-20260929'));}catch(err){complete=false;console.info('Previous gallery snapshot unavailable',err)}
-  for(let i=1;i<=7;i++){
-    try{
-      const response=await fetch('assets/data/photo-library-restore-20260918-part-'+String(i).padStart(2,'0')+'.json?v=2',{cache:'force-cache'});
-      if(!response.ok)throw new Error('Photo archive unavailable');
-      collect(await response.json());
-    }catch(err){complete=false;console.info('Previous photo archive unavailable',err)}
-  }
-  recoverPackageGalleryPhotos(data,records);
-  data.recovery={...(data.recovery||{}),allPreviousModelPhotos20261009:complete?1:0};
-  return data;
-}
+function recoverPackageGalleryPhotos(data){return data;}
+async function collectAllPreviousModelPhotos20261009(data){return data;}
 function restoreHeliPackageGallery20261009(data){
-  if(Number(data.recovery?.heliGalleryRestored20261009||0)>=2)return data;
   const id='nybfw_followup_20261009_heli_kalkstein_sophia_ambre_iyanu';
-  const targets=[...(data.drafts||[]),data.activeDraftId===id?data.draft:null].filter(d=>d?.id===id);
-  for(const d of targets){
-    const t=document.createElement('template');t.innerHTML=d.previewHtml||'';
-    for(const mid of d.modelIds||[]){
-      const m=data.models.find(m=>m.id===mid);if(!m)continue;
-      // Respect a deliberate empty package selection.
-      const manual=d.userOverrides?.photoSelections?.[mid];
-      if(Array.isArray(manual)&&manual.length===0)continue;
-      const block=bridalMaterialBlock(t.content,mid,m,data.models);
-      const current=[...(Array.isArray(d.photoSelections?.[mid])?d.photoSelections[mid]:[]),...(Array.isArray(manual)?manual:[]),...(block?[...block.querySelectorAll('img')].map(img=>img.getAttribute('src')):[])];
-      const urls=uniqueGalleryPhotoUrls([...current,...defaultModelGalleryPhotos(data,m,d)].filter(Boolean));
-      d.photoSelections={...(d.photoSelections||{}),[mid]:urls};
-      d.packagePhotos={...(d.packagePhotos||{}),[mid]:[...urls]};
-      if(manual)d.userOverrides.photoSelections[mid]=[...urls];
-      if(block&&d.includePhotos!==false){
-        const existing=new Set([...block.querySelectorAll('img')].map(img=>galleryPhotoKey(img.getAttribute('src'))));
-        for(const url of urls)if(!existing.has(galleryPhotoKey(url))){const row=document.createElement('div'),img=document.createElement('img');img.src=url;img.alt=m.name;img.width=440;img.style.cssText='display:block;max-width:100%;height:auto';row.appendChild(img);block.appendChild(row);}
-      }
-    }
-    if(d.previewHtml){d.previewHtml=uniformEmailPhotoSizes(t.innerHTML);d.previewNeedsGmailUpdate=true;}
+  for(const draft of [data.draft,...(data.drafts||[])].filter(d=>d?.id===id)){
+    const explicit=structuredClone(draft.userOverrides?.photoSelections||{});
+    draft.photoSelections={};draft.packagePhotos={};
+    if(Object.keys(explicit).length){draft.userOverrides=draft.userOverrides||{};draft.userOverrides.photoSelections=explicit;}
+    draft.generatedPhotoMode='live-gallery';draft.generatedPhotoModeVersion=2;
   }
-  data.recovery={...(data.recovery||{}),heliGalleryRestored20261009:2};
-  return data;
+  data.recovery={...(data.recovery||{}),heliGalleryRestored20261009:3};return data;
 }
 function draftPhotosForModel(m){
   const manual=db.draft?.userOverrides?.photoSelections;
@@ -5636,7 +5533,7 @@ function addHeliKalksteinFollowup20261009(data){
       initialMessage:'Hi Heli Kalkstein Team,\n\nI wanted to follow up and send Sophia Pippen, Ambre, and Iyanu as additional options. Their materials are below.',
       followupTemplateIncludesGreeting:true,
       followupCtaHtml:'<div data-clm-bridal-followup-cta="heli-20261009" style="margin:0 0 18px">Again, you can see the rest of our models <a href="'+link+'"><strong><em>HERE</em></strong></a>.<br><br>Let me know if you would like to see any of them for a casting or fitting.</div>',
-      photoSelections:{},modelExtras:{},html:'',signatureClose:'Thank you,',
+      modelExtras:{},generatedPhotoMode:'live-gallery',generatedPhotoModeVersion:2,html:'',signatureClose:'Thank you,',
       source:'User-requested CRM follow-up October 9, 2026',
       notes:'CRM only. Uses saved model gallery photos and text defaults; no email sent.'
     });
@@ -5762,65 +5659,8 @@ async function bootstrapWorkspace(){
 }
 bootstrapWorkspace();
 
-async function restoreOldPhotoLibrary20260929(data){
-  if(data.recovery?.oldPhotoLibraryRestoreVersion>=2)return data;
-  data.photoLibrary=data.photoLibrary||{};
-  data.hiddenGalleryPhotoKeys={};
-  let restored=0;
-  const add=(id,item,label='Restored photo')=>{
-    const raw=typeof item==='string'?item:(item?.url||item?.src||'');
-    const url=upgradedPhotoURL(String(raw||'').trim());
-    if(!id||!url)return;
-    const list=data.photoLibrary[id]||(data.photoLibrary[id]=[]);
-    const key=galleryPhotoKey(url);
-    if(list.some(x=>galleryPhotoKey(photoURL(x))===key))return;
-    list.push(typeof item==='object'&&item?{...item,url,label:item.label||label}:{url,label});
-    restored++;
-  };
-  try{
-    const backup=await idbReadWorkspaceAtKey('backup-before-gallery-repair-20260929');
-    if(backup){
-      for(const [id,list] of Object.entries(backup.photoLibrary||{}))for(const item of list||[])add(id,item,'Restored from pre-repair backup');
-      for(const m of backup.models||[]){
-        for(const key of ['photos','photoLibrary','portfolioPhotos','images'])for(const item of (Array.isArray(m[key])?m[key]:[]))add(m.id,item,'Restored model photo');
-        if(m.photo)add(m.id,m.photo,'Restored primary photo');
-        if(m.photoUrl)add(m.id,m.photoUrl,'Restored agency photo');
-      }
-      for(const [id,url] of Object.entries(backup.customPhotos||{}))add(id,url,'Restored custom photo');
-      for(const d of [backup.draft,...(backup.drafts||[])].filter(Boolean)){
-        for(const [id,value] of Object.entries(d.photoSelections||{}))for(const url of (Array.isArray(value)?value:[value]))add(id,url,'Restored saved draft photo');
-        for(const [id,list] of Object.entries(d.packagePhotos||{}))for(const url of (Array.isArray(list)?list:[]))add(id,url,'Restored saved draft photo');
-      }
-    }
-  }catch(err){console.info('Pre-repair photo backup unavailable',err)}
-  for(let i=1;i<=7;i++){
-    const part=String(i).padStart(2,'0');
-    try{
-      const response=await fetch('assets/data/photo-library-restore-20260918-part-'+part+'.json?v=2',{cache:'reload'});
-      if(!response.ok)continue;
-      const payload=await response.json();
-      for(const [id,list] of Object.entries(payload.photoLibrary||{}))for(const item of list||[])add(id,item,'Restored September photo');
-    }catch(err){console.info('Archived photo part '+part+' unavailable',err)}
-  }
-  for(const d of [data.draft,...(data.drafts||[])].filter(Boolean)){
-    for(const [id,value] of Object.entries(d.photoSelections||{}))for(const url of (Array.isArray(value)?value:[value]))add(id,url,'Saved draft photo');
-    for(const [id,list] of Object.entries(d.packagePhotos||{}))for(const url of (Array.isArray(list)?list:[]))add(id,url,'Saved draft photo');
-  }
-  data.recovery={...(data.recovery||{}),oldPhotoLibraryRestoreVersion:2,oldPhotoLibraryRestoreOn:'2026-09-29',oldPhotoLibraryRestoredCount:restored};
-  return data;
-}
-function dedupePhotoLibrary20260929(data){
-  for(const [id,list] of Object.entries(data.photoLibrary||{})){
-    const seen=new Set(),out=[];
-    for(const item of list||[]){
-      const url=photoURL(item);if(!url)continue;
-      const key=galleryPhotoKey(url);if(seen.has(key))continue;
-      seen.add(key);out.push(item);
-    }
-    data.photoLibrary[id]=out;
-  }
-  return data;
-}
+async function restoreOldPhotoLibrary20260929(data){return data;}
+function dedupePhotoLibrary20260929(data){return data;}
 
 /* END INDEXEDDB RUNTIME OVERRIDES */
 $('#modelSearch').oninput=renderModels;$('#locationFilter').onchange=renderModels;$('#divisionFilter').onchange=renderModels;$('#nicheFilter').onchange=renderModels;
