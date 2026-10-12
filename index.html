@@ -280,6 +280,7 @@ th,td{padding:8px}
 <script src="assets/data/modelscom-opportunity-drafts-20261009.js?v=20261009-live-gallery-4"></script>
 <script src="assets/data/campaign-casting-drafts-20261009.js?v=20261009-campaign-casting-1"></script>
 <script src="assets/data/casting-director-packages-20261012.js?v=20261012-directors-1"></script>
+<script src="assets/data/casting-director-brand-matches-20261012.js?v=20261012-brand-model-matches-1"></script>
 <script src="assets/crm-media-store.js?v=20261009-gallery-hash-recovery-1"></script>
 <script src="assets/crm-bridal-materials.js?v=20261005-photo-persistence-2"></script>
 <script src="assets/data/gallery-gmail-recovery-20261009.js?v=2"></script>
@@ -1918,7 +1919,10 @@ function applyRecovered(incoming){
   const withCastingDirectorPackages=window.addCastingDirectorPackages20261012
     ? window.addCastingDirectorPackages20261012(withCampaignDirectorDrafts)
     : withCampaignDirectorDrafts;
-  const withoutRachelBridal=removeRachelFromBridalPackages20261009(withCastingDirectorPackages);
+  const withBrandMatchedCastingPackages=window.updateCastingDirectorBrandSelections20261012
+    ? window.updateCastingDirectorBrandSelections20261012(withCastingDirectorPackages)
+    : withCastingDirectorPackages;
+  const withoutRachelBridal=removeRachelFromBridalPackages20261009(withBrandMatchedCastingPackages);
   return restoreMainGalleryState(migrateDraftPreviewDocuments(withoutRachelBridal),gallerySnapshot);
 }
 /* CRM INDEXEDDB STORAGE V1 */
