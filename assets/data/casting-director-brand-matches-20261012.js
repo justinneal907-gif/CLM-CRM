@@ -148,7 +148,7 @@ window.updateCastingDirectorBrandSelections20261012=function(data){
     if(spec.modelIds.some(id=>!models.has(id))){skipped.push(id+' (model missing)');continue;}
     const selected=spec.modelIds.map(id=>models.get(id));
     const names=selected.map(m=>m.name);
-    const intro='Hi '+d.contactName.split(/\s+/)[0]+',\n\nI wanted to send '+names.slice(0,2).join(', ')+', and '+names[2]+' for any upcoming '+spec.brand+' projects you may be casting. Their materials are below. Please let me know if you would like to see any of them for a casting or go-see.';
+    const intro='Hi '+d.contactName.split(/\s+/)[0]+',\n\nI wanted to send '+names.slice(0,2).join(', ')+', and '+names[2]+' for consideration for upcoming projects involving '+spec.brand+'. Their materials are below. Please let me know if you would like to see any of them for a casting or go-see.';
     // Only package fields updated, using models' EXISTING gallery and saved extras.
     Object.assign(d,{
       packageName:'Campaign Casting | '+spec.brand+' | '+d.contactName,
@@ -167,7 +167,7 @@ window.updateCastingDirectorBrandSelections20261012=function(data){
       castingBriefRaw:'Proactive submission for possible future '+spec.brand+' work. Confirm open casting, fees, usage, dates, location and travel before committing models.',
       parsedBrief:{project:spec.brand,location:'Unknown'},
       researchStatus:'Brand matched to past casting/creative credit — no open paid role confirmed',
-      notes:(d.notes||'')+'\n\nBRAND RESEARCH 2026-10-12: '+spec.brand+' — '+spec.work+'. '+spec.source+'\nREVISED MODEL MATCH: '+spec.rationale+'\nThe linked Canva design is a full original-roster copy, not yet trimmed to these models. The Canva editor link is NOT a verified client-view link. Do not send without agent review.'
+      notes:'BRAND: '+spec.brand+'\nCASTING DIRECTOR: '+d.contactName+'\nVERIFIED PRIOR WORK: '+spec.work+'\nSOURCE: '+spec.source+'\nSELECTED MODELS: '+names.join(', ')+'\nWHY THEY FIT: '+spec.rationale+'\nCONTACT: '+(d.recipientEmail||'Not verified')+'\nCANVA: '+(d.canvaEditUrl||'See the separate Canva copy')+' (editing copy only; public access unverified)\nThis Canva copy still contains the 48-page regular roster; select/hide the non-matching models before sending. No currently open paid casting, rate, usage, dates or deadline has been confirmed. Do not send without review.'
     });
     updated++;
   }
