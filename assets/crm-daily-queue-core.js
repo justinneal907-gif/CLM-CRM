@@ -7,7 +7,7 @@ const emails=v=>(String(v||'').toLowerCase().match(/[a-z0-9.!#$%&'*+/=?^_`{|}~-]
 function day(value=new Date()){return new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(value));}
 function safeUrl(value){try{const u=new URL(value);return u.protocol==='https:'||u.protocol==='http:'?u.href:'';}catch{return '';}}
 function shootReady(s){return Boolean(s&&s.date&&s.time&&s.location&&s.team&&s.terms&&s.delivery&&s.modelConfirmed&&s.teamConfirmed);}
-function sentEvidence(s){return Boolean(s&&emails(s.email||s.recipient).length&&(s.gmailMessageId||s.evidenceVerified&&safeUrl(s.gmailUrl||s.evidenceUrl)));}
+function sentEvidence(s){if(s?.channel==='platform')return Boolean(s.evidenceVerified&&s.confirmationId&&safeUrl(s.evidenceUrl));return Boolean(s&&emails(s.email||s.recipient).length&&(s.gmailMessageId||s.evidenceVerified&&safeUrl(s.gmailUrl||s.evidenceUrl)));}
 function count({date,models=[],entries=[],submissions=[],drafts=[]}){
  const packages=new Set(),followups=new Set(),gosees=new Set(),jobs={},shoots=new Set(),outreach={};
  for(const m of models){jobs[m.id]=new Set();outreach[m.id]=new Set();}
@@ -17,7 +17,7 @@ function count({date,models=[],entries=[],submissions=[],drafts=[]}){
  for(const s of receipts){const to=emails(s.email||s.recipient);const key=norm(s.opportunityId)+'|'+to.slice().sort().join(',');
  if(s.kind==='followup'){to.forEach(e=>followups.add(e));continue;}
  if(s.kind==='shoot'){continue;}
- packages.add(key);
+ if(s.channel!=='platform')packages.add(key);
  for(const id of s.modelIds||[]){if(!jobs[id])continue;if(s.kind==='job'&&s.eligible===true&&s.liveVerified===true)jobs[id].add(norm(s.opportunityId));else outreach[id].add(key);if(s.kind==='gosee')gosees.add(id+'|'+to.join(','));}
  }
  for(const q of entries)if(q.kind==='shoot'&&q.confirmedOn===date&&shootReady(q.shoot))shoots.add(q.id);
