@@ -11,11 +11,12 @@ const run=s=>vm.runInContext(s,ctx),read=s=>JSON.parse(run(`JSON.stringify(${s})
 
 run(`db={models:[{id:'a',name:'Callie'},{id:'b',name:'Maja'},{id:'c',name:'Agang'}],drafts:[],draft:{modelIds:['a','b'],previewHtml:'<div><p>Hi Team,</p><p>I wanted to send <b>Callie</b> and <i>Maja</i>. Their materials are below.</p><p>Again: Callie and Maja.</p><div data-clm-model-id="a"><b>Callie</b><img src="https://test/a.jpg"></div><div data-clm-model-id="b"><b>Maja</b><img src="https://test/b.jpg"></div><p>Thank you,</p></div>'},settings:{},photoLibrary:{}};selected=['a','b'];persistWorkspaceSafe=async()=>true;renderAll=()=>{};renderEmail=()=>{};renderEmailMatches=()=>{};`);
 const text=()=>{const t=dom.window.document.createElement('template');t.innerHTML=read('db.draft.previewHtml');return t.content.textContent};
-run("setSelectedModelPosition('b',1)");assert.match(text(),/send Maja and Callie/);assert.match(text(),/Again: Maja and Callie/);
-assert.match(read('db.draft.previewHtml'),/https:\/\/test\/a.jpg/);
-run("addToEmail('c')");assert.match(text(),/send Maja, Callie, and Agang/);
-run("removeFromEmail('a')");assert.match(text(),/send Maja and Agang/);assert.ok(!read('db.draft.previewHtml').includes('test/a.jpg'));
-run("removeFromEmail('b');removeFromEmail('c');addToEmail('a')");assert.match(text(),/send Callie/);assert.match(text(),/Again: Callie/);
-run("db=JSON.parse(JSON.stringify(db));addToEmail('b')");assert.match(text(),/send Callie and Maja/);
-assert.match(text(),/Hi Team/);assert.match(text(),/Their materials are below/);assert.match(text(),/Thank you/);
-console.log('Passed: all prose name lists follow add/remove/reorder, formatted names, zero-to-one, persisted bindings and preserved surrounding text/photos.');
+run("setSelectedModelPosition('b',1);addToEmail('c');removeFromEmail('a')");
+assert.match(text(),/send Callie and Maja/);assert.match(text(),/Again: Callie and Maja/);
+assert.deepEqual(read('selected'),['b','c']);
+assert.ok(!read('db.draft.previewHtml').includes('test/a.jpg'));
+// Previously bound names are now ordinary editable text too.
+run(`db.draft.previewHtml='<div><p>I wanted to send <span data-clm-model-names="selected">Maja and Agang</span>.</p><div data-clm-model-id="b"><b>Maja</b></div><div data-clm-model-id="c"><b>Agang</b></div></div>';document.querySelector('#emailPreview').dataset.manualRefreshInitialized='';`);
+run("setSelectedModelPosition('c',1);removeFromEmail('b')");
+assert.match(text(),/send Maja and Agang/);
+console.log('PASS: add/remove/reorder update model sections while body names stay untouched, including previously saved bindings.');
