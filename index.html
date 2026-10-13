@@ -4162,6 +4162,9 @@ function generateInitialEmailHtml(){
     const closing=`<div style="margin:8px 0 0">Again, you can find the rest of our models&nbsp;<a href="${miamiLink}" target="_blank">HERE</a>.&nbsp;</div><div style="margin:8px 0 0">Let me know if you would like to see any of them for a casting or fitting.</div><div style="margin:8px 0 0"><div>Thank you,</div><div>Justin</div><div><br></div><div><i>WhatsApp:</i></div><div><i>+1(907)317 3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
     return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${intro}${modelSection}${closing}</div>`;
   }
+  if(activeRecord?.goSeeSentTemplate20261013||working.goSeeSentTemplate20261013){
+    return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${modelSection}${followupCtaHtml}<div>Thank you,</div><br><div>Justin</div><br><div>Chez Les Mannequins · Creative Agency</div><br><div>Model Representation | Artist Management | Casting | Production | Advertising</div></div>`;
+  }
   return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${(!blankBodyCopy&&more)?`<div style="margin:0 0 24px">${more}</div>`:''}${followupCtaHtml}<div>${close}</div><div>Justin</div><div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
 }
 
@@ -5884,6 +5887,34 @@ async function restoreMainGalleryExplicit20261009(data){
   data.recovery={...(data.recovery||{}),[marker]:1,authoritativeGalleryRepair20261009At:new Date().toISOString(),authoritativeGalleryRepair20261009Count:restored,authoritativeGalleryRepairArchivedCount:archived,authoritativeGalleryRepairEmailedCount:emailed,authoritativeGalleryRepairEvidenceModels:26};
   return data;
 }
+
+function addCallieMajaGoSeePackages20261013(data){
+  const marker='callieMajaGoSeePackages20261013';
+  if(data.recovery?.[marker])return data;
+  const modelIds=['new-york-women-callie-steg','new-york-women-maja-stockwell'];
+  if(modelIds.some(id=>!(data.models||[]).some(m=>m.id===id)))return data;
+  data.drafts=Array.isArray(data.drafts)?data.drafts:[];
+  const entries=[["xyne","Xyne","Xyne Team","nouri@xyne.co"],["irene-ojo","Irene Ojo","Irene","ireneojo@gmail.com"],["unit-c","Unit C","Tytiah","info@unit-c.co"],["exposure-ny","Exposure NY","Megan","megan@exposureny.com"],["secret-gallery","The Secret Gallery","Drew and Daniel","casting@thesecretgalleryinc.com"],["jennifer-starr","Jennifer Starr","Jennifer","jennifer@jenniferstarr.net"]];
+  for(const [slug,company,contactName,recipientEmail] of entries){
+    const id='nyc-gosee-20261013-callie-maja-'+slug;
+    if(data.drafts.some(d=>d.id===id))continue;
+    data.drafts.push({
+      id,date:'2026-10-13',eventName:'NYC Go See',packageName:'NYC Go See | '+company+' | Callie + Maja',
+      purpose:'submission',contactId:'',contactName,company,recipientEmail,cc:'',
+      brandProject:company,subject:'Callie + Maja | NYC Go See',packageLink:'',
+      modelIds:[...modelIds],models:['Callie','Maja Stockwell'],includePhotos:true,includeStats:true,includeSources:true,
+      initialMessage:'Hi '+contactName+',\n\nI wanted to put Callie and Maja on your radar for any upcoming projects you may be casting in New York. We would be happy to arrange a quick go-see in NYC if you would like. Their materials are below.',
+      followupCtaHtml:'<div style="margin:0 0 18px">If you would like to see them, please let me know.</div>',
+      goSeeSentTemplate20261013:true,signatureClose:'Thank you,',modelExtras:{},
+      generatedPhotoMode:'live-gallery',generatedPhotoModeVersion:3,html:'',
+      source:'User-requested CRM go-see package; latest sent Callie email 1a136017f4ed6314; recipients from remaining Work Gmail go-see drafts.',
+      notes:'Callie and Maja only. CRM only; no email sent. Saved gallery and model text remain authoritative.'
+    });
+  }
+  data.recovery={...(data.recovery||{}),[marker]:1};
+  return data;
+}
+
 async function bootstrapWorkspace(){
   try{await window.CLMMediaStore?.init?.()}catch(err){console.info('Media store init skipped',err)}
   await ensureMilanArchiveLoaded();
@@ -5935,6 +5966,7 @@ async function bootstrapWorkspace(){
   // Restore the exact loaded gallery after all legacy automatic setup. Automatic setup is read-only for gallery data.
   db=restoreMainGalleryState(db,mainGalleryBeforeAutomaticSetup);
   // Main gallery is authoritative; never rebuild it from package history.
+  db=addCallieMajaGoSeePackages20261013(db);
   db=addHeliKalksteinFollowup20261009(db);
   db=restoreHeliPackageGallery20261009(db);
   db=repairRepeatedFollowupClosings20261009(db);
