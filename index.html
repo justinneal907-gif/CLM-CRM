@@ -2076,7 +2076,8 @@ async function loadWorkspaceIndexedDB(){
         stored.recovery.photoDeleteQuarantine20260929=true;
       }
       // Deletion tombstones are user data; never clear them on reload.
-      return applyRecovered(await restoreSavedGalleryAdditions(stored));
+      try{await restoreSavedGalleryAdditions(stored)}catch(err){console.warn('Gallery additions could not be read; keeping the saved workspace.',err)}
+      return applyRecovered(stored);
     }
   }catch(err){
     console.warn('IndexedDB read unavailable; attempting legacy migration/fallback.',err);
