@@ -201,8 +201,115 @@ const SPECS=[
   }
 ];
 const normalizeName=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+
+/* Verified-contact brand drafts | 2026-10-13
+ * ADD ONLY. Does not write to models, model galleries, photo libraries,
+ * draft photo selections, saved extras, submissions, or existing packages.
+ * Do not regenerate if a user deletes the draft after import.
+ * The Thom Browne record is intentionally UNSENDABLE until a current public
+ * casting-director email is independently verified.
+ */
+function addVerifiedBrandDrafts20261013(data){
+  if(!data||typeof data!=='object')return data;
+  data.recovery=data.recovery||{};
+  if(data.recovery.verifiedBrandDrafts20261013===1)return data;
+  data.drafts=Array.isArray(data.drafts)?data.drafts:[];
+  const byId=new Map((data.models||[]).map(m=>[m.id,m]));
+  const specs=[
+    {
+      key:'bottega-veneta',
+      brand:'Bottega Veneta',
+      contact:'Anita Bitton',
+      company:'Establishment Casting',
+      email:'anita@establishmentnewyork.com',
+      greeting:'Hi Anita,',
+      modelIds:['new-york-women-seven-wright','new-york-women-ni-simone','new-york-women-mob-e'],
+      message:'I wanted to share a new selection of our models for consideration for upcoming Bottega Veneta projects. Their materials are below. Please let me know if you would like to see any of them for a casting or fitting.',
+      contactEvidence:'https://theagents.club/the-establishment-new-york',
+      castingEvidence:'https://models.com/work/bottega-veneta-bottega-veneta--ss-2026-campaign',
+      prior:'Anita received a Chanel package September 20 and Zimmermann package September 21. These are additional, not repeated models.'
+    },
+    {
+      key:'courreges',
+      brand:'Courrèges',
+      contact:'Julia Lange',
+      company:'Art Partner / Julia Lange',
+      email:'info@artpartner.com',
+      greeting:'Hi Julia,',
+      modelIds:['new-york-women-ni-simone','new-york-women-mob-e','new-york-women-seven-wright'],
+      message:'I wanted to follow up with additional model options for possible future Courrèges projects. Their materials are below. Please let me know if you would like to see any of them for a casting or fitting.',
+      contactEvidence:'https://www.artpartner.com/julia-lange',
+      castingEvidence:'https://www.artpartner.com/julia-lange',
+      prior:'A Courrèges SS27 package was already sent September 21 to Julia Lange and Mathilde Curel featuring Claudia, Maja, Rachel, Agang, and Sophia Pippen. This is an optional follow-up, not a first contact. Art Partner email is a verified company inbox, NOT a Julia-only personal mailbox.'
+    },
+    {
+      key:'dkny',
+      brand:'DKNY',
+      contact:'Jennifer Starr',
+      company:'Jennifer Starr Casting',
+      email:'jennifer@jenniferstarr.net',
+      greeting:'Hi Jennifer,',
+      modelIds:['new-york-women-june-ramadhan','new-york-women-erin-connors','new-york-women-janel-cheatham'],
+      message:'I wanted to share additional options for upcoming DKNY commercial fashion projects. Their materials are below. Please let me know if you would like to see any of them for a casting or fitting.',
+      contactEvidence:'https://www.jenniferstarr.net/',
+      castingEvidence:'https://models.com/work/dkny-dkny-spring-2026/2789741',
+      prior:'Jennifer received Callie and Maja in an October 13 go-see email. This package contains different models. Erin is included only for the documented commercial fashion advertising category.'
+    },
+    {
+      key:'thom-browne',
+      brand:'Thom Browne',
+      contact:'',
+      company:'Thom Browne (casting contact pending independent verification)',
+      email:'',
+      greeting:'Hi Thom Browne Team,',
+      modelIds:['new-york-women-seven-wright','new-york-women-claudia-lucchini','new-york-women-sal-soliman'],
+      message:'I wanted to introduce a selection of our models for consideration for future Thom Browne fashion projects. Their materials are below. Please let me know if you would like to see any of them for a casting or fitting.',
+      contactEvidence:'NOT VERIFIED',
+      castingEvidence:'https://models.com/work/thom-browne-thom-browne-fw-26-show/2741957',
+      prior:'HOLD. Sivan Currie has verified Thom Browne show credits, but her address from prior outgoing mail lacks independent public confirmation as a casting contact. No director email or recipient is entered. Do not send until verified.'
+    }
+  ];
+  let created=0;
+  for(const spec of specs){
+    const id='verified-brand-20261013-'+spec.key;
+    if(data.drafts.some(d=>d&&d.id===id))continue;
+    if(spec.modelIds.some(modelId=>!byId.has(modelId))){
+      console.warn('[CLM 2026-10-13] Saved brand draft skipped; model ID is missing:',spec.key);
+      continue;
+    }
+    const models=spec.modelIds.map(modelId=>byId.get(modelId).name);
+    data.drafts.push({
+      id,date:'2026-10-13',purpose:'submission',eventName:'Campaign Casting',
+      packageName:'Campaign Casting | '+spec.brand,
+      contactId:'',contactName:spec.contact,company:spec.company,
+      recipientEmail:spec.email,brandProject:spec.brand,
+      subject:spec.brand+' | Upcoming Model Consideration',
+      packageLink:'',
+      initialMessage:spec.greeting+'\\n\\n'+spec.message,
+      includeStats:true,includePhotos:true,includeSources:true,
+      models,modelIds:[...spec.modelIds],modelExtras:{},
+      generatedPhotoMode:'live-gallery',generatedPhotoModeVersion:3,
+      html:'',
+      castingBriefRaw:'General agency introduction only. No active casting, rates, usage, dates, or deadlines verified.',
+      parsedBrief:{project:spec.brand,location:'Unconfirmed'},
+      brief:spec.brand+' general casting introduction. Confirm project details prior to any availability commitment.',
+      researchStatus:spec.email?'Verified public professional contact; proactive, not an open job':'HOLD: no independently verified casting recipient email',
+      source:'Casting credit: '+spec.castingEvidence,
+      contactEvidence:spec.contactEvidence,
+      castingEvidence:spec.castingEvidence,
+      selectionRationale:'Selected new or previously under-presented models for this director; verify current digitals, availability and fit before sending.',
+      notes:'CONTACT: '+(spec.email||'NOT VERIFIED, LEAVE RECIPIENT EMPTY')+'\\nSOURCE: '+spec.contactEvidence+'\\nCASTING: '+spec.castingEvidence+'\\nHISTORY: '+spec.prior+'\\nExisting CRM gallery, saved images and model texts remain authoritative. Public package link not yet verified; no Gmail draft has been created.'
+    });
+    created++;
+  }
+  data.recovery.verifiedBrandDrafts20261013=1;
+  data.recovery.verifiedBrandDrafts20261013Created=created;
+  return data;
+}
+
 window.addCastingDirectorPackages20261012=function(data){
   if(!data||typeof data!=='object')return data;
+  data=addVerifiedBrandDrafts20261013(data);
   data.recovery={...(data.recovery||{})};
   if(data.recovery.castingDirectorPackages20261012===1)return data;
   data.drafts=Array.isArray(data.drafts)?data.drafts:[];
