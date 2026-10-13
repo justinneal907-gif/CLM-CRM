@@ -4051,6 +4051,44 @@ function editPreviewModelExtra(id){
   const html=sanitizeEditableEmailHtml(t.innerHTML);storeDraftPreview(html);
   const preview=$('#emailPreview');if(preview){preview.innerHTML=draftPreviewHtml(html);preview.dataset.manualRefreshInitialized='1';bindDraftPreviewGifs();}
 }
+function syncSubmissionModelNames(root){
+  const names=selectedModels().map(m=>m.name);
+  const label=names.length<2?(names[0]||''):names.length===2?names.join(' and '):names.slice(0,-1).join(', ')+', and '+names.at(-1);
+  const escape=value=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const known=[...new Set(db.models.flatMap(m=>[m.name,String(m.name||'').split(/\s+/)[0]]).filter(Boolean))].sort((a,b)=>b.length-a.length);
+  if(!known.length)return;
+  // Only the name list immediately following an explicit submission phrase is dynamic.
+  const prefix=String.raw`\b(?:I\s+(?:wanted\s+to|want\s+to|would\s+like\s+to|am)\s+(?:follow\s+up\s+and\s+)?(?:send|submit|introduce|put)|Please\s+consider)\s+(?:you\s+)?(?:over\s+)?`;
+  const name='(?:'+known.map(escape).join('|')+')';
+  const pattern=new RegExp('('+prefix+')('+name+'(?:\\s*(?:,\\s*(?:and\\s+)?|and\\s+|&\\s*)'+name+')*)(?![\\p{L}\\p{N}])','giu');
+  const prefixEnd=new RegExp(prefix+'$','iu');
+  const blocks=[...root.querySelectorAll('p,div,li')].filter(el=>!el.closest('[data-clm-model-id]')&&!el.querySelector('p,div,li,img,[data-clm-model-id]'));
+  for(const block of blocks){
+    // Never process the sign-off or anything following it, including old name bindings.
+    if(/(?:^|\n)\s*(?:Thank\s+you|Thanks|Best(?:\s+regards)?|Kind\s+regards|Regards|Sincerely)[,!]/i.test(block.textContent))break;
+    for(const span of block.querySelectorAll('[data-clm-model-names]')){
+      const before=document.createRange();before.selectNodeContents(block);before.setEndBefore(span);
+      if(!prefixEnd.test(before.toString()))continue;
+      const emphasis=span.querySelector('b,strong,i,em');
+      if(emphasis)emphasis.textContent=label;else span.textContent=label;
+      span.setAttribute('data-clm-model-names','submission');
+    }
+    const walker=document.createTreeWalker(block,4),nodes=[];let node,text='';
+    while((node=walker.nextNode())){
+      if(node.parentElement.closest('[data-clm-model-names],a,script,style')){text+='\u0000'.repeat(node.textContent.length);continue;}
+      nodes.push({node,start:text.length,end:text.length+node.textContent.length});text+=node.textContent;
+    }
+    for(const match of [...text.matchAll(pattern)].reverse()){
+      const start=match.index+match[1].length,end=start+match[2].length;
+      const first=nodes.find(n=>n.start<=start&&n.end>start),last=nodes.find(n=>n.start<end&&n.end>=end);if(!first||!last)continue;
+      const range=document.createRange();range.setStart(first.node,start-first.start);range.setEnd(last.node,end-last.start);
+      const span=document.createElement('span');span.setAttribute('data-clm-model-names','submission');
+      const emphasis=first.node.parentElement.closest('b,strong,i,em');
+      if(emphasis&&block.contains(emphasis)){const inner=document.createElement(emphasis.tagName);inner.textContent=label;span.appendChild(inner);}else span.textContent=label;
+      range.deleteContents();range.insertNode(span);
+    }
+  }
+}
 function editPreviewModels(previousIds,photoModelId=''){
   if(typeof db.draft?.previewHtml!=='string')return;
   const selectionChanged=JSON.stringify(previousIds||[])!==JSON.stringify(selected);
@@ -4066,6 +4104,8 @@ function editPreviewModels(previousIds,photoModelId=''){
     if(block)block.setAttribute('data-clm-model-id',id);
     return block;
   };
+  for(const id of previousIds||[])findBlock(id);
+  if(selectionChanged)syncSubmissionModelNames(root);
   for(const id of previousIds||[])if(!selected.includes(id))findBlock(id)?.remove();
   if(selectionChanged){
   const existing=(previousIds||[]).filter(id=>selected.includes(id)).map(findBlock).filter(Boolean);
