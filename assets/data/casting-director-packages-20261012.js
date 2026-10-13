@@ -285,7 +285,7 @@ function addVerifiedBrandDrafts20261013(data){
       recipientEmail:spec.email,brandProject:spec.brand,
       subject:spec.brand+' | Upcoming Model Consideration',
       packageLink:'',
-      initialMessage:spec.greeting+'\\n\\n'+spec.message,
+      initialMessage:spec.greeting+'\n\n'+spec.message,
       includeStats:true,includePhotos:true,includeSources:true,
       models,modelIds:[...spec.modelIds],modelExtras:{},
       generatedPhotoMode:'live-gallery',generatedPhotoModeVersion:3,
@@ -298,7 +298,7 @@ function addVerifiedBrandDrafts20261013(data){
       contactEvidence:spec.contactEvidence,
       castingEvidence:spec.castingEvidence,
       selectionRationale:'Selected new or previously under-presented models for this director; verify current digitals, availability and fit before sending.',
-      notes:'CONTACT: '+(spec.email||'NOT VERIFIED, LEAVE RECIPIENT EMPTY')+'\\nSOURCE: '+spec.contactEvidence+'\\nCASTING: '+spec.castingEvidence+'\\nHISTORY: '+spec.prior+'\\nExisting CRM gallery, saved images and model texts remain authoritative. Public package link not yet verified; no Gmail draft has been created.'
+      notes:'CONTACT: '+(spec.email||'NOT VERIFIED, LEAVE RECIPIENT EMPTY')+'\nSOURCE: '+spec.contactEvidence+'\nCASTING: '+spec.castingEvidence+'\nHISTORY: '+spec.prior+'\nExisting CRM gallery, saved images and model texts remain authoritative. Public package link not yet verified; no Gmail draft has been created.'
     });
     created++;
   }
