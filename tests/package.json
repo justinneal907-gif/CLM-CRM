@@ -1,5 +1,11 @@
 {
   "private": true,
-  "scripts": { "test": "cd .. && node tests/preview-authority.cjs && node tests/preview-send.cjs && node tests/email-package-integrity.cjs" },
-  "devDependencies": { "jsdom": "30.1.1" }
+  "scripts": {
+    "test": "cd .. && node tests/preview-authority.cjs && node tests/preview-send.cjs && node tests/email-package-integrity.cjs",
+    "test:gallery": "cd .. && node tests/direct-gallery-reload.cjs"
+  },
+  "devDependencies": {
+    "jsdom": "30.1.1",
+    "fake-indexeddb": "6.2.5"
+  }
 }

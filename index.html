@@ -2027,6 +2027,39 @@ function clearLegacyWorkspaceAfterMigration(){
   }
   try{localStorage.setItem(IDB_MIGRATION_MARKER,new Date().toISOString())}catch{}
 }
+// Direct gallery additions survive stale draft/workspace saves and other open tabs.
+const MAIN_GALLERY_ADDITIONS_KEY='main-gallery-user-additions-v1';
+async function saveMainGalleryAdditions(id,photos){
+  const database=await openCRMDatabase();
+  return new Promise((resolve,reject)=>{
+    const tx=database.transaction(IDB_STORE,'readwrite'),store=tx.objectStore(IDB_STORE);
+    const req=store.get(MAIN_GALLERY_ADDITIONS_KEY);
+    req.onsuccess=()=>{
+      const additions=req.result||{};
+      const list=additions[id]||(additions[id]=[]);
+      for(const photo of photos){
+        const url=photoURL(photo);if(!url)continue;
+        if(!list.some(item=>photoURL(item)===url))list.push(structuredClone(photo));
+      }
+      store.put(additions,MAIN_GALLERY_ADDITIONS_KEY);
+    };
+    tx.oncomplete=()=>{database.close();resolve(true)};
+    tx.onerror=()=>{database.close();reject(tx.error||new Error('Gallery save failed.'))};
+    tx.onabort=()=>{database.close();reject(tx.error||new Error('Gallery save was aborted.'))};
+  });
+}
+async function restoreSavedGalleryAdditions(data){
+  const additions=await idbReadWorkspaceAtKey(MAIN_GALLERY_ADDITIONS_KEY);
+  data.photoLibrary=data.photoLibrary||{};
+  for(const [id,photos] of Object.entries(additions||{})){
+    const list=data.photoLibrary[id]||(data.photoLibrary[id]=[]);
+    for(const photo of photos){
+      const url=photoURL(photo);if(!url||isDeletedPhoto(data,id,url))continue;
+      if(!list.some(item=>galleryPhotoKey(item)===galleryPhotoKey(photo)))list.push(structuredClone(photo));
+    }
+  }
+  return data;
+}
 async function loadWorkspaceIndexedDB(){
   try{
     let stored=await idbReadWorkspace();
@@ -2043,13 +2076,14 @@ async function loadWorkspaceIndexedDB(){
         stored.recovery.photoDeleteQuarantine20260929=true;
       }
       // Deletion tombstones are user data; never clear them on reload.
-      return applyRecovered(stored);
+      return applyRecovered(await restoreSavedGalleryAdditions(stored));
     }
   }catch(err){
     console.warn('IndexedDB read unavailable; attempting legacy migration/fallback.',err);
     idbUnavailable=true;
   }
   const migrated=loadLegacyWorkspace();
+  try{await restoreSavedGalleryAdditions(migrated)}catch(err){console.warn('Gallery additions could not be read',err)}
   try{
     await idbWriteWorkspace(structuredClone(migrated));
     idbUnavailable=false;
@@ -3311,7 +3345,7 @@ function download(name,text,type){const a=document.createElement('a');a.href=URL
 function exportAll(){download('justin-agency-crm-upgraded-copy.json',JSON.stringify(db,null,2),'application/json')}
 function exportRoster(){const rows=[['Name','Location','Division','Main Niche','Secondary Niche','Hair','Eyes','Availability','Status From','Status To','Hold / Booking Project','Measurements','Profile URL','Photo URL','Active Board'],...db.models.map(m=>[m.name,m.location,m.division,m.niche||'',m.secondaryNiche||'',m.hair||'',m.eyes||'',m.availabilityStatus||'Unknown',m.statusFrom||'',m.statusTo||'',m.holdProject||'',m.stats||m.measurements,m.profile||m.profileUrl,getPhoto(m),m.activeBoard!==false])];download('chez-les-mannequins-global-roster.csv',rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv')}
 async function importAll(file){try{let data=JSON.parse(await file.text());if(data&&data.state)data=migrateLegacy(data.state);if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('Invalid CRM backup');db=applyRecovered(data);selected=[...(db.selected||[])];save();alert('CRM backup imported.')}catch(e){console.error(e);alert('Could not import that JSON file.')}}
-function resetWorkspace(){if(!confirm('Reset contacts, submissions, bookings, tasks, drafts, selected models, and custom photos in this copy? The seeded roster remains.'))return;db=structuredClone(seed);selected=[];save()}
+async function resetWorkspace(){if(!confirm('Reset contacts, submissions, bookings, tasks, drafts, selected models, and custom photos in this copy? The seeded roster remains.'))return;await idbWriteWorkspaceAtKey({},MAIN_GALLERY_ADDITIONS_KEY);db=structuredClone(seed);selected=[];save()}
 function renderAll(){if(active==='gallery'){renderModelGallery();return;}if(maintenanceSweep())persistWorkspaceSafe(false);renderStats();if(active==='today'){renderToday();return}if(active==='models'){setupFilters();renderModels();return}if(['contacts','submissions','bookings','tasks'].includes(active)){renderTables();return}if(active==='email'){setupFilters();renderContactOptions();renderDrafts();renderEmail();return}}
 function captureDraft(){db.draft={...(db.draft||{}),eventName:$('#emailEvent').value.trim(),purpose:$('#emailPurpose').value,contactId:$('#emailContact').value,contactName:$('#emailContactName').value,company:$('#emailCompany').value,recipientEmail:$('#emailRecipient').value,brandProject:$('#emailBrand').value,packageLink:$('#emailLink').value,brief:$('#emailContext').value,notes:$('#emailPrivateNotes')?.value||'',castingBriefRaw:$('#castingBriefRaw')?.value||db.draft?.castingBriefRaw||'',parsedBrief:db.draft?.parsedBrief||null,subject:$('#emailSubject').value,includeStats:$('#includeStats').checked,measurementUnits:normalizeMeasurementUnits($('#measurementUnits')?.value),includePhotos:$('#includePhotos').checked,includeSources:$('#includeSources').checked,modelIds:[...selected]}}
 function hydrateDraft(){
@@ -5836,19 +5870,32 @@ function renderModelGallery(){
   const photos=mainGalleryPhotoOptions(model);
   grid.innerHTML=photos.map(p=>'<div class="photo-library-card"><img loading="lazy" decoding="async" src="'+esc(packageThumbnailUrl(p.url))+'" alt="'+esc(model.name)+'"><div>'+esc(p.label)+'</div></div>').join('')||'<p>No photos. Upload photos or add a URL.</p>';
 }
+async function commitGalleryPhotos(id,photos){
+  if(!photos.length)return 0;
+  // Commit the dedicated record before touching the workspace or claiming success.
+  await saveMainGalleryAdditions(id,photos);
+  db=await restoreSavedGalleryAdditions(db);
+  await persistWorkspaceSafe(true);
+  return photos.length;
+}
 async function addGalleryUrl(){
   const id=$('#galleryModel').value,url=$('#galleryUrl').value.trim();
   if(!id||!/^https?:\/\//i.test(url))return $('#galleryStatus').textContent='Choose a model and enter a full photo URL.';
-  addMainGalleryPhoto(id,url,'Saved photo');
-  if(!await persistWorkspaceSafe(true))return $('#galleryStatus').textContent='Photo could not be saved.';
-  $('#galleryUrl').value='';renderModelGallery();$('#galleryStatus').textContent='Photo saved.';
+  $('#galleryStatus').textContent='Saving photo…';
+  try{
+    await commitGalleryPhotos(id,[{url:upgradedPhotoURL(url),label:'Saved photo'}]);
+    $('#galleryUrl').value='';renderModelGallery();$('#galleryStatus').textContent='Photo saved.';
+  }catch(err){console.error('Gallery photo save failed',err);$('#galleryStatus').textContent='Photo could not be saved. Please try again.';}
 }
 async function addGalleryFiles(input){
   const id=$('#galleryModel').value;if(!id)return;
   $('#galleryStatus').textContent='Saving photos…';
-  let count=0;for(const file of [...input.files]){const ref=await fileToDraftPhoto(file);if(ref){addMainGalleryPhoto(id,ref,file.name);count++;}}
-  input.value='';if(!await persistWorkspaceSafe(true))return $('#galleryStatus').textContent='Photos could not be saved.';
-  renderModelGallery();$('#galleryStatus').textContent=count+' photos saved.';
+  try{
+    const photos=[];
+    for(const file of [...input.files]){const ref=await fileToDraftPhoto(file);if(!ref)throw new Error('Could not store '+file.name);photos.push({url:ref,label:file.name});}
+    const count=await commitGalleryPhotos(id,photos);
+    input.value='';renderModelGallery();$('#galleryStatus').textContent=count+' photos saved.';
+  }catch(err){console.error('Gallery upload failed',err);$('#galleryStatus').textContent='Photos could not be saved. Please try again.';}
 }
 
 // User-requested CRM-only package. Append once without rewriting existing drafts.
