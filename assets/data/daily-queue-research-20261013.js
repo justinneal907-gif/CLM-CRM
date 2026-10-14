@@ -1969,7 +1969,7 @@ const leads=[
   },
   {
     "priority": 1,
-    "verification": "Researched luxury brand prospect; no public live casting brief",
+    "verification": "Prior package verified in agency sent mail; two additional suggested faces; no announced vacancy.",
     "verifiedAt": "2026-10-14",
     "rate": "Not published",
     "deadline": "",
@@ -1980,7 +1980,7 @@ const leads=[
     "title": "Gabriela Hearst | follow up prior September submission",
     "casterId": "bg-jess-streeters",
     "market": "Paris; international womenswear",
-    "evidence": "Gabriela Hearst S/S 27 show on 2026-10-05 credits Jess Hallett. Cast includes Nyaduola Gabriel, Maartje Verhoef, Agel Akol, Karly Loyce, Saskia de Brauw, Aker Ajak and Karolin Wolter. Lean and strong mature character faces, artisanal serious luxury styling and refined runway proportions. Chez Les Mannequins already sent a Gabriela Hearst model package to Jess Hallett's Streeters representative 2026-09-22.",
+    "evidence": "Gabriela Hearst S/S 27 show on 2026-10-05 credits Jess Hallett. Cast includes Nyaduola Gabriel, Maartje Verhoef, Agel Akol, Karly Loyce, Saskia de Brauw, Aker Ajak and Karolin Wolter. Lean and strong mature character faces, artisanal serious luxury styling and refined runway proportions. Chez Les Mannequins already sent a Gabriela Hearst model package to Jess Hallett's Streeters representative 2026-09-22. Verified agency work sent mail dated 2026-09-22: original names were Ambre, Rachel, Bianca, Maja Stockwell and Claudia. None of those five should be offered as new options in this follow-up.",
     "sources": [
       "https://www.bergdorfgoodman.com/c/designers-a-z-cat000001?navpath=cat000000_cat000001",
       "https://models.com/work/gabriela-hearst-gabriela-hearst-ss-27-show",
@@ -1989,22 +1989,14 @@ const leads=[
     "matches": [
       {
         "name": "Agang",
-        "reason": "5'11; prominent cheekbones and direct intense presence suit sculptural ethical-luxury fashion silhouettes."
+        "reason": "Not included in the Gabriela Hearst package already sent Sept 22. At 5'11 with sculptural cheekbones, short hair and strong runway proportions, an appropriately different new face for serious luxury casting."
       },
       {
-        "name": "Ambre",
-        "reason": "5'11, 32/25/35; sophisticated defined-feature profile for campaign and runway consideration, pending location/travel."
-      },
-      {
-        "name": "Claudia",
-        "reason": "5'10, 30/23/32; refined minimal high-fashion profile with strong slim tailoring dimensions."
-      },
-      {
-        "name": "Maja Stockwell",
-        "reason": "6'2, 32/26/35; sophisticated long silhouette might suit architectural tailoring, but confirm garments and height before any show fitting."
+        "name": "Mary Timms",
+        "reason": "Not included in original Gabriela Hearst submission. At 5'10 with a narrow 30/20/33 shape and distinct fashion look, a fresh possibility for editorial/luxury collections; flag size 11 footwear fit."
       }
     ],
-    "action": "FOLLOW-UP ONLY, not a new introduction: agency already sent 'S/S 2027 Model Package — Gabriela Hearst' on 2026-09-22 to birgitta@streeters.com. Review original models and any response before deciding whether these are truly new faces. Avoid resending an identical package."
+    "action": "FOLLOW-UP ONLY: Previously sent to birgitta@streeters.com on 2026-09-22 with Ambre, Rachel, Bianca, Maja Stockwell and Claudia. Check for response and follow up only with newly researched Agang and Mary Timms. No second new introduction, no repeated model attachments."
   }
 ];
 const knownCasters=new Set((R.casters||[]).map(c=>c.id));for(const c of casters)if(!knownCasters.has(c.id))R.casters.push(c);
