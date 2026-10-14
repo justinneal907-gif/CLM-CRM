@@ -1797,7 +1797,7 @@ const leads=[
     "title": "Khaite | collection and campaign introduction",
     "casterId": "bg-piergiorgio-direct",
     "market": "New York; international projects",
-    "evidence": "Models.com latest Khaite S/S 27 show (2026-09-12) credits Piergiorgio Del Moro and includes Liu Wen, Alex Consani, Kaia Gerber, Julia Nobis, Awar Odhiang and Anok Yai among its fashion-facing cast. Sculptural minimal tailoring, elongated lean proportions and distinctive cheekbone/jaw structures, with short and long hair both represented. A similarity hypothesis, not a measurement-by-measurement eligibility guarantee.",
+    "evidence": "Models.com latest Khaite S/S 27 show (2026-09-12) credits Piergiorgio Del Moro and includes Liu Wen, Alex Consani, Kaia Gerber, Julia Nobis, Awar Odhiang and Anok Yai among its fashion-facing cast. The latest collection mixes romantic lace, sheer fabrics and fluid movement with leather, sculptural tailoring and sharply defined faces; short and long hairstyles both appear in the cast. A similarity hypothesis, not a measurement-by-measurement eligibility guarantee.",
     "sources": [
       "https://www.bergdorfgoodman.com/c/designers-a-z-cat000001?navpath=cat000000_cat000001",
       "https://models.com/work/khaite-khaite-ss-27-show",
@@ -1806,7 +1806,7 @@ const leads=[
     "matches": [
       {
         "name": "Claudia",
-        "reason": "5'10, 30/23/32; lean angular runway profile and precise silhouette suit Khaite's severe tailoring. Confirm European location/travel and updated digitals."
+        "reason": "5'10, 30/23/32; lean angular runway profile and precise silhouette suit Khaite's S/S 27 contrast of romantic delicacy and architectural tailoring. Confirm European location/travel and updated digitals."
       },
       {
         "name": "Agang",
@@ -1814,7 +1814,7 @@ const leads=[
       },
       {
         "name": "Ambre",
-        "reason": "5'11, 32/25/35; defined brows/lips and strong closeup presence, worth testing with a severe low-styling full-length image. Confirm France to NYC travel."
+        "reason": "5'11, 32/25/35; defined brows/lips and strong closeup presence, worth testing with a pared-back full-length and expressive closeup image. Confirm France to NYC travel."
       }
     ],
     "action": "New brand introduction. Casting: Piergiorgio Del Moro, direct work-email route pg@dmfashionstudio.com. Check sent history and current model availability. Submit only if the studio wants upcoming campaign/editorial or show introductions, not an unverified open role."
