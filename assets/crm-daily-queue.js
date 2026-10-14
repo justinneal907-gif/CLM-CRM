@@ -25,6 +25,39 @@ function seed(){
  s.researchVersions.push(R.version);
  }
 }
+/* Apply updated Establishment office routing without changing sent history,
+   models, galleries, image identifiers or any email body. */
+function correctEstablishmentContact(){
+ const c=R.casters.find(x=>x.id==='establishment-calvin');
+ if(!c)return;
+ const ids=new Set(['brand-bottega','bg-20261014-ulla-johnson']);
+ const oldEmail='anita@establishmentnewyork.com';
+ const updateDraft=d=>{
+  if(!d||d.gmailMessageId&&d.sentAt)return;
+  const old=C.emails(d.recipientEmail).includes(oldEmail);
+  const overrideOld=C.emails(d.userOverrides?.fields?.recipientEmail).includes(oldEmail);
+  if(old)d.recipientEmail=c.email;
+  if(overrideOld)d.userOverrides.fields.recipientEmail=c.email;
+  if(old||overrideOld){
+   if(!d.contactName||/anita/i.test(d.contactName))d.contactName=c.name;
+   if(/anita/i.test(d.userOverrides?.fields?.contactName||''))d.userOverrides.fields.contactName=c.name;
+  }
+ };
+ for(const q of state().entries){
+  if(!ids.has(q.id))continue;
+  const previous=C.emails(q.email);
+  if(previous.length&&!previous.includes(oldEmail)&&!previous.includes(c.email))continue;
+  const lead=R.leads.find(x=>x.id===q.id);
+  q.email=c.email;
+  q.contactName=c.name;
+  q.casterId=c.id;
+  q.contactSource=c.source;
+  q.contactVerification=c.scope;
+  if(lead)q.action=lead.action;
+  if(q.draftId)updateDraft((db.drafts||[]).find(d=>d.id===q.draftId));
+  if(q.draftId&&db.activeDraftId===q.draftId)updateDraft(db.draft);
+ }
+}
 function activity(q){const records=(db.submissions||[]).filter(s=>s.draftId&&s.draftId===q.draftId||s.queueId===q.id);return[...(q.receipts||[]),...records].filter(s=>C.emails(s.email||s.recipient).length&&(s.gmailMessageId||s.evidenceVerified&&C.safeUrl(s.evidenceUrl||s.gmailUrl))).sort((a,b)=>String(b.date).localeCompare(String(a.date)));}
 function previous(q){const emails=C.emails(q.email);return[...(db.submissions||[]),...state().entries.flatMap(e=>e.receipts||[])].filter(s=>emails.some(e=>C.emails(s.email).includes(e))&&(s.gmailMessageId||s.evidenceVerified)).sort((a,b)=>String(b.date).localeCompare(String(a.date)))[0];}
 function stale(q){return q.verifiedAt&&date>new Date(new Date(q.verifiedAt+'T12:00:00Z').getTime()+7*86400000).toISOString().slice(0,10);}
@@ -76,6 +109,6 @@ async function buildDraft(q){if(!q)throw Error('Action not found.');if(q.draftId
  const id='daily-queue-draft-'+Date.now()+'-'+Math.random().toString(36).slice(2,7);const d={id,queueId:q.id,date:C.day(),eventName:'',packageName:q.packageName||q.title,purpose,contactName:q.contactName||'',company:q.title,recipientEmail:q.email,brandProject:q.title,subject:q.kind==='gosee'&&q.emailSubject?q.emailSubject:(q.kind==='followup'?'Following Up':'Model Package')+' | '+q.title,packageLink:'',modelIds:ids,models:models.map(m=>m.name),includePhotos:ids.length>0,includeStats:ids.length>0,includeSources:ids.length>0,initialMessage:message,blankBodyCopy:q.kind==='gosee',sourceGmailDraftId:q.kind==='gosee'?(q.gmailDraftId||''):'',sourceGmailMessageId:q.kind==='gosee'?(q.gmailMessageId||''):'',followupCtaHtml:'',modelExtras:{},generatedPhotoMode:'live-gallery',generatedPhotoModeVersion:3,html:'',notes:[q.action,q.evidence,q.contactVerification,...(q.sources||[])].filter(Boolean).join('\n'),source:'Daily action queue — reviewed research'};
  db.drafts=db.drafts||[];db.drafts.push(d);q.draftId=id;await persist();await loadDraft(id);
 }
-async function boot(){if(ready)return;ready=true;try{const saved=await idbReadWorkspaceAtKey(QUEUE_KEY);if(saved?.version===1&&(!state()||(saved.updatedAt||0)>(state().updatedAt||0)))db.dailyActionQueue=saved;}catch(err){notice='Could not restore the saved queue: '+err.message;}seed();const originalPersist=persistWorkspaceSafe;persistWorkspaceSafe=function(showError=true){const current=state();if(current)current.updatedAt=Math.max(Date.now(),(current.updatedAt||0)+1);const snapshot=current?structuredClone(current):{};return idbWriteWorkspaceAtKey(snapshot,QUEUE_KEY).then(()=>originalPersist(showError)).catch(err=>{notice='Could not save queue: '+err.message;render();return false;});};try{await persist();}catch(err){notice=err.message;}const original=renderTables;renderTables=function(){const result=original.apply(this,arguments);if(el('view-submissions')?.classList.contains('active'))render();return result;};render();window.CLMDailyQueue={render,buildDraft,getState:()=>structuredClone(state())};}
+async function boot(){if(ready)return;ready=true;try{const saved=await idbReadWorkspaceAtKey(QUEUE_KEY);if(saved?.version===1&&(!state()||(saved.updatedAt||0)>(state().updatedAt||0)))db.dailyActionQueue=saved;}catch(err){notice='Could not restore the saved queue: '+err.message;}seed();correctEstablishmentContact();const originalPersist=persistWorkspaceSafe;persistWorkspaceSafe=function(showError=true){const current=state();if(current)current.updatedAt=Math.max(Date.now(),(current.updatedAt||0)+1);const snapshot=current?structuredClone(current):{};return idbWriteWorkspaceAtKey(snapshot,QUEUE_KEY).then(()=>originalPersist(showError)).catch(err=>{notice='Could not save queue: '+err.message;render();return false;});};try{await persist();}catch(err){notice=err.message;}const original=renderTables;renderTables=function(){const result=original.apply(this,arguments);if(el('view-submissions')?.classList.contains('active'))render();return result;};render();window.CLMDailyQueue={render,buildDraft,getState:()=>structuredClone(state())};}
  if(window.__clmWorkspaceReady)window.CLMDailyQueueReady=boot();else window.addEventListener('clm:workspace-ready',()=>{window.CLMDailyQueueReady=boot();},{once:true});
 })();
