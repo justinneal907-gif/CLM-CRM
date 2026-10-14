@@ -277,7 +277,6 @@ th,td{padding:8px}
 <script src="assets/models/sophia-extra-photo-1.js"></script>
 <script src="assets/models/sophia-extra-photo-2.js"></script>
 <script src="assets/data/core-roster.js?v=20261008-erin-portfolio-1"></script>
-<script src="assets/crm-agency-photos.js?v=20261014-1"></script>
 <script src="assets/data/modelscom-opportunity-drafts-20261009.js?v=20261009-live-gallery-4"></script>
 <script src="assets/data/campaign-casting-drafts-20261009.js?v=20261009-campaign-casting-1"></script>
 <script src="assets/data/casting-director-packages-20261012.js?v=20261012-directors-1"></script>
@@ -6163,7 +6162,6 @@ async function bootstrapWorkspace(){
   db=repairRepeatedFollowupClosings20261009(db);
   db=migrateAssistantGeneratedDraftPhotos20261009(db);
   db=await restoreMainGalleryExplicit20261009(db);
-  db=await window.CLMImportAgencyPhotos(db);
   try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Authoritative gallery repair save skipped',err)}
   db.recovery={...(db.recovery||{}),authoritativeEdits20261008:1};
   selected=[...(db.selected||[])];
