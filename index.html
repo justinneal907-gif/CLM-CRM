@@ -3516,7 +3516,40 @@ const EMAIL_OVERRIDE_FIELD_MAP={
 function markUserFieldOverrideFromElement(id,el){
   const key=EMAIL_OVERRIDE_FIELD_MAP[id];
   if(!key||!el)return;
+  const previousLink=db.draft?.packageLink||'';
   markDraftUserField(key,el.type==='checkbox'?!!el.checked:el.value);
+  if(key==='packageLink')updateDraftPackageLink(el.value,previousLink);
+}
+
+function packageLinkHtml(html,value,previousLink=''){
+  const t=document.createElement('template');t.innerHTML=String(html||'');
+  const url=String(value||'').trim();
+  for(const a of t.content.querySelectorAll('a')){
+    if(a.closest('[data-clm-model-id],[data-clm-model-extra],.saved-model-text'))continue;
+    const href=a.getAttribute('href')||'';
+    const packageAnchor=a.hasAttribute('data-clm-package-link')||
+      (!!previousLink&&href===previousLink)||
+      (/^(?:https?:\/\/)?(?:www\.)?(?:canva\.com|canva\.link)\//i.test(href)&&/^(here|view package|package|portfolio)$/i.test(a.textContent.trim()));
+    if(!packageAnchor)continue;
+    a.setAttribute('data-clm-package-link','1');
+    if(url){a.setAttribute('href',url);a.setAttribute('target','_blank');}
+    else a.removeAttribute('href');
+  }
+  return t.innerHTML;
+}
+function updateDraftPackageLink(value,previousLink=''){
+  const preview=$('#emailPreview');
+  for(const target of activeDraftOverrideTargets()){
+    target.packageLink=String(value||'').trim();
+    for(const field of ['previewHtml','html','followupCtaHtml']){
+      if(typeof target[field]==='string')target[field]=packageLinkHtml(target[field],value,previousLink);
+    }
+  }
+  if(preview?.dataset.manualRefreshInitialized==='1'){
+    const html=packageLinkHtml(currentEmailPreviewHtml(),value,previousLink);
+    storeDraftPreview(html);
+    preview.innerHTML=draftPreviewHtml(html);
+  }
 }
 
 function draftModelLinkMap(){
@@ -4240,11 +4273,11 @@ function generateInitialEmailHtml(){
   const isMiamiSubmission=activeId.startsWith('miami_fashion_week_2026_')&&d.purpose==='submission';
   const useMiamiSentFormat=isMiamiSubmission&&!initialMessage;
   const useBridalUnseenFormat=String(activeRecord?.outreachFormat||working.outreachFormat||'')==='bridal-unseen-20261007';
-  const miamiLink='https://canva.link/phxa5c71325j0qv';
+  const miamiLink=esc(d.link);
   const miamiNamesSource=picked.length?picked.map(m=>m.name):((activeRecord?.models||working.models||[]).filter(Boolean));
   const miamiNames=miamiNamesSource.length<2?(miamiNamesSource[0]||''):(miamiNamesSource.length===2?miamiNamesSource[0]+' and '+miamiNamesSource[1]:miamiNamesSource.slice(0,-1).join(', ')+', and '+miamiNamesSource[miamiNamesSource.length-1]);
   const greeting=useMiamiSentFormat?`Hi ${esc(identity.brand||d.brand)} Team,`:(isBridalFollowup?esc(working.followupGreeting||'Hi,'):(names.length?`Hi ${esc(naturalNameList(names))},`:'Hi,'));
-  const generatedLead=isBridalFollowup?bridalFollowupDefaultBody({...working,models:picked.map(m=>m.name),brandProject:d.brand}):`Below are our recommendations${identity.brand?' for '+esc(identity.brand):''}${identity.event?' for '+esc(identity.event):''}. <a href="https://canva.link/vhk73x4zncw11o7"><strong><em>HERE</em></strong></a> are additional suggestions. Please also feel free to inquire about anyone on <a href="https://www.chezlesmannequins.com/">our website</a> as many of our models travel and may be in town.`;
+  const generatedLead=isBridalFollowup?bridalFollowupDefaultBody({...working,models:picked.map(m=>m.name),brandProject:d.brand}):`Below are our recommendations${identity.brand?' for '+esc(identity.brand):''}${identity.event?' for '+esc(identity.event):''}.${d.link?` <a data-clm-package-link="1" href="${esc(d.link)}"><strong><em>HERE</em></strong></a> are additional suggestions.`:''} Please also feel free to inquire about anyone on <a href="https://www.chezlesmannequins.com/">our website</a> as many of our models travel and may be in town.`;
   const lead=initialMessage?esc(initialMessage).replace(/\r?\n/g,'<br>'):(isBridalFollowup?esc(generatedLead).replace(/\r?\n/g,'<br>'):generatedLead);
 
   const blocks=picked.map(m=>{
@@ -4253,7 +4286,7 @@ function generateInitialEmailHtml(){
     return `<div data-clm-model-id="${esc(m.id)}" style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&forcedStats?' | '+formatStats(forcedStats,d.units):''}</div>${d.sources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftExtraHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`;
   }).join('');
   const extra='';
-  const more=(isBridalFollowup||!!initialMessage||useMiamiSentFormat)?'':'Again, you can see more models <a href="https://canva.link/vhk73x4zncw11o7"><strong><em>HERE</em></strong></a>.';
+  const more=(isBridalFollowup||!!initialMessage||useMiamiSentFormat||!d.link)?'':`Again, you can see more models <a data-clm-package-link="1" href="${esc(d.link)}"><strong><em>HERE</em></strong></a>.`;
   const modelSection=blocks||(d.purpose==='followup'?'':'<div>[Select one or more models]</div>');
   const close=useMiamiSentFormat?'Thank you,':(String(activeRecord?.signatureClose||working?.signatureClose||'').trim()||(tone.tone==='personal'?'Best,':'Thank you,'));
   const followupCtaHtml=String(activeRecord?.followupCtaHtml||working.followupCtaHtml||'').trim();
@@ -4262,17 +4295,17 @@ function generateInitialEmailHtml(){
   const leadHtml=(!blankBodyCopy&&lead)?`<div>${lead}</div><br>`:'';
   if(useBridalUnseenFormat){
     const brand=esc(identity.brand||d.brand);
-    const bridalLink='https://canva.link/vhk73x4zncw11o7';
+    const bridalLink=esc(d.link);
     const bridalGreeting=String(activeRecord?.contactName||working.contactName||'').trim()==='James'?'Hi James,':'Hi '+brand+' Team,';
-    const intro='<div>'+bridalGreeting+'</div><div><br></div><div>I wanted to send '+esc(miamiNames)+' for New York Bridal Week. Their materials are below.</div><div><br></div><div>Click <a href="'+bridalLink+'" target="_blank">HERE</a> to see the rest of our models.</div><div><br></div>';
-    const closing='<div style="margin:8px 0 0">Again, you can find the rest of our models <a href="'+bridalLink+'" target="_blank">HERE</a>.</div><div style="margin:8px 0 0">Let me know if you would like to see any of them for a casting or fitting. If you are not interested in this selection, please let me know and I can send others.</div><div style="margin:8px 0 0"><div>Thank you,</div><div>Justin</div><div><br></div><div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>';
-    return '<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">'+intro+modelSection+closing+'</div>';
+    const intro='<div>'+bridalGreeting+'</div><div><br></div><div>I wanted to send '+esc(miamiNames)+' for New York Bridal Week. Their materials are below.</div><div><br></div><div>Click <a data-clm-package-link="1" href="'+bridalLink+'" target="_blank">HERE</a> to see the rest of our models.</div><div><br></div>';
+    const closing='<div style="margin:8px 0 0">Again, you can find the rest of our models <a data-clm-package-link="1" href="'+bridalLink+'" target="_blank">HERE</a>.</div><div style="margin:8px 0 0">Let me know if you would like to see any of them for a casting or fitting. If you are not interested in this selection, please let me know and I can send others.</div><div style="margin:8px 0 0"><div>Thank you,</div><div>Justin</div><div><br></div><div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>';
+    return packageLinkHtml('<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">'+intro+modelSection+closing+'</div>',d.link);
   }
   if(useMiamiSentFormat){
     const brand=esc(identity.brand||d.brand);
-    const intro=`<div>${greeting}</div><div><br></div><div>I wanted to send ${esc(miamiNames)} to ${brand} for Miami Fashion week. Their materials are below.</div><div><br></div><div>Click <a href="${miamiLink}" target="_blank">HERE</a>&nbsp;to see the rest of our models.</div><div><br></div>`;
-    const closing=`<div style="margin:8px 0 0">Again, you can find the rest of our models&nbsp;<a href="${miamiLink}" target="_blank">HERE</a>.&nbsp;</div><div style="margin:8px 0 0">Let me know if you would like to see any of them for a casting or fitting.</div><div style="margin:8px 0 0"><div>Thank you,</div><div>Justin</div><div><br></div><div><i>WhatsApp:</i></div><div><i>+1(907)317 3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
-    return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${intro}${modelSection}${closing}</div>`;
+    const intro=`<div>${greeting}</div><div><br></div><div>I wanted to send ${esc(miamiNames)} to ${brand} for Miami Fashion week. Their materials are below.</div><div><br></div><div>Click <a data-clm-package-link="1" href="${miamiLink}" target="_blank">HERE</a>&nbsp;to see the rest of our models.</div><div><br></div>`;
+    const closing=`<div style="margin:8px 0 0">Again, you can find the rest of our models&nbsp;<a data-clm-package-link="1" href="${miamiLink}" target="_blank">HERE</a>.&nbsp;</div><div style="margin:8px 0 0">Let me know if you would like to see any of them for a casting or fitting.</div><div style="margin:8px 0 0"><div>Thank you,</div><div>Justin</div><div><br></div><div><i>WhatsApp:</i></div><div><i>+1(907)317 3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
+    return packageLinkHtml(`<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${intro}${modelSection}${closing}</div>`,d.link);
   }
   if(activeRecord?.goSeeSentTemplate20261013||working.goSeeSentTemplate20261013){
     return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${modelSection}${followupCtaHtml}<div>Thank you,</div><br><div>Justin</div><br><div>Chez Les Mannequins · Creative Agency</div><br><div>Model Representation | Artist Management | Casting | Production | Advertising</div></div>`;
@@ -4830,30 +4863,12 @@ function activeApprovedCanvaViewLink(){
   return String(active?.brandCanvaPublicViewLink||db?.draft?.brandCanvaPublicViewLink||CANVA_DRAFT_LINK);
 }
 function stripCanvaLinksText(value,approvedLink=''){
-  // Canva links are normalized to the approved destination for the current
-  // package. Brand-specific filtered packages use Canva's view URL only.
-  const destination=String(approvedLink||activeApprovedCanvaViewLink()||CANVA_DRAFT_LINK);
-  return String(value??'').replace(
-    /(?:https?:\/\/)?(?:www\.)?(?:canva\.com|canva\.link)\/[^\s"'<>\\)]*/gi,
-    destination
-  );
+  // Public Canva destinations belong to the user. Saving, copying and loading
+  // must preserve each URL, including model links and custom preview edits.
+  return String(value??'');
 }
 function normalizeCanvaLinksInDraftRecord(record){
-  if(!record||typeof record!=='object')return record;
-  const approved=String(record.brandCanvaPublicViewLink||CANVA_DRAFT_LINK);
-  let changed=false;
-  const walk=obj=>{
-    if(!obj||typeof obj!=='object')return;
-    for(const key of Object.keys(obj)){
-      const value=obj[key];
-      if(typeof value==='string'){
-        const clean=stripCanvaLinksText(value,approved);
-        if(clean!==value){obj[key]=clean;changed=true;}
-      }else if(value&&typeof value==='object')walk(value);
-    }
-  };
-  walk(record);
-  if(changed&&record.gmailDraftId)record.previewNeedsGmailUpdate=true;
+  // Kept for older recovery callers; global URL replacement is destructive.
   return record;
 }
 function removeCanvaLinksFromWorkspace(data){
@@ -5161,7 +5176,7 @@ function applyBrandSpecificBridalCanvaLinks20261005(data){
     // Canva Connect API view_url values are private/temporary. Never put them
     // in client email. Use only a verified public share URL here.
     delete record.brandCanvaViewLink;
-    record.packageLink=String(record.brandCanvaPublicViewLink||CANVA_DRAFT_LINK);
+    record.packageLink=String(userOverrideFieldValue(record,'packageLink',record.packageLink||record.brandCanvaPublicViewLink||CANVA_DRAFT_LINK));
     const url=record.packageLink;
     const cta='<div data-clm-bridal-followup-cta="20261005" style="margin:0 0 18px"><div>All three are currently available for Bridal Week.</div><br><div>Would you like to see any of them for a casting or fitting, or have us place anyone on hold?</div><br><div>You can also view the rest of our Bridal Week package <a href="'+url+'" target="_blank"><strong><em>HERE</em></strong></a>.</div></div>';
     record.followupCtaHtml=cta;
