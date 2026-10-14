@@ -1736,3 +1736,278 @@ window.CLMDailyResearch = {
     }
   ]
 };
+
+/* BG DESIGNER RESEARCH 2026-10-14: 6 selected brands */
+;(function(){
+'use strict';
+const R=window.CLMDailyResearch;if(!R)return;
+const casters=[
+  {
+    "id": "bg-piergiorgio-direct",
+    "name": "Piergiorgio Del Moro (DMCASTING)",
+    "email": "pg@dmfashionstudio.com",
+    "source": "https://models.com/people/piergiorgio-del-moro",
+    "scope": "Casting credit: Khaite S/S 27 on Models.com. Direct route previously used in work sent mail; no claim of accepting open casting.",
+    "verifiedAt": "2026-10-14"
+  },
+  {
+    "id": "bg-proenza-team",
+    "name": "Julia Lange and Tess Wilcox",
+    "email": "julia.lange@me.com, tess.wilcox@gmail.com",
+    "source": "https://models.com/people/julia-lange",
+    "scope": "Both credited Proenza Schouler S/S 27. Both addresses previously used by Chez Les Mannequins in work sent mail; confirm availability.",
+    "verifiedAt": "2026-10-14"
+  },
+  {
+    "id": "bg-ulla-team",
+    "name": "Anita Bitton and Calvin Wilson (Establishment Casting)",
+    "email": "anita@establishmentnewyork.com",
+    "source": "https://models.com/agency/Establishment-Casting/work",
+    "scope": "Both credited Ulla Johnson S/S 27; published Anita route, fallback office info@establishmentnewyork.com. Confirm this project is still handled by the same team.",
+    "verifiedAt": "2026-10-14"
+  },
+  {
+    "id": "bg-jess-streeters",
+    "name": "Jess Hallett (via Birgitta at Streeters)",
+    "email": "birgitta@streeters.com",
+    "source": "https://models.com/people/jess-hallett",
+    "scope": "Official represented casting director; booking route already used in work sent mail on Gabriela Hearst 2026-09-22.",
+    "verifiedAt": "2026-10-14"
+  },
+  {
+    "id": "bg-rachel-midland",
+    "name": "Rachel Chandler (Midland Casting)",
+    "email": "contact@midland.agency",
+    "source": "https://models.com/people/rachel-chandler",
+    "scope": "Latest Carolina Herrera S/S 27 casting credit. Public studio address also appears in prior agency work correspondence; studio routing, not a verified direct personal email.",
+    "verifiedAt": "2026-10-14"
+  }
+];
+const leads=[
+  {
+    "priority": 1,
+    "verification": "Researched luxury brand prospect; no public live casting brief",
+    "verifiedAt": "2026-10-14",
+    "rate": "Not published",
+    "deadline": "",
+    "status": "Review",
+    "date": "",
+    "id": "bg-20261014-khaite",
+    "kind": "package",
+    "title": "Khaite | collection and campaign introduction",
+    "casterId": "bg-piergiorgio-direct",
+    "market": "New York; international projects",
+    "evidence": "Models.com latest Khaite S/S 27 show (2026-09-12) credits Piergiorgio Del Moro and includes Liu Wen, Alex Consani, Kaia Gerber, Julia Nobis, Awar Odhiang and Anok Yai among its fashion-facing cast. Sculptural minimal tailoring, elongated lean proportions and distinctive cheekbone/jaw structures, with short and long hair both represented. A similarity hypothesis, not a measurement-by-measurement eligibility guarantee.",
+    "sources": [
+      "https://www.bergdorfgoodman.com/c/designers-a-z-cat000001?navpath=cat000000_cat000001",
+      "https://models.com/work/khaite-khaite-ss-27-show",
+      "https://models.com/people/piergiorgio-del-moro/95"
+    ],
+    "matches": [
+      {
+        "name": "Claudia",
+        "reason": "5'10, 30/23/32; lean angular runway profile and precise silhouette suit Khaite's severe tailoring. Confirm European location/travel and updated digitals."
+      },
+      {
+        "name": "Agang",
+        "reason": "5'11, 30/25/33; closely cropped hair, strong cheekbones and long legs create an individual silhouette for the Khaite cast."
+      },
+      {
+        "name": "Ambre",
+        "reason": "5'11, 32/25/35; defined brows/lips and strong closeup presence, worth testing with a severe low-styling full-length image. Confirm France to NYC travel."
+      }
+    ],
+    "action": "New brand introduction. Casting: Piergiorgio Del Moro, direct work-email route pg@dmfashionstudio.com. Check sent history and current model availability. Submit only if the studio wants upcoming campaign/editorial or show introductions, not an unverified open role."
+  },
+  {
+    "priority": 1,
+    "verification": "Researched luxury brand prospect; no public live casting brief",
+    "verifiedAt": "2026-10-14",
+    "rate": "Not published",
+    "deadline": "",
+    "status": "Review",
+    "date": "",
+    "id": "bg-20261014-proenza-schouler",
+    "kind": "package",
+    "title": "Proenza Schouler | runway and lookbook introduction",
+    "casterId": "bg-proenza-team",
+    "market": "New York; international luxury",
+    "evidence": "Latest Proenza Schouler S/S 27 show (2026-09-10) credits Julia Lange and Tess Wilcox. Cast includes Bebe Parnell, Nora Attal, Grace Bol, Faith Johnson, Diane Chiu, Caitlin Soetendal and Josephen Akuei. The cast spans distinct faces, controlled androgyny, sharp bone structure and sleek runway silhouettes; architectural and modern styling. Reviewed CRM body measurements, height and portfolio readiness.",
+    "sources": [
+      "https://www.bergdorfgoodman.com/c/designers-a-z-cat000001?navpath=cat000000_cat000001",
+      "https://models.com/work/proenza-schouler-proenza-schouler-ss-27-show",
+      "https://models.com/people/julia-lange/5"
+    ],
+    "matches": [
+      {
+        "name": "Agang",
+        "reason": "5'11, 30/25/33; strong cheekbones and short hair present the character and clean tailoring profile evident in recent casting."
+      },
+      {
+        "name": "Claudia",
+        "reason": "5'10, 30/23/32; narrow silhouette, angular facial definition and runway-ready look for architectural silhouettes."
+      },
+      {
+        "name": "Mary Timms",
+        "reason": "5'10, 30/20/33; elongated lean editorial measurements may fit design-driven showroom looks; shoe size 11 should be flagged."
+      },
+      {
+        "name": "Maja Stockwell",
+        "reason": "6'2, 32/26/35; long sculptural blonde silhouette, suitable as a character look but height/sample fit must be approved before any runway submission."
+      }
+    ],
+    "action": "New brand introduction; latest casting directors Julia Lange (julia.lange@me.com) and Tess Wilcox (tess.wilcox@gmail.com), both previously addressed in agency work email for a different brand. Confirm fit and ask about upcoming collections without implying an active vacancy."
+  },
+  {
+    "priority": 1,
+    "verification": "Researched luxury brand prospect; no public live casting brief",
+    "verifiedAt": "2026-10-14",
+    "rate": "Not published",
+    "deadline": "",
+    "status": "Review",
+    "date": "",
+    "id": "bg-20261014-ulla-johnson",
+    "kind": "package",
+    "title": "Ulla Johnson | ready-to-wear and campaign introduction",
+    "casterId": "bg-ulla-team",
+    "market": "New York; womenswear",
+    "evidence": "Ulla Johnson S/S 27 show (2026-09-14) lists Anita Bitton and Calvin Wilson of Establishment Casting. Sample cast includes Mauria Caetano, Esme Cornelius, Sijia Kang, Jennifer Matias, Aker Ajak and Enya Davis. Brand favors textile-rich romantic design and expressive individual faces; the cast demonstrates diverse complexions, hair textures and airy movement. Compare clean agency digitals, not only highly styled shots.",
+    "sources": [
+      "https://www.bergdorfgoodman.com/c/designers-a-z-cat000001?navpath=cat000000_cat000001",
+      "https://models.com/work/ulla-johnson-ulla-johnson-ss-27-show",
+      "https://models.com/agency/Establishment-Casting/work"
+    ],
+    "matches": [
+      {
+        "name": "Callie",
+        "reason": "6'1, 32/24/36.5; expressive blue eyes, copper brown hair and strong editorial face align with tactile feminine collections. Need gown/sample height fit checked."
+      },
+      {
+        "name": "Ambre",
+        "reason": "5'11, 32/25/35; soft beauty presence and defined features suit layered prints and lifestyle campaign imagery; France travel confirm."
+      },
+      {
+        "name": "Agang",
+        "reason": "5'11, 30/25/33; distinct close-cropped hair and expressive cheekbones could bring a strong modern contrast to romantic textiles."
+      }
+    ],
+    "action": "New brand introduction; Anita Bitton and Calvin Wilson both credited. Published route to Anita: anita@establishmentnewyork.com; alternate office info@establishmentnewyork.com. Contact does not establish an active casting opening."
+  },
+  {
+    "priority": 1,
+    "verification": "Researched luxury brand prospect; no public live casting brief",
+    "verifiedAt": "2026-10-14",
+    "rate": "Not published",
+    "deadline": "",
+    "status": "Review",
+    "date": "",
+    "id": "bg-20261014-brandon-maxwell",
+    "kind": "package",
+    "title": "Brandon Maxwell | luxury runway introduction",
+    "casterId": "bg-jess-streeters",
+    "market": "New York; luxury ready-to-wear",
+    "evidence": "Models.com records Jess Hallett for Brandon Maxwell S/S 27 on 2026-09-13. Show cast includes Emm Arruda, Jennifer Matias, Paula Soares, Tasha Tilberg and Glorianny Saint Fleur: mature presence, natural self-possession, individual faces and polished refined styling. Brand aesthetic rewards confident editorial expression and elegant tailoring as well as runway dimensions.",
+    "sources": [
+      "https://www.bergdorfgoodman.com/c/designers-a-z-cat000001?navpath=cat000000_cat000001",
+      "https://models.com/people/jess-hallett",
+      "https://models.com/client/brandon-maxwell"
+    ],
+    "matches": [
+      {
+        "name": "Callie",
+        "reason": "6'1, 32/24/36.5; mature expressive headshot, distinctive copper hair, striking runway elegance; sample size concern."
+      },
+      {
+        "name": "Mary Timms",
+        "reason": "5'10, 30/20/33; narrow high-fashion silhouette and versatility can work under crisp tailoring; shoe size 11 flag."
+      },
+      {
+        "name": "Ambre",
+        "reason": "5'11, 32/25/35; strong beauty closeups with sophisticated features; verify travel and full-body tailoring images."
+      }
+    ],
+    "action": "New brand introduction through Jess Hallett's official Streeters representative, birgitta@streeters.com. The agency has previously contacted this representative for Gabriela Hearst; avoid near-duplicate emails and confirm the brand's next booking timeline."
+  },
+  {
+    "priority": 1,
+    "verification": "Researched luxury brand prospect; no public live casting brief",
+    "verifiedAt": "2026-10-14",
+    "rate": "Not published",
+    "deadline": "",
+    "status": "Review",
+    "date": "",
+    "id": "bg-20261014-carolina-herrera",
+    "kind": "package",
+    "title": "Carolina Herrera | ready-to-wear and campaign introduction",
+    "casterId": "bg-rachel-midland",
+    "market": "New York; international luxury",
+    "evidence": "Models.com credits Rachel Chandler as casting director on Carolina Herrera S/S 27 (2026-09-14), a high-profile show including Karlie Kloss, Hejia Li, Sara Eirud, Aker Ajak, Faith Johnson and Luma Vitoria. Structured elegant womenswear, polished beauty and confident diverse facial types. Latest credit has greater weight than previous season or unverified association.",
+    "sources": [
+      "https://www.bergdorfgoodman.com/c/designers-a-z-cat000001?navpath=cat000000_cat000001",
+      "https://models.com/work/carolina-herrera-carolina-herrera-ss-27-show",
+      "https://models.com/people/rachel-chandler"
+    ],
+    "matches": [
+      {
+        "name": "Callie",
+        "reason": "6'1, defined jaw, blue eyes, copper-brown hair; elegant polished campaign prospect for tailored silhouettes. Sample size/height must be approved."
+      },
+      {
+        "name": "Agang",
+        "reason": "5'11, short hair and sculptural cheekbones; dramatic formalwear runway or designer campaign possibility."
+      },
+      {
+        "name": "Ambre",
+        "reason": "5'11, 32/25/35; poised beauty closeup for polished luxury campaigns, pending updated full-length styling and France travel check."
+      },
+      {
+        "name": "Mary Timms",
+        "reason": "5'10, slim silhouette, 30/20/33; possible runway or eveningwear shape, with shoe size 11 fit caveat."
+      }
+    ],
+    "action": "New brand introduction to latest credited casting director Rachel Chandler at Midland studio contact@midland.agency (studio address, not personal direct mailbox). Agency has used the studio email for Valentino on 2026-10-13; consolidate where appropriate."
+  },
+  {
+    "priority": 1,
+    "verification": "Researched luxury brand prospect; no public live casting brief",
+    "verifiedAt": "2026-10-14",
+    "rate": "Not published",
+    "deadline": "",
+    "status": "Review",
+    "date": "",
+    "id": "bg-20261014-gabriela-hearst",
+    "kind": "followup",
+    "title": "Gabriela Hearst | follow up prior September submission",
+    "casterId": "bg-jess-streeters",
+    "market": "Paris; international womenswear",
+    "evidence": "Gabriela Hearst S/S 27 show on 2026-10-05 credits Jess Hallett. Cast includes Nyaduola Gabriel, Maartje Verhoef, Agel Akol, Karly Loyce, Saskia de Brauw, Aker Ajak and Karolin Wolter. Lean and strong mature character faces, artisanal serious luxury styling and refined runway proportions. Chez Les Mannequins already sent a Gabriela Hearst model package to Jess Hallett's Streeters representative 2026-09-22.",
+    "sources": [
+      "https://www.bergdorfgoodman.com/c/designers-a-z-cat000001?navpath=cat000000_cat000001",
+      "https://models.com/work/gabriela-hearst-gabriela-hearst-ss-27-show",
+      "https://models.com/people/jess-hallett"
+    ],
+    "matches": [
+      {
+        "name": "Agang",
+        "reason": "5'11; prominent cheekbones and direct intense presence suit sculptural ethical-luxury fashion silhouettes."
+      },
+      {
+        "name": "Ambre",
+        "reason": "5'11, 32/25/35; sophisticated defined-feature profile for campaign and runway consideration, pending location/travel."
+      },
+      {
+        "name": "Claudia",
+        "reason": "5'10, 30/23/32; refined minimal high-fashion profile with strong slim tailoring dimensions."
+      },
+      {
+        "name": "Maja Stockwell",
+        "reason": "6'2, 32/26/35; sophisticated long silhouette might suit architectural tailoring, but confirm garments and height before any show fitting."
+      }
+    ],
+    "action": "FOLLOW-UP ONLY, not a new introduction: agency already sent 'S/S 2027 Model Package — Gabriela Hearst' on 2026-09-22 to birgitta@streeters.com. Review original models and any response before deciding whether these are truly new faces. Avoid resending an identical package."
+  }
+];
+const knownCasters=new Set((R.casters||[]).map(c=>c.id));for(const c of casters)if(!knownCasters.has(c.id))R.casters.push(c);
+const knownLeads=new Set((R.leads||[]).map(l=>l.id));for(const l of leads)if(!knownLeads.has(l.id))R.leads.push(l);
+R.version='20261014-bergdorf-six-1';R.verifiedAt='2026-10-14';
+})();
