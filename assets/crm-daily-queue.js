@@ -30,7 +30,7 @@ function seed(){
 function correctEstablishmentContact(){
  const c=R.casters.find(x=>x.id==='establishment-calvin');
  if(!c)return;
- const ids=new Set(['brand-bottega','bg-20261014-ulla-johnson']);
+ const ids=new Set(R.leads.filter(l=>l.casterId===c.id).map(l=>l.id));
  const oldEmail='anita@establishmentnewyork.com';
  const updateDraft=d=>{
   if(!d||d.gmailMessageId&&d.sentAt)return;
