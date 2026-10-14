@@ -2003,3 +2003,108 @@ const knownCasters=new Set((R.casters||[]).map(c=>c.id));for(const c of casters)
 const knownLeads=new Set((R.leads||[]).map(l=>l.id));for(const l of leads)if(!knownLeads.has(l.id))R.leads.push(l);
 R.version='20261014-bergdorf-six-1';R.verifiedAt='2026-10-14';
 })();
+
+/* BG DESIGNER RESEARCH 2026-10-14: 2 MORE BRANDS */
+;(function(){
+'use strict';
+const R=window.CLMDailyResearch;if(!R)return;
+const casters=[
+  {
+    "id": "bg-sivan-currie-20261014",
+    "name": "Sivan Currie",
+    "email": "sivan.currie@gmail.com",
+    "source": "https://models.com/people/sivan-currie",
+    "scope": "Models.com lists Thom Browne S/S 27 in Sivan Currie's 2026 work. Email used by Chez Les Mannequins in agency sent mail on Sept 18, 21, 24 and 25 2026, but is not newly confirmed on a public office website. Latest show has no directly accessible individual casting credit; verify agency relationship for upcoming projects.",
+    "verifiedAt": "2026-10-14"
+  }
+];
+const leads=[
+  {
+    "priority": 1,
+    "verification": "Prospective luxury brand introduction — no currently open casting brief verified",
+    "verifiedAt": "2026-10-14",
+    "status": "Review",
+    "date": "",
+    "rate": "Not disclosed",
+    "deadline": "",
+    "receipts": [],
+    "id": "bg-20261014-thom-browne",
+    "kind": "package",
+    "title": "Thom Browne | conceptual runway and campaign introduction",
+    "casterId": "bg-sivan-currie-20261014",
+    "market": "New York / international; London casting contact",
+    "evidence": "Bergdorf Goodman carries Thom Browne. The latest women's S/S 27 show dated Sept 15 2026 includes 55 models: Vlada Roslyakova (opened), Kai Schreiber (closed), Lineisy Montero, Grace Bol, Debra Shaw, Naki Depass, Sijia Kang, Dilone, Mayowa Nicholas, and many character faces. 30 of 55 were first-time Thom Browne cast members. Women average about 5'11 (53 recorded). Distinct faces, androgynous polish, long/tapered silhouettes and theatrical styling are more important than conventional glossy commercial beauty. Models.com's Sivan Currie portfolio includes this latest show and earlier Thom Browne shows (latest work record accessible). Men's S/S 27 on June 22 2026 also cast by Sivan Currie. The show has completed; reach out for future projects, not a currently open runway job.",
+    "sources": [
+      "https://www.bergdorfgoodman.com/c/designers-a-z-cat000001?navpath=cat000000_cat000001",
+      "https://models.com/work/thom-browne-thom-browne-ss-27-show",
+      "https://models.com/people/sivan-currie",
+      "https://fashiondb.com/check-in/thom-browne-ss-27",
+      "https://models.com/work/thom-browne-thom-browne-fw-26-show"
+    ],
+    "matches": [
+      {
+        "name": "Seven Wright",
+        "reason": "Not on the focus shortlist. 5'11, 33/25/32.5, long dark brown hair; strong long fashion silhouette. Submit a clean look alongside a high-concept portrait; latest women's show average height about 5'11."
+      },
+      {
+        "name": "Rachel Stone",
+        "reason": "Not a focus model. 5'10, 32/24.5/33.5; alternative and character-driven presentation has a more coherent fit for Thom Browne's theatrical runway than romantic/luxury bridal submissions."
+      },
+      {
+        "name": "Agang",
+        "reason": "5'11, 30/25/33; sharp cheekbones and short hair give an immediate graphic editorial identity suitable for the casting's distinctive character faces."
+      },
+      {
+        "name": "Alex Connor",
+        "reason": "Not a focus model. London-based 6'2, chest 38/waist 28/hips 35. Slim tailored menswear profile for future Thom Browne male or mixed runway/editorial work. Men's S/S27 was cast by the same director; do not treat the mostly female Sept 15 show as a menswear brief."
+      }
+    ],
+    "action": "NEW INTRODUCTION: Sivan Currie — sivan.currie@gmail.com (previously used in sent work mail, most recently Sept 25). No direct Thom Browne submission found in work sent/drafts after Sept 1. Confirm whether Sivan is handling the next assignment and preferred market; include Seven, Rachel, Agang and Alex only after location, material and wardrobe fit review. Do not present as a live opening."
+  },
+  {
+    "priority": 1,
+    "verification": "Prospective luxury brand introduction — no currently open casting brief verified",
+    "verifiedAt": "2026-10-14",
+    "status": "Review",
+    "date": "",
+    "rate": "Not disclosed",
+    "deadline": "",
+    "receipts": [],
+    "id": "bg-20261014-michael-kors",
+    "kind": "package",
+    "title": "Michael Kors Collection | luxury runway and campaign introduction",
+    "casterId": "bg-piergiorgio-direct",
+    "market": "New York / international womenswear",
+    "evidence": "Bergdorf Goodman lists Michael Kors Collection. On the latest S/S27 runway (Sept 11, 2026) Piergiorgio Del Moro/DMCASTING is explicitly credited by the brand's official show page and Models.com work entry. The 65-person recorded cast included Noor Khan (opened), Alex Consani (closed), Awar Odhiang, Hejia Li, Selena Forrest, Aymeline Valade, Diane Chiu, Julia Nobis and Paloma Elsesser. The house's official creative statement highlights lean tailoring, mini suits, narrow trousers, sculptural dresses, sharp monochrome, bold eyewear and polished movement. The cast is exceptionally competitive, so this is a client introduction rather than a credible claim of an imminent runway booking.",
+    "sources": [
+      "https://www.bergdorfgoodman.com/c/designers-a-z-cat000001?navpath=cat000000_cat000001",
+      "https://models.com/work/michael-kors-collection-michael-kors-collection-ss-27-show",
+      "https://models.com/client/michael-kors-collection/all/2026/1",
+      "https://www.michaelkors-collection.com/",
+      "https://model-scouting.com/check-in/michael-kors-collection-ss-27"
+    ],
+    "matches": [
+      {
+        "name": "Elle Pickens",
+        "reason": "Non-focus Los Angeles model who can travel if confirmed. 5'10, 32/23/34; lean long contemporary tailoring proportions suit the show's fitted jackets, slim pants and sculptural dresses. Confirm availability for NYC."
+      },
+      {
+        "name": "Raquel",
+        "reason": "Non-focus Miami model. 5'11, 33/27/36 and strong pageant-fashion presence may translate to polished campaigns or wider sample fit; her measurements need confirmation against runway samples and usage terms."
+      },
+      {
+        "name": "Seven Wright",
+        "reason": "Non-focus NYC model. 5'11, 33/25/32.5, dark long hair; strong sculptural dress, suiting, and graphic monochrome presentation. Check full-body digitals and mobility before a runway introduction."
+      },
+      {
+        "name": "June Ramadhan",
+        "reason": "Non-focus NYC model. 5'9, 30/23/33; lean measurements are plausible for fitted separates, eyewear and campaign stills; sample and casting minimum height are unknown, so label as secondary campaign/lookbook consideration."
+      }
+    ],
+    "action": "NEW INTRODUCTION: Piergiorgio Del Moro — pg@dmfashionstudio.com, work-mail route used on multiple prior designer submissions. No Michael Kors brand submission found in work sent/drafts after Sept 1. Suggest Elle, Raquel, Seven and June. Check NYC availability, prior outreach frequency to Piergiorgio and the next campaign timing; no open brief is confirmed."
+  }
+];
+const casterIds=new Set((R.casters||[]).map(x=>x.id));for(const x of casters)if(!casterIds.has(x.id))R.casters.push(x);
+const leadIds=new Set((R.leads||[]).map(x=>x.id));for(const x of leads)if(!leadIds.has(x.id))R.leads.push(x);
+R.version='20261014-bergdorf-eight-1';R.verifiedAt='2026-10-14';
+})();
