@@ -4,13 +4,13 @@ const R=window.CLMDailyResearch;if(!R)return;
 const contact={id:'establishment-calvin',name:'Calvin Wilson (Establishment Casting)',email:'info@establishmentnewyork.com',source:'https://models.com/agency/Establishment-Casting/info',scope:'Calvin Wilson is a verified Establishment Casting director. This is the published studio inbox, not a verified direct email. Calvin co-cast Ulla Johnson S/S27, but the latest Bottega Veneta show credits Anita. Confirm responsibility before sending.',verifiedAt:'2026-10-14'};
 if(!R.casters.some(x=>x.id===contact.id))R.casters.push(contact);
 for(const lead of R.leads){
-if(!['brand-bottega','bg-20261014-ulla-johnson'].includes(lead.id))continue;
+const previous=R.casters.find(c=>c.id===lead.casterId);if(!(lead.casterId==='anita'||(/anita/i.test(previous?.name||'')&&/establishment/i.test(previous?.email||''))))continue;
 lead.casterId=contact.id;
 lead.email=contact.email;
 lead.contactName=contact.name;
 lead.contactSource=contact.source;
 lead.contactVerification=contact.scope;
-lead.action=lead.id==='brand-bottega'?'Contact Calvin Wilson via the verified Establishment office address for future Bottega research. Confirm assignment: latest show credited Anita, while Calvin has earlier Bottega casting credits.':'Contact Calvin Wilson through the verified Establishment office address for future Ulla Johnson projects. Calvin co-cast the latest show. Already submitted to Anita on October 14: review previous correspondence before a new send.';
+lead.action=lead.id==='brand-bottega'?'Contact Calvin Wilson via the verified Establishment office address for future Bottega research. Confirm assignment: latest show credited Anita, while Calvin has earlier Bottega casting credits.':lead.id==='bg-20261014-ulla-johnson'?'Contact Calvin Wilson through the verified Establishment office address for future Ulla Johnson projects. Calvin co-cast the latest show. Already submitted to Anita on October 14: review previous correspondence before a new send.':'Contact Calvin Wilson via the Establishment office inbox info@establishmentnewyork.com for research introductions. Confirm current assignment with the studio before sending.';
 }
 R.version='20261014-establishment-calvin-1';R.verifiedAt='2026-10-14';
 })();
