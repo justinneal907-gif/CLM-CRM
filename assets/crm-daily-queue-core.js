@@ -17,7 +17,7 @@ function count({date,models=[],entries=[],submissions=[],drafts=[]}){
  for(const s of receipts){const to=emails(s.email||s.recipient);const key=norm(s.opportunityId)+'|'+to.slice().sort().join(',');
  if(s.kind==='followup'){to.forEach(e=>followups.add(e));continue;}
  if(s.kind==='shoot'){continue;}
- if(s.channel!=='platform')packages.add(key);
+ if(s.channel!=='platform'&&(s.kind==='package'||s.kind==='brand'))packages.add(key);
  for(const id of s.modelIds||[]){if(!jobs[id])continue;if(s.kind==='job'&&s.eligible===true&&s.liveVerified===true)jobs[id].add(norm(s.opportunityId));else outreach[id].add(key);if(s.kind==='gosee')gosees.add(id+'|'+to.join(','));}
  }
  for(const q of entries)if(q.kind==='shoot'&&q.confirmedOn===date&&shootReady(q.shoot))shoots.add(q.id);
