@@ -6175,6 +6175,32 @@ async function bootstrapWorkspace(){
   startGmailSessionKeeper();
   restoreWorkGmailSession().catch(err=>console.info('Gmail session restore skipped',err));
 }
+// Keep each model's horizontal photo-picker position across a package re-render.
+// Selection changes deliberately rebuild the cards, but should never snap the strip to its start.
+const renderEmailSelectionWithoutScrollRestore=renderEmailSelection;
+renderEmailSelection=function(){
+  const root=document.querySelector('#selectedModels');
+  if(!root)return renderEmailSelectionWithoutScrollRestore();
+  const positions=new Map();
+  const current=selectedModels();
+  root.querySelectorAll('.draft-model-card').forEach((card,index)=>{
+    const id=current[index]?.id;
+    if(!id)return;
+    const strip=card.querySelector('.draft-photo-strip');
+    if(strip)positions.set(id,{left:strip.scrollLeft,top:strip.scrollTop,
+      details:[...card.querySelectorAll('details')].map(node=>node.open)});
+  });
+  const result=renderEmailSelectionWithoutScrollRestore();
+  const next=selectedModels();
+  root.querySelectorAll('.draft-model-card').forEach((card,index)=>{
+    const position=positions.get(next[index]?.id);
+    if(!position)return;
+    const strip=card.querySelector('.draft-photo-strip');
+    if(strip){strip.scrollLeft=position.left;strip.scrollTop=position.top;}
+    card.querySelectorAll('details').forEach((node,i)=>{if(i<position.details.length)node.open=position.details[i];});
+  });
+  return result;
+};
 bootstrapWorkspace();
 
 async function restoreOldPhotoLibrary20260929(data){return data;}
