@@ -5,7 +5,7 @@
   'use strict';
   if(window.__clmEmailSyncLoaded)return;
   window.__clmEmailSyncLoaded=true;
-  const SYNC_VERSION='2026-09-30-package-subject-v1';
+  const SYNC_VERSION='2026-10-16-any-package-subject-v2';
   const SYNC_INTERVAL_MS=15*60*1000;
   const KNOWN_IDS_KEY='clm.crm.gmailSentSyncIds.v1';
   let syncTimer=null;
@@ -106,14 +106,14 @@
     }
     const connected=typeof gmailAccessToken!=='undefined'&&!!gmailAccessToken&&Date.now()<gmailTokenExpiresAt;
     extra.innerHTML=connected
-      ? '<b>Sent-mail sync:</b> active every 5 minutes · last check '+(typeof esc==='function'?esc(lastSyncText()):lastSyncText())
+      ? '<b>Sent-mail sync:</b> active every 15 minutes · last check '+(typeof esc==='function'?esc(lastSyncText()):lastSyncText())
       : '<b>Sent-mail sync:</b> connect Work Gmail to enable automatic submission updates while this CRM is open.';
   }
   async function gmailListSent(token){
     const out=[];
     let pageToken='';
     for(let page=0;page<3;page++){
-      const q='in:sent newer_than:45d {subject:"Model Package" subject:"S/S 2027" subject:"SS 2027"}';
+      const q='in:sent newer_than:45d';
       const u=new URL('https://gmail.googleapis.com/gmail/v1/users/me/messages');
       u.searchParams.set('maxResults','100');
       u.searchParams.set('q',q);
@@ -135,7 +135,7 @@
   }
   async function gmailMessageMeta(token,id){
     const u=new URL('https://gmail.googleapis.com/gmail/v1/users/me/messages/'+encodeURIComponent(id));
-    u.searchParams.set('format','metadata');
+    u.searchParams.set('format','full');
     ['Subject','To','Date','X-CLM-Tracking-ID','X-CLM-Tracking-State','X-CLM-Signal-ID'].forEach(x=>u.searchParams.append('metadataHeaders',x));
     const options={headers:{Authorization:'Bearer '+token}};
     const r=window.CLMGmailThrottle?.fetch
@@ -147,6 +147,46 @@
     }
     return await r.json();
   }
+  function sentMimeParts(message){
+    const out=[];const walk=p=>{out.push(p);for(const child of p.parts||[])walk(child)};walk(message.payload||{});return out;
+  }
+  function decodeSentText(data){return new TextDecoder().decode(Uint8Array.from(atob(String(data||'').replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0)))}
+  async function recoverMissingSentPackage(meta,token){
+    const subject=header(meta,'Subject'),to=header(meta,'To');
+    if(/^\s*(re|fwd):/i.test(subject))return;
+    if((db.drafts||[]).some(d=>d.gmailMessageId===meta.id))return;
+    const existing=findDraftForMessage(subject,to,meta.id);
+    if(existing&&!existing.gmailMessageId)return;
+    const parts=sentMimeParts(meta),htmlPart=parts.find(p=>p.mimeType==='text/html'&&p.body?.data);
+    if(!htmlPart)return;
+    const html=decodeSentText(htmlPart.body.data),template=document.createElement('template');template.innerHTML=html;
+    const canonical=url=>{try{const u=new URL(url);return u.hostname.replace(/^www\./,'')+decodeURIComponent(u.pathname).replace(/\/$/,'').toLowerCase()}catch{return ''}};
+    const links=new Set([...template.content.querySelectorAll('a[href]')].map(a=>canonical(a.getAttribute('href'))).filter(x=>x.startsWith('chezlesmannequins.com/')));
+    const models=(db.models||[]).filter(m=>[m.profileUrl,m.profile].some(url=>url&&links.has(canonical(url))));
+    if(!models.length)return; // Personal messages without roster portfolio links are not packages.
+    const manifest=[];
+    for(const img of template.content.querySelectorAll('img')){
+      const src=img.getAttribute('src')||'';if(!src.startsWith('cid:'))continue;
+      const cid=src.slice(4),part=parts.find(p=>(p.headers||[]).some(h=>h.name.toLowerCase()==='content-id'&&h.value.replace(/[<>]/g,'')===cid));
+      if(!part||!/^image\//.test(part.mimeType||''))throw new Error('A sent package photo could not be recovered. The message will be retried.');
+      let data=part.body?.data;
+      if(!data&&part.body?.attachmentId){
+        const url='https://gmail.googleapis.com/gmail/v1/users/me/messages/'+encodeURIComponent(meta.id)+'/attachments/'+encodeURIComponent(part.body.attachmentId);
+        const options={headers:{Authorization:'Bearer '+token}};
+        const response=window.CLMGmailThrottle?.fetch?await window.CLMGmailThrottle.fetch(url,options,{retryRateLimit:true,maxRetries:2}):await fetch(url,options);
+        if(!response.ok)throw new Error('Could not recover a sent photo. Reconnect Work Gmail and sync again.');
+        data=(await response.json()).data;
+      }
+      if(!data)throw new Error('Sent photo bytes are missing. Recovery will retry.');
+      img.setAttribute('src','data:'+part.mimeType+';base64,'+data.replace(/-/g,'+').replace(/_/g,'/'));
+      manifest.push({contentId:cid,originalFilename:part.filename||''});
+    }
+    template.content.querySelectorAll('script,iframe,object,embed,form').forEach(el=>el.remove());
+    template.content.querySelectorAll('*').forEach(el=>[...el.attributes].forEach(a=>{if(/^on/i.test(a.name)||/^(src|href)$/i.test(a.name)&&/^\s*javascript:/i.test(a.value))el.removeAttribute(a.name)}));
+    const sentAt=new Date(Number(meta.internalDate)).toISOString();
+    const recovered={id:'recovered-sent-'+meta.id,subject,packageName:subject,brandProject:subject,purpose:'submission',recipientEmail:to,date:nyDateFromMs(meta.internalDate),sentAt,submittedAt:sentAt,submittedDate:nyDateFromMs(meta.internalDate),gmailMessageId:meta.id,gmailThreadId:meta.threadId,submissionStatus:'Submitted',models:models.map(m=>m.name),modelIds:models.map(m=>m.id),previewHtml:template.innerHTML,html:'',sentImageManifest:manifest,includePhotos:true,includeStats:true,includeSources:true,source:'Recovered exact Work Gmail sent copy',recoveryStoredAt:new Date().toISOString()};
+    db.drafts.push(typeof recoveredPackageModelBlocks==='function'?recoveredPackageModelBlocks(recovered):recovered);meta.clmRecoveredPackage=true;
+  }
   function findDraftForMessage(subject,to,messageId){
     const exactByMessage=messageId?(db?.drafts||[]).find(d=>d.gmailMessageId===messageId):null;
     if(exactByMessage)return exactByMessage;
@@ -154,14 +194,15 @@
     const tos=emailList(to);
     if(!tos.length)return null;
 
-    const sameRecipient=draft=>draftRecipientEmails(d).some(e=>tos.includes(e));
-    let candidates=(db?.drafts||[]).filter(d=>norm(d.subject)===subjectKey&&sameRecipient(d));
+    const sameRecipient=draft=>draftRecipientEmails(draft).some(e=>tos.includes(e));
+    let candidates=(db?.drafts||[]).filter(d=>(!d.gmailMessageId||d.gmailMessageId===messageId)&&norm(d.subject)===subjectKey&&sameRecipient(d));
     if(candidates.length){
       const active=db?.activeDraftId?candidates.find(d=>d.id===db.activeDraftId):null;
       return active||candidates[candidates.length-1];
     }
 
     const brandCandidates=(db?.drafts||[]).filter(d=>{
+      if(d.gmailMessageId&&d.gmailMessageId!==messageId)return false;
       if(!sameRecipient(d))return false;
       const b=norm(draftBrand(d));
       return b&&b.length>=4&&subjectKey.includes(b);
@@ -197,13 +238,13 @@
   function reconcileSentMessage(meta){
     const messageId=meta.id;
     const subject=header(meta,'Subject');
-    if(!/model package|s\/s\s*2027|ss\s*2027/i.test(subject))return false;
     const to=header(meta,'To');
     const date=nyDateFromMs(meta.internalDate);
     const trackingId=header(meta,'X-CLM-Tracking-ID');
     const tracked=header(meta,'X-CLM-Tracking-State')==='armed'&&/^[a-f0-9]{20,}$/.test(trackingId);
     const exactTracked=tracked?(db.drafts||[]).find(d=>d.openTrackingId===trackingId):null;
     const draft=exactTracked||findDraftForMessage(subject,to,messageId);
+    if(!draft&&!/model package|s\/s\s*2027|ss\s*2027/i.test(subject))return false;
     const gmailUrl='https://mail.google.com/mail/u/?authuser='+encodeURIComponent(WORK_EMAIL)+'#sent/'+messageId;
     let sub=existingSubmissionForMessage(messageId,subject,date,to,draft);
     let changed=false;
@@ -293,13 +334,14 @@
         if(known.has(item.id)&&existingMessageIds.has(item.id))continue;
         const meta=await gmailMessageMeta(token,item.id);
         checked++;
+        await recoverMissingSentPackage(meta,token);
         if(reconcileSentMessage(meta))updates++;
         known.add(item.id);
       }
-      saveKnownIds(known);
       db.settings={...(db.settings||{}),gmailLastSyncAt:new Date().toISOString(),gmailSentSyncVersion:SYNC_VERSION};
-      if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+      if(typeof persistWorkspaceSafe==='function'){if(!await persistWorkspaceSafe(true))throw new Error('Sent packages could not be saved. Keep this tab open and back up your data.')}
       else if((updates||checked)&&typeof save==='function')save();
+      saveKnownIds(known);
       if(typeof renderAll==='function'){
         try{renderAll()}catch(renderErr){console.error('CLM post-sync render failed; sync data is still saved.',renderErr)}
       }

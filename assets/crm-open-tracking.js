@@ -840,7 +840,7 @@
         if(resolution==='blocked')throw new Error('Previous tracked send is still unresolved. Check Work Gmail Sent Mail before creating another draft.');
       }
       if(sendBusy)throw new Error('Wait for the current send to finish.');
-      if(typeof saveDraft==='function')saveDraft(false);
+      if(typeof saveDraft==='function'&&!await saveDraft(false))throw new Error('CRM package save failed. Gmail draft was not created.');
       const target=draftTarget();
       const result=await original.apply(this,arguments);
       const id=randomHex(14);
@@ -857,7 +857,7 @@
         openTrackingLastCheckedAt:''
       });
       db.settings=Object.assign({},db.settings||{},{openTrackingVersion:TRACK_VERSION});
-      if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+      if(typeof persistWorkspaceSafe==='function'&&!await persistWorkspaceSafe(true))throw new Error('Gmail draft exists, but its CRM tracking link could not be saved. Check Gmail Drafts before retrying.');
       if(typeof renderAll==='function')renderAll();
       renderTrackerStatus();
       return result;
