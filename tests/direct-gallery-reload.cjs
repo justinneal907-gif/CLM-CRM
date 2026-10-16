@@ -3,7 +3,7 @@ const {JSDOM}=require('jsdom');const {IDBFactory}=require('fake-indexeddb');
 const html=fs.readFileSync('index.html','utf8'),factory=new IDBFactory();
 function page(){
  const dom=new JSDOM(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,''),{url:'https://justinneal907-gif.github.io/CLM-CRM/',runScripts:'outside-only'});
- const ctx=dom.getInternalVMContext();Object.assign(ctx,{structuredClone,console,indexedDB:factory,Blob});
+ const ctx=dom.getInternalVMContext();Object.assign(ctx,{structuredClone,console,indexedDB:factory,Blob,CLMCloud:{init:async()=>{},save:async()=>true}});
  Object.defineProperty(ctx,'crypto',{value:require('node:crypto').webcrypto});
  ctx.FileReader=class{readAsDataURL(blob){blob.arrayBuffer().then(bytes=>{this.result='data:'+blob.type+';base64,'+Buffer.from(bytes).toString('base64');this.onload()}).catch(err=>{this.error=err;this.onerror()})}};
  vm.runInContext(fs.readFileSync('assets/crm-media-store.js','utf8'),ctx);

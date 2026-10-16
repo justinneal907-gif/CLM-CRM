@@ -107,7 +107,7 @@
     if(id)return /image\/gif/i.test(metadata.get(id)?.type||'');
     return /^data:image\/gif/i.test(raw)||/\.gif(?:[?#]|$)/i.test(raw);
   }
-  async function storeFile(file){if(!file)return'';return putBlob(file,{name:file.name||'Uploaded image'})}
+  async function storeFile(file){if(!file)return'';return putBlob(file,{name:file.name||'Uploaded image',optimize:false})}
   async function toDataUrl(value){
     const raw=String(value||''),id=idFromRef(raw);if(!id)return raw;
     const record=await getRecord(raw);return record?.blob?blobToDataUrl(record.blob):'';
@@ -165,6 +165,6 @@
     objectUrls.delete(id);metadata.delete(id);contentKeys.delete(id);
     await tx('readwrite',store=>store.delete(id));
   }
-  window.CLMMediaStore={init,storeFile,putBlob,displayUrl,toDataUrl,migrateWorkspace,isGif,contentKey,findRefByHashes,mediaMeta,isMediaRef:v=>!!idFromRef(v),remove};
+  window.CLMMediaStore={init,storeFile,putBlob,getRecord,displayUrl,toDataUrl,migrateWorkspace,isGif,contentKey,findRefByHashes,mediaMeta,isMediaRef:v=>!!idFromRef(v),remove};
 })();
 

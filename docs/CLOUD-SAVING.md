@@ -1,0 +1,15 @@
+# Private CRM saving
+
+The main CRM uses the existing Supabase project, separate from Submission Manager tables. Sign in through the Private cloud saving panel with the agency work account. Choose Open cloud copy or Save this browser copy to cloud once. Later refreshes resume the confirmed revision automatically. A cloud revision changed by another browser requires reviewing the copies again.
+
+Browser edits are committed to IndexedDB before cloud saving. A cloud failure never reports a confirmed cloud save. The browser copy and its media are retained. Cloud switches keep an additional IndexedDB safety copy in clm-cloud-safety/copies. Existing package journals and gallery recovery records remain intact and may retain newer browser edits; the next save reconciles them against the selected cloud revision.
+
+Workspace data is partitioned by package and gallery without changing its text, image bytes, model IDs or photo associations. Other workspace fields are separate parts. Current working-draft selection and navigation remain local; archived packages, model records, galleries and settings persist remotely. New uploaded images retain original file bytes and filenames. Private storage objects use immutable paths containing their SHA-256 hash. Save verifies an uploaded file before committing references; cold loading verifies bytes before restoring the same local media ID.
+
+The crm_commit RPC intentionally uses SECURITY DEFINER with an empty search_path, an explicit authenticated work-owner check, a locked revision row and an expected-version condition. Direct table writes have no RLS policy. Anonymous users cannot read CRM tables or call this RPC. Authenticated table reads require ownership. The private photo bucket has owner-folder SELECT/INSERT policies and no UPDATE/DELETE policy. No service-role key is shipped. The security advisor reports the intentionally callable SECURITY DEFINER RPC; its owner gate and stale-version rejection are verified in rolled-back database tests.
+
+Each commit atomically retains previous changed parts in crm_cloud_history and increments the revision. No absent package row or photo object is deleted. Package deletion markers remain workspace data. Changing accounts, clearing browser data or moving devices requires signing in again; use the cloud copy after checking its package count.
+
+Run npm run test:cloud --prefix tests, npm run test:persistence --prefix tests and npm run test:gallery --prefix tests. Cloud tests use a simulated service for upload/readback, text, reload, conflicts and failures; database tests separately verify real RLS, versioning and history. An authenticated live-browser sign-in is required to verify the real browser-to-cloud upload flow.
+
+The private-cloud-schema.sql file records the migration already applied through the Supabase migration tool. Do not rerun it as a reset script. Private migration backups are deliberately excluded from this public repository.

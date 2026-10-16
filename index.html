@@ -281,7 +281,9 @@ th,td{padding:8px}
 <script src="assets/data/campaign-casting-drafts-20261009.js?v=20261009-campaign-casting-1"></script>
 <script src="assets/data/casting-director-packages-20261012.js?v=20261012-directors-1"></script>
 <script src="assets/data/casting-director-brand-matches-20261012.js?v=20261012-brand-model-matches-2"></script>
-<script src="assets/crm-media-store.js?v=20261009-gallery-hash-recovery-1"></script>
+<script src="assets/crm-media-store.js?v=20261016-private-cloud"></script>
+<script src="assets/vendor/supabase-2.57.4.js"></script>
+<script src="assets/crm-cloud.js?v=20261016-private-cloud"></script>
 <script src="assets/crm-bridal-materials.js?v=20261005-photo-persistence-2"></script>
 <script src="assets/data/gallery-gmail-recovery-20261009.js?v=2"></script>
 <script>
@@ -2019,9 +2021,15 @@ function idbWriteWorkspaceAtKey(snapshot,key=IDB_STATE_KEY){
           if(time&&time>=previousTime&&time>(journal.deleted[d.id]||0)){journal.records[d.id]=structuredClone(d);journal.times[d.id]=time;}
         }
         for(const [id,d] of Object.entries(journal.records))if((journal.deleted[id]||0)>=(journal.times[id]||Date.parse(d.lastEditedAt||d.recoveryStoredAt||'')||0))delete journal.records[id];
-        const records=new Map((snapshot.drafts||[]).filter(d=>!journal.deleted[d.id]).map(d=>[d.id,d]));
-        for(const [id,d] of Object.entries(journal.records))records.set(id,structuredClone(d));
-        snapshot.drafts=[...records.values()];snapshot.packageDeletionTimes={...journal.deleted};snapshot.packageRestoreTimes={...(snapshot.packageRestoreTimes||{}),...journal.times};
+        // An explicitly accepted cloud copy supersedes older local journal
+        // entries. Keep those entries as recovery data, without reapplying them.
+        const cutoff=snapshot._cloudAcceptedAt||0;
+        const activeDeleted={...(snapshot.packageDeletionTimes||{})};
+        for(const [id,time] of Object.entries(journal.deleted))if(time>cutoff)activeDeleted[id]=time;
+        const records=new Map((snapshot.drafts||[]).filter(d=>!activeDeleted[d.id]).map(d=>[d.id,d]));
+        const activeTimes={...(snapshot.packageRestoreTimes||{})};
+        for(const [id,d] of Object.entries(journal.records))if((journal.times[id]||0)>cutoff){records.set(id,structuredClone(d));activeTimes[id]=journal.times[id]}
+        snapshot.drafts=[...records.values()];snapshot.packageDeletionTimes=activeDeleted;snapshot.packageRestoreTimes=activeTimes;
         store.put(journal,'saved-package-journal-v1');store.put(snapshot,key);
       };
     }
@@ -3121,7 +3129,7 @@ async function persistEditedPackage(){
   const id=db.activeDraftId,editedAt=db.draft?.lastEditedAt;
   const saved=await persistWorkspaceSafe(true);
   if(db.activeDraftId===id&&db.draft?.lastEditedAt===editedAt){
-    packageSaveFeedback(saved?'Package saved in this browser · '+packageDateText(db.draft):'Package NOT saved. Keep this tab open, retry Save draft, and back up your data.',!saved);
+    packageSaveFeedback(saved?'Package saved and verified in Supabase · '+packageDateText(db.draft):'Cloud NOT saved. Your browser copy is retained. Check Private cloud saving above, retry Save draft, and back up your data.',!saved);
     if(saved)renderDrafts();
   }
   return saved;
@@ -5022,7 +5030,11 @@ let workspacePersistTimer=0;
 function writeWorkspaceSnapshot(showError=false){
   let snapshot;
   try{removeCanvaLinksFromWorkspace(db);snapshot=structuredClone(db)}catch{snapshot=JSON.parse(JSON.stringify(db))}
-  return queueIndexedDBWrite(snapshot,showError);
+  return queueIndexedDBWrite(snapshot,showError).then(async saved=>{
+    if(!saved)return false;
+    if(!window.CLMCloud)return false;
+    return window.CLMCloud.save(snapshot);
+  });
 }
 function persistWorkspaceSafe(showError=true){
   // Runtime extensions can load while IndexedDB/media are still opening. They
@@ -6062,7 +6074,7 @@ async function commitGalleryPhotos(id,photos){
   // Commit the dedicated record before touching the workspace or claiming success.
   await saveMainGalleryAdditions(id,photos);
   db=await restoreSavedGalleryAdditions(db);
-  await persistWorkspaceSafe(true);
+  if(!await persistWorkspaceSafe(true))throw new Error('Photos retained in this browser; Supabase save is not confirmed. Connect cloud saving above and retry.');
   return photos.length;
 }
 async function addGalleryUrl(){
@@ -6072,7 +6084,7 @@ async function addGalleryUrl(){
   try{
     await commitGalleryPhotos(id,[{url:upgradedPhotoURL(url),label:'Saved photo'}]);
     $('#galleryUrl').value='';renderModelGallery();$('#galleryStatus').textContent='Photo saved.';
-  }catch(err){console.error('Gallery photo save failed',err);$('#galleryStatus').textContent='Photo could not be saved. Please try again.';}
+  }catch(err){console.error('Gallery photo save failed',err);$('#galleryStatus').textContent='Photo could not be saved to cloud. '+(err.message||'Please try again.');}
 }
 async function addGalleryFiles(input){
   const id=$('#galleryModel').value;if(!id)return;
@@ -6082,7 +6094,7 @@ async function addGalleryFiles(input){
     for(const file of [...input.files]){const ref=await fileToDraftPhoto(file);if(!ref)throw new Error('Could not store '+file.name);photos.push({url:ref,label:file.name});}
     const count=await commitGalleryPhotos(id,photos);
     input.value='';renderModelGallery();$('#galleryStatus').textContent=count+' photos saved.';
-  }catch(err){console.error('Gallery upload failed',err);$('#galleryStatus').textContent='Photos could not be saved. Please try again.';}
+  }catch(err){console.error('Gallery upload failed',err);$('#galleryStatus').textContent='Photos could not be saved to cloud. '+(err.message||'Please try again.');}
 }
 
 // User-requested CRM-only package. Append once without rewriting existing drafts.
@@ -6309,6 +6321,13 @@ async function bootstrapWorkspace(){
   compactPackageActions();
   const casting=$('#castingLeadsPanel');if(casting)casting.addEventListener('toggle',()=>{if(casting.open)ensureCastingLeadsLoaded()});
   window.addEventListener('clm:media-cache-updated',()=>{if(active==='models')renderModels();else if(active==='email'){renderPhotoLibrary();renderEmailSelection()}});
+  if(window.CLMCloud)await window.CLMCloud.init({
+    get:()=>db,
+    replace:async snapshot=>{
+      await idbWriteWorkspace(structuredClone(snapshot));
+      db=snapshot;selected=[...(db.selected||[])];hydrateDraft();renderAll();
+    }
+  });
   window.__clmWorkspaceReady=true;
   await persistWorkspaceSafe(false);
   if(workspaceApp)workspaceApp.inert=false;

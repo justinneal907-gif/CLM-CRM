@@ -3,7 +3,7 @@ const {JSDOM}=require('jsdom'),{IDBFactory}=require('fake-indexeddb');
 const source=fs.readFileSync('index.html','utf8'),factory=new IDBFactory();
 function page(){
  const dom=new JSDOM(source.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,''),{url:'https://justinneal907-gif.github.io/CLM-CRM/',runScripts:'outside-only'});
- const ctx=dom.getInternalVMContext();Object.assign(ctx,{structuredClone,indexedDB:factory,console,Blob,TextDecoder});
+ const ctx=dom.getInternalVMContext();Object.assign(ctx,{structuredClone,indexedDB:factory,console,Blob,TextDecoder,CLMCloud:{init:async()=>{},save:async()=>true}});
  vm.runInContext(fs.readFileSync('assets/crm-bridal-materials.js','utf8'),ctx);
  const script=source.match(/<script>([\s\S]*?)<\/script>/)[1];vm.runInContext(script.slice(0,script.indexOf('bootstrapWorkspace();')),ctx);
  const run=s=>vm.runInContext(s,ctx);run('window.__clmWorkspaceReady=true');
@@ -58,5 +58,8 @@ function page(){
  assert.match(q.run("db.drafts.find(d=>d.gmailMessageId==='custom-sent').previewHtml"),/data:image\/png;base64,/);
  assert.equal(q.run("db.drafts.find(d=>d.gmailMessageId==='custom-sent').sentImageManifest[0].originalFilename"),'original.png');
  const count=q.run('db.drafts.length');await q.run("window.testSent.recoverMissingSentPackage(sent,'token')");assert.equal(q.run('db.drafts.length'),count);
- q.dom.window.close();console.log('PASS: real IndexedDB save/reload, stale-tab protection, autosave fields, timestamps, honest failure, blocked Gmail on failure, additive recovery and custom-subject sent photos.');
+ // Explicit cloud acceptance must not reapply an older local journal version.
+ const accepted=await q.run('idbReadWorkspace()');accepted._cloudAcceptedAt=Date.now()+10;accepted.drafts.find(d=>d.id===saved.id).previewHtml='<p>Accepted cloud text</p>';q.ctx.accepted=accepted;
+ await q.run('idbWriteWorkspace(accepted)');assert.equal((await q.run('idbReadWorkspace()')).drafts.find(d=>d.id===saved.id).previewHtml,'<p>Accepted cloud text</p>');
+ q.dom.window.close();console.log('PASS: real IndexedDB save/reload, stale-tab protection, autosave fields, timestamps, honest failure, blocked Gmail on failure, additive recovery, custom-subject sent photos and cloud-copy acceptance.');
 })().catch(e=>{console.error(e);process.exitCode=1});
