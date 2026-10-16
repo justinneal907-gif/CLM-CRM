@@ -1,6 +1,7 @@
 create table public.crm_cloud_state(owner_id uuid primary key references auth.users(id), version bigint not null default 1, updated_at timestamptz not null default now());
 create table public.crm_cloud_parts(owner_id uuid not null references auth.users(id), part_key text not null, data jsonb not null, primary key(owner_id,part_key));
 create table public.crm_cloud_history(id bigint generated always as identity primary key, owner_id uuid not null references auth.users(id), version bigint not null, previous_parts jsonb not null, saved_at timestamptz not null default now());
+create index crm_cloud_history_owner_revision_idx on public.crm_cloud_history(owner_id,version desc);
 alter table public.crm_cloud_state enable row level security;
 alter table public.crm_cloud_parts enable row level security;
 alter table public.crm_cloud_history enable row level security;
