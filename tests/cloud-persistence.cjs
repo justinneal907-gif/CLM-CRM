@@ -40,6 +40,13 @@ function page(factory=new IDBFactory()){
  await refresh.ctx.CLMCloud.connect('cloud');refresh.get().photoLibrary.m.push({url:'clm-media:missing'});assert.equal(await refresh.ctx.CLMCloud.save(refresh.get()),false);assert.deepEqual(cloud.parts,before);
  // An unrelated signed-in user cannot save through the client.
  cloud.user='other';assert.equal(await second.ctx.CLMCloud.save(second.get()),false);
- for(const p of [first,second,refresh])p.dom.window.close();
+ cloud.user=owner;
+ const recovery=page();await recovery.init();recovery.get().drafts.push({id:'browser-only',previewHtml:'Browser-only text'});
+ await recovery.ctx.CLMCloud.connect('cloud');assert.ok(recovery.get().drafts.some(d=>d.id==='browser-only'),'Opening cloud must retain browser-only packages');
+ recovery.get().drafts=recovery.get().drafts.filter(d=>d.id!=='browser-only');
+ assert.equal(await recovery.ctx.CLMCloud.recoverMissing(),1);assert.equal(cloud.parts['draft:browser-only'].previewHtml,'Browser-only text');
+ cloud.user=null;await recovery.ctx.CLMCloud.connect();const connectionError=recovery.dom.window.document.querySelector('#crmCloudStatus').textContent;
+ assert.equal(await recovery.ctx.CLMCloud.save(recovery.get()),false);assert.equal(recovery.dom.window.document.querySelector('#crmCloudStatus').textContent,connectionError,'Background autosave must retain connection errors');
+ for(const p of [first,second,refresh,recovery])p.dom.window.close();
  console.log('PASS: verified cloud text, private original photo bytes, cold restore, refresh reconnect, offline retry, stale conflict, missing photo protection, work-account restriction and version history.');
 })().catch(error=>{console.error(error);process.exitCode=1});

@@ -4,7 +4,7 @@
   const OWNER='7752d038-f954-4223-8e19-d7485fb30710', BUCKET='clm-crm-private';
   const client=window.supabase.createClient('https://coipdgmfuervnuqnfiud.supabase.co','sb_publishable_-3GGsWtASGt6dyTet6TWjg_CoZf7Xqs');
   const skip=new Set(['workspaceSavedAt','dailyActionQueue','activeDraftId','selected','draft','_cloudAcceptedAt']);
-  let version=null, baseline={}, queue=Promise.resolve(), hooks, connected=false, conflict=false;
+  let version=null, baseline={}, queue=Promise.resolve(), hooks, connected=false, conflict=false, connecting=false, connectionError='';
   function parts(data){
     const out={};for(const [key,value] of Object.entries(data))if(!skip.has(key)&&key!=='drafts'&&key!=='photoLibrary')out[key]=value;
     for(const d of data.drafts||[])out['draft:'+d.id]=d;
@@ -93,12 +93,14 @@
   async function save(snapshot){
     const copy=structuredClone(snapshot);
     const operation=queue.then(async()=>{
-      if(!connected||conflict){message(conflict?'Save conflict — browser copy retained. Review cloud copies below.':'Saved in this browser only — sign in and connect cloud saving.',true);return false;}
-      try{message('Saving to Supabase…');version=await commit(copy,version,baseline);await backup({version,parts:baseline},'confirmed');message('Saved and verified in Supabase · '+new Date().toLocaleTimeString());return true;}
+      if(!connected||conflict){if(!connecting&&!connectionError)message(conflict?'Save conflict — browser copy retained. Review cloud copies below.':'Saved in this browser only — connect cloud saving above.',true);return false;}
+      try{message('Saving to Supabase…');version=await commit(copy,version,baseline);await backup({version,parts:baseline},'confirmed');message('Saved and verified in Supabase · '+new Date().toLocaleTimeString());hooks.confirmed?.();return true;}
       catch(error){if(String(error.message).includes('CRM_CONFLICT')){conflict=true;connected=false;}message('Cloud NOT saved: '+error.message+' Browser copy retained.',true);return false;}
     });queue=operation.catch(()=>false);return operation;
   }
   async function connect(mode){
+    if(connecting)return;
+    connecting=true;connectionError='';
     try{
       message(mode?'Checking cloud and preserving both copies…':'Checking work-account connection…');
       await queue;const snapshot=structuredClone(hooks.get()),remote=await read();
@@ -110,16 +112,37 @@
         // Preserve cloud-only records. Never infer deletions from a missing browser row.
         message('Uploading and verifying private photos, then saving packages…');
         const local=mergeBrowser(parts(snapshot),remote.parts);
-        const combined=assemble(local,snapshot);version=await commit(combined,remote.version,remote.parts);await hooks.replace(combined);
+        const combined=assemble(local,snapshot);await hydrateMedia(combined);version=await commit(combined,remote.version,remote.parts);await hooks.replace(combined);
       }else{
-        const next=assemble(remote.parts,snapshot);next._cloudAcceptedAt=Date.now();
+        // The cloud version wins for matching records. Browser-only records
+        // and gallery entries remain accessible instead of disappearing.
+        const next=assemble(mergeBrowser(remote.parts,parts(snapshot)),snapshot);next._cloudAcceptedAt=Date.now();
         // Do not carry a stale editable draft over the cloud package being opened.
         const active=next.drafts.find(d=>d.id===snapshot.activeDraftId);
         if(active){next.draft=structuredClone(active);next.selected=[...(active.modelIds||[])];}
         await hydrateMedia(next);await hooks.replace(next);version=remote.version;baseline=remote.parts;
       }
-      await backup({version,parts:baseline},'confirmed');connected=true;conflict=false;message('Connected · '+remotePackages+' cloud packages · future saves go to Supabase');
-    }catch(error){connected=false;message('Cloud connection stopped: '+error.message+' Your browser copy is safe.',true);}
+      await backup({version,parts:baseline},'confirmed');connected=true;conflict=false;
+      await save(hooks.get());
+    }catch(error){connected=false;connectionError='Cloud connection stopped: '+error.message+' Your browser copy is safe.';message(connectionError,true);}
+    finally{connecting=false;}
+  }
+  async function safetyCopies(){return new Promise((resolve,reject)=>{const request=indexedDB.open('clm-cloud-safety',1);request.onupgradeneeded=()=>request.result.createObjectStore('copies');request.onerror=()=>reject(request.error);request.onsuccess=()=>{const db=request.result,tx=db.transaction('copies','readonly'),get=tx.objectStore('copies').getAll();get.onsuccess=()=>resolve((get.result||[]).filter(row=>Array.isArray(row.drafts)));get.onerror=()=>reject(get.error);tx.oncomplete=()=>db.close()}})}
+  async function recoverMissing(){
+    try{
+      await queue;const original=structuredClone(hooks.get());await backup(original);
+      let merged=parts(original);const before=(original.drafts||[]).length;
+      for(const copy of await safetyCopies()){
+        const old=parts(copy);
+        for(const key of Object.keys(old))if(key.startsWith('draft:')&&original.packageDeletionTimes?.[key.slice(6)])delete old[key];
+        merged=mergeBrowser(merged,old);
+      }
+      const next=assemble(merged,original);await hooks.replace(next);
+      const added=next.drafts.length-before;
+      message('Recovered '+added+' missing packages from browser safety copies. '+(connected?'Saving to Supabase…':'Browser copy preserved; choose Save this browser copy to cloud.'));
+      if(connected)await save(next);
+      return added;
+    }catch(error){connectionError='Recovery stopped: '+error.message;message(connectionError,true);return false;}
   }
   function assemble(p,local){const out={...local,drafts:[],photoLibrary:{}};for(const [key,value] of Object.entries(p)){if(key.startsWith('draft:'))out.drafts.push(value);else if(key.startsWith('gallery:'))out.photoLibrary[key.slice(8)]=value;else out[key]=value;}return out;}
   async function init(callbacks){
@@ -127,7 +150,8 @@
     const panel=document.createElement('section');panel.style.cssText='margin:12px;padding:14px;border:2px solid #927b53;border-radius:12px;background:#fff;color:#222';
     panel.innerHTML='<strong>Private cloud saving</strong><p id="crmCloudStatus" role="status">Saved in this browser only. Connect Supabase below.</p><details><summary>Connect or review cloud copies</summary><form id="crmCloudLogin"><p>Work account: justin.neal.chezlesmannequins@gmail.com</p><label>Password <input id="crmCloudPassword" type="password" autocomplete="current-password" required></label> <button type="submit">Sign in</button></form><p id="crmCloudReview"></p><button type="button" id="crmCloudInspect">Check cloud</button> <button type="button" id="crmCloudLoad">Open cloud copy</button> <button type="button" id="crmCloudKeep">Save this browser copy to cloud</button><p>Opening a copy keeps a safety backup of this browser. Saving this browser copy retains earlier cloud versions and cloud-only packages.</p></details>';
     document.body.prepend(panel);
-    document.getElementById('crmCloudLogin').onsubmit=async event=>{event.preventDefault();try{check(await client.auth.signInWithPassword({email:'justin.neal.chezlesmannequins@gmail.com',password:document.getElementById('crmCloudPassword').value}));document.getElementById('crmCloudPassword').value='';await connect();}catch(error){message('Sign-in failed: '+error.message,true)}};
+    const recovery=document.createElement('button');recovery.type='button';recovery.id='crmCloudRecover';recovery.textContent='Recover missing browser packages';panel.querySelector('details').append(recovery);recovery.onclick=()=>recoverMissing();
+    document.getElementById('crmCloudLogin').onsubmit=async event=>{event.preventDefault();try{message('Signing in to your work account…');check(await client.auth.signInWithPassword({email:'justin.neal.chezlesmannequins@gmail.com',password:document.getElementById('crmCloudPassword').value}));document.getElementById('crmCloudPassword').value='';await connect();}catch(error){connectionError='Sign-in failed: '+error.message;message(connectionError,true)}};
     document.getElementById('crmCloudInspect').onclick=()=>connect();document.getElementById('crmCloudLoad').onclick=()=>connect('cloud');document.getElementById('crmCloudKeep').onclick=()=>connect('browser');
     // Auto-resume only the exact cloud revision this browser last confirmed.
     const session=await client.auth.getSession();if(session.data?.session?.user?.id===OWNER){
@@ -137,5 +161,5 @@
   }
   async function loadBaseline(){return new Promise(resolve=>{const request=indexedDB.open('clm-cloud-safety',1);request.onupgradeneeded=()=>request.result.createObjectStore('copies');request.onerror=()=>resolve(null);request.onsuccess=()=>{const db=request.result,tx=db.transaction('copies','readonly'),get=tx.objectStore('copies').get('confirmed');get.onsuccess=()=>resolve(get.result||null);get.onerror=()=>resolve(null);tx.oncomplete=()=>db.close()}})}
     // Baselines live in IndexedDB alongside safety copies, never in small localStorage quotas.
-  window.CLMCloud={init,save,parts,assemble,canonical,mergeBrowser,connect,isConnected:()=>connected};
+  window.CLMCloud={init,save,parts,assemble,canonical,mergeBrowser,connect,recoverMissing,isConnected:()=>connected};
 })();

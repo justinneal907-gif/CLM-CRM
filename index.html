@@ -283,7 +283,7 @@ th,td{padding:8px}
 <script src="assets/data/casting-director-brand-matches-20261012.js?v=20261012-brand-model-matches-2"></script>
 <script src="assets/crm-media-store.js?v=20261016-private-cloud"></script>
 <script src="assets/vendor/supabase-2.57.4.js"></script>
-<script src="assets/crm-cloud.js?v=20261016-private-cloud"></script>
+<script src="assets/crm-cloud.js?v=20261016-private-cloud-recovery-2"></script>
 <script src="assets/crm-bridal-materials.js?v=20261005-photo-persistence-2"></script>
 <script src="assets/data/gallery-gmail-recovery-20261009.js?v=2"></script>
 <script>
@@ -6323,6 +6323,7 @@ async function bootstrapWorkspace(){
   window.addEventListener('clm:media-cache-updated',()=>{if(active==='models')renderModels();else if(active==='email'){renderPhotoLibrary();renderEmailSelection()}});
   if(window.CLMCloud)await window.CLMCloud.init({
     get:()=>db,
+    confirmed:()=>packageSaveFeedback('Saved and verified in Supabase.',false),
     replace:async snapshot=>{
       await idbWriteWorkspace(structuredClone(snapshot));
       db=snapshot;selected=[...(db.selected||[])];hydrateDraft();renderAll();
