@@ -2011,17 +2011,17 @@ function idbWriteWorkspaceAtKey(snapshot,key=IDB_STATE_KEY){
       // snapshot from erasing packages saved by this tab. No galleries are merged.
       const read=store.get('saved-package-journal-v1');
       read.onsuccess=()=>{
-        const journal=read.result||{records:{},deleted:{}};
+        const journal=read.result||{records:{},deleted:{}};journal.times=journal.times||{};
         for(const [id,time] of Object.entries(snapshot.packageDeletionTimes||{}))journal.deleted[id]=Math.max(journal.deleted[id]||0,time);
         for(const d of snapshot.drafts||[]){
-          const time=Date.parse(d.lastEditedAt||d.recoveryStoredAt||'')||0;
-          const previous=journal.records[d.id],previousTime=Date.parse(previous?.lastEditedAt||previous?.recoveryStoredAt||'')||0;
-          if(time&&time>=previousTime&&time>(journal.deleted[d.id]||0))journal.records[d.id]=structuredClone(d);
+          const time=Math.max(Date.parse(d.lastEditedAt||d.recoveryStoredAt||'')||0,snapshot.packageRestoreTimes?.[d.id]||0);
+          const previous=journal.records[d.id],previousTime=journal.times[d.id]||Date.parse(previous?.lastEditedAt||previous?.recoveryStoredAt||'')||0;
+          if(time&&time>=previousTime&&time>(journal.deleted[d.id]||0)){journal.records[d.id]=structuredClone(d);journal.times[d.id]=time;}
         }
-        for(const [id,d] of Object.entries(journal.records))if((journal.deleted[id]||0)>=(Date.parse(d.lastEditedAt||d.recoveryStoredAt||'')||0))delete journal.records[id];
+        for(const [id,d] of Object.entries(journal.records))if((journal.deleted[id]||0)>=(journal.times[id]||Date.parse(d.lastEditedAt||d.recoveryStoredAt||'')||0))delete journal.records[id];
         const records=new Map((snapshot.drafts||[]).filter(d=>!journal.deleted[d.id]).map(d=>[d.id,d]));
         for(const [id,d] of Object.entries(journal.records))records.set(id,structuredClone(d));
-        snapshot.drafts=[...records.values()];snapshot.packageDeletionTimes={...journal.deleted};
+        snapshot.drafts=[...records.values()];snapshot.packageDeletionTimes={...journal.deleted};snapshot.packageRestoreTimes={...(snapshot.packageRestoreTimes||{}),...journal.times};
         store.put(journal,'saved-package-journal-v1');store.put(snapshot,key);
       };
     }
@@ -3294,6 +3294,25 @@ async function importRecoveredPackages(file){
     const incoming=JSON.parse(await file.text());
     if(incoming.format!=='clm-recovered-sent-packages-v1'||!Array.isArray(incoming.drafts))throw new Error('Choose a recovered sent-package file.');
     await idbWriteWorkspaceAtKey(structuredClone(db),'backup-before-sent-package-recovery-'+Date.now());
+    let restored=0;
+    if(incoming.workspaceBackup){
+      const current=structuredClone(db),backup=structuredClone(incoming.workspaceBackup);
+      if(!Array.isArray(backup.drafts)||!Array.isArray(backup.models))throw new Error('Invalid workspace recovery backup.');
+      // Restore the last complete export, keeping every additional stored row.
+      // The pre-restore workspace is backed up above, including conflicting versions.
+      db={...current,...backup};
+      for(const key of ['drafts','models','contacts','submissions','bookings','tasks']){
+        const rows=new Map((backup[key]||[]).map(row=>[row.id,row]));
+        for(const row of current[key]||[])if(!rows.has(row.id))rows.set(row.id,row);
+        db[key]=[...rows.values()];
+      }
+      for(const key of ['photoLibrary','customPhotos','deletedPhotoKeys','hiddenGalleryPhotoKeys'])db[key]={...(current[key]||{}),...(backup[key]||{})};
+      db.recovery={...(current.recovery||{}),...(backup.recovery||{}),completeExportRestoredAt:new Date().toISOString()};
+      db.packageRestoreTimes={...(current.packageRestoreTimes||{}),...(backup.packageRestoreTimes||{})};
+      for(const record of db.drafts)db.packageRestoreTimes[record.id]=Date.now();
+      restored=db.drafts.length-current.drafts.length;
+      selected=[...(db.selected||[])];hydrateDraft();
+    }
     let added=0;
     for(const record of incoming.drafts){
       if(!record.id||!record.gmailMessageId||typeof record.previewHtml!=='string')throw new Error('Invalid recovered package.');
@@ -3301,8 +3320,8 @@ async function importRecoveredPackages(file){
       db.drafts.push({...recoveredPackageModelBlocks(structuredClone(record)),recoveryStoredAt:new Date().toISOString()});added++;
     }
     if(!await persistWorkspaceSafe(true))throw new Error('Recovery could not be saved. Keep this tab open and back up your data.');
-    renderDrafts();setStatus('Recovered '+added+' sent packages. Existing packages and galleries were preserved.');
-    packageSaveFeedback('Recovered '+added+' sent packages and saved them in this browser.');
+    renderDrafts();setStatus('Restored '+restored+' workspace packages and recovered '+added+' sent copies. Existing packages and galleries were preserved.');
+    packageSaveFeedback('Restored '+restored+' workspace packages and '+added+' sent copies; saved in this browser.');
   }catch(err){setStatus(err.message);packageSaveFeedback(err.message,true);}
 }
 
