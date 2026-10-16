@@ -5025,6 +5025,9 @@ function writeWorkspaceSnapshot(showError=false){
   return queueIndexedDBWrite(snapshot,showError);
 }
 function persistWorkspaceSafe(showError=true){
+  // Runtime extensions can load while IndexedDB/media are still opening. They
+  // must never commit the temporary seed workspace over the saved user data.
+  if(!window.__clmWorkspaceReady)return Promise.resolve(false);
   db.selected=[...selected];
   db.workspaceSavedAt=Math.max(Date.now(),(db.workspaceSavedAt||0)+1);
   if(typeof compactDraftCachesForStorage==='function')compactDraftCachesForStorage();
@@ -6235,6 +6238,7 @@ function addCampaignPackages20261013(data){
 }
 
 async function bootstrapWorkspace(){
+  const workspaceApp=document.querySelector('.app');if(workspaceApp)workspaceApp.inert=true;
   try{await window.CLMMediaStore?.init?.()}catch(err){console.info('Media store init skipped',err)}
   await ensureMilanArchiveLoaded();
   try{
@@ -6305,8 +6309,9 @@ async function bootstrapWorkspace(){
   compactPackageActions();
   const casting=$('#castingLeadsPanel');if(casting)casting.addEventListener('toggle',()=>{if(casting.open)ensureCastingLeadsLoaded()});
   window.addEventListener('clm:media-cache-updated',()=>{if(active==='models')renderModels();else if(active==='email'){renderPhotoLibrary();renderEmailSelection()}});
-  persistWorkspaceSafe(false);
   window.__clmWorkspaceReady=true;
+  await persistWorkspaceSafe(false);
+  if(workspaceApp)workspaceApp.inert=false;
   try{window.dispatchEvent(new CustomEvent('clm:workspace-ready'))}catch{}
   startGmailSessionKeeper();
   restoreWorkGmailSession().catch(err=>console.info('Gmail session restore skipped',err));

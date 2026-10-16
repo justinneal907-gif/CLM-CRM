@@ -6,7 +6,7 @@ function page(){
  const ctx=dom.getInternalVMContext();Object.assign(ctx,{structuredClone,indexedDB:factory,console,Blob,TextDecoder});
  vm.runInContext(fs.readFileSync('assets/crm-bridal-materials.js','utf8'),ctx);
  const script=source.match(/<script>([\s\S]*?)<\/script>/)[1];vm.runInContext(script.slice(0,script.indexOf('bootstrapWorkspace();')),ctx);
- const run=s=>vm.runInContext(s,ctx);
+ const run=s=>vm.runInContext(s,ctx);run('window.__clmWorkspaceReady=true');
  run(`db={models:[{id:'m',name:'Model',location:'NYC',profile:'https://www.chezlesmannequins.com/women/model'}],contacts:[],submissions:[],drafts:[{id:'legacy',subject:'Legacy',date:'2026-10-16',previewHtml:'<p>Keep legacy text</p>',modelIds:[],models:[]}],draft:{subject:'New custom shoot',modelIds:['m']},photoLibrary:{m:[{url:'https://test/original.jpg',label:'Original filename.jpg'}]},settings:{}};selected=['m'];active='email';hydrateDraft();renderAll=()=>{};renderEmailSelection=()=>{};renderBrandAdvisor=()=>{};renderBriefSummary=()=>{};renderSubmissionWarnings=()=>{};renderDraftScope=()=>{};go=async()=>{};`);
  return {dom,ctx,run};
 }
@@ -22,6 +22,13 @@ function page(){
  p.ctx.stale=stale;await p.run('idbWriteWorkspace(stale)');
  const stored=await p.run('idbReadWorkspace()');assert.equal(stored.drafts.length,2);assert.equal(stored.drafts.find(d=>d.id===saved.id).previewHtml,saved.previewHtml);
  assert.equal(stored.drafts.find(d=>d.id==='legacy').lastEditedAt,undefined);
+ // Exercise the actual asynchronous bootstrap while a runtime tries to save seed data.
+ const boot=page();boot.run(`window.__clmWorkspaceReady=false;db=structuredClone(seed);ensureMilanArchiveLoaded=async()=>{};startGmailSessionKeeper=()=>{};restoreWorkGmailSession=async()=>{};window.CLMMediaStore={init:()=>new Promise(resolve=>window.releaseBoot=resolve)};`);
+ const booting=boot.run('bootstrapWorkspace()');assert.equal(await boot.run('persistWorkspaceSafe(true)'),false);
+ boot.run('window.releaseBoot()');await booting;
+ assert.equal(boot.run('db.models.length'),1);assert.equal(boot.run('db.models[0].id'),'m');assert.equal(boot.run('db.drafts.length'),2);boot.dom.window.close();
+ // A runtime extension firing before bootstrap finishes cannot write seed data.
+ p.run('window.__clmWorkspaceReady=false');assert.equal(await p.run('persistWorkspaceSafe(true)'),false);assert.equal((await p.run('idbReadWorkspace()')).drafts.length,2);p.run('window.__clmWorkspaceReady=true');
  // A cold reload uses the independently persisted package journal.
  p.dom.window.close();const q=page();await q.run('(async()=>{db=await loadWorkspaceIndexedDB()})()');q.run('renderDrafts()');
  assert.match(q.run("document.querySelector('#savedDrafts').textContent"),/Recently saved packages/);

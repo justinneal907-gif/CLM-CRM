@@ -9,7 +9,7 @@ function page(){
  vm.runInContext(fs.readFileSync('assets/crm-media-store.js','utf8'),ctx);
  vm.runInContext(fs.readFileSync('assets/crm-bridal-materials.js','utf8'),ctx);
  const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];vm.runInContext(script.slice(0,script.indexOf('bootstrapWorkspace();')),ctx);
- const run=s=>vm.runInContext(s,ctx);
+ const run=s=>vm.runInContext(s,ctx);run('window.__clmWorkspaceReady=true');
  run(`db={models:[{id:'m',name:'Model',location:'NYC'},{id:'n',name:'Other',location:'NYC'}],contacts:[],drafts:[],draft:{modelIds:[]},photoLibrary:{m:[{url:'https://test/old.jpg',label:'Existing'}]},settings:{}};selected=[];active='gallery';setStatus=()=>{};renderAll=()=>{};renderModelGallery();`);
  return {dom,ctx,run};
 }
