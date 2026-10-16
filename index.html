@@ -3307,6 +3307,7 @@ async function importRecoveredPackages(file){
         db[key]=[...rows.values()];
       }
       for(const key of ['photoLibrary','customPhotos','deletedPhotoKeys','hiddenGalleryPhotoKeys'])db[key]={...(current[key]||{}),...(backup[key]||{})};
+      for(const [modelId,photos] of Object.entries(db.photoLibrary))if(Array.isArray(photos)&&photos.length)await saveMainGalleryAdditions(modelId,photos);
       db.recovery={...(current.recovery||{}),...(backup.recovery||{}),completeExportRestoredAt:new Date().toISOString()};
       db.packageRestoreTimes={...(current.packageRestoreTimes||{}),...(backup.packageRestoreTimes||{})};
       for(const record of db.drafts)db.packageRestoreTimes[record.id]=Date.now();
