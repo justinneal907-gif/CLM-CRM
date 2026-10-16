@@ -12,6 +12,18 @@
     return out;
   }
   const canonical=value=>JSON.stringify(value,function(key,item){return item&&typeof item==='object'&&!Array.isArray(item)?Object.keys(item).sort().reduce((out,k)=>(out[k]=item[k],out),{}):item});
+  function mergeBrowser(local,remote){
+    const out={...remote,...local};
+    for(const key of ['models','contacts','submissions','bookings','tasks'])if(Array.isArray(remote[key])&&Array.isArray(local[key])){
+      const records=new Map(remote[key].map((item,i)=>[item.id||'cloud:'+i,item]));
+      for(const [i,item] of local[key].entries()){const id=item.id||'browser:'+i;records.set(id,{...(records.get(id)||{}),...item})}out[key]=[...records.values()];
+    }
+    for(const key of Object.keys(remote))if(key.startsWith('gallery:')&&Array.isArray(local[key])){
+      const items=new Map();for(const item of [...remote[key],...local[key]])items.set(canonical(item),item);out[key]=[...items.values()];
+    }
+    for(const key of ['customPhotos','settings','localGalleryOverrides','hiddenGalleryPhotoKeys','deletedPhotoKeys','packageRestoreTimes','packageDeletionTimes','modelInteractions'])if(remote[key]&&local[key]&&typeof remote[key]==='object'&&!Array.isArray(remote[key]))out[key]={...remote[key],...local[key]};
+    return out;
+  }
   function message(text,error=false){const el=document.getElementById('crmCloudStatus');if(el){el.textContent=text;el.style.color=error?'#a62424':'';}window.dispatchEvent(new CustomEvent('clm:cloud-status',{detail:{text,error}}));}
   function check(result){if(result.error)throw result.error;return result.data;}
   async function signedIn(){const user=check(await client.auth.getUser())?.user;if(user?.id!==OWNER)throw new Error('Sign in with your work account to save to Supabase.');return user;}
@@ -88,6 +100,7 @@
   }
   async function connect(mode){
     try{
+      message(mode?'Checking cloud and preserving both copies…':'Checking work-account connection…');
       await queue;const snapshot=structuredClone(hooks.get()),remote=await read();
       const remotePackages=Object.keys(remote.parts).filter(k=>k.startsWith('draft:')).length;
       document.getElementById('crmCloudReview').textContent='Cloud: '+remotePackages+' packages. This browser: '+(snapshot.drafts||[]).length+' packages. Both copies are preserved before changing copies.';
@@ -95,7 +108,8 @@
       await backup(snapshot);
       if(mode==='browser'){
         // Preserve cloud-only records. Never infer deletions from a missing browser row.
-        const local=parts(snapshot);for(const [key,value] of Object.entries(remote.parts))if(!(key in local))local[key]=value;
+        message('Uploading and verifying private photos, then saving packages…');
+        const local=mergeBrowser(parts(snapshot),remote.parts);
         const combined=assemble(local,snapshot);version=await commit(combined,remote.version,remote.parts);await hooks.replace(combined);
       }else{
         const next=assemble(remote.parts,snapshot);next._cloudAcceptedAt=Date.now();
@@ -123,5 +137,5 @@
   }
   async function loadBaseline(){return new Promise(resolve=>{const request=indexedDB.open('clm-cloud-safety',1);request.onupgradeneeded=()=>request.result.createObjectStore('copies');request.onerror=()=>resolve(null);request.onsuccess=()=>{const db=request.result,tx=db.transaction('copies','readonly'),get=tx.objectStore('copies').get('confirmed');get.onsuccess=()=>resolve(get.result||null);get.onerror=()=>resolve(null);tx.oncomplete=()=>db.close()}})}
     // Baselines live in IndexedDB alongside safety copies, never in small localStorage quotas.
-  window.CLMCloud={init,save,parts,assemble,canonical,connect,isConnected:()=>connected};
+  window.CLMCloud={init,save,parts,assemble,canonical,mergeBrowser,connect,isConnected:()=>connected};
 })();

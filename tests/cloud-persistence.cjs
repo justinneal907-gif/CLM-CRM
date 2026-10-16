@@ -19,6 +19,8 @@ function page(factory=new IDBFactory()){
 }
 (async()=>{
  const first=page();await first.init();assert.equal(await first.ctx.CLMCloud.save(first.get()),false,'Sign-in alone must not overwrite cloud');
+ const merged=first.ctx.CLMCloud.mergeBrowser({models:[{id:'m',name:'Edited'}],'gallery:m':[{url:'local'}]}, {models:[{id:'m',name:'Original',profile:'Keep'},{id:'remote',name:'Cloud-only'}],'gallery:m':[{url:'remote'}],'draft:remote':{id:'remote'}});
+ assert.equal(merged.models.length,2);assert.equal(merged.models[0].profile,'Keep');assert.equal(merged['gallery:m'].length,2);assert.equal(merged['draft:remote'].id,'remote');
  await first.ctx.CLMCloud.connect('cloud');assert.equal(first.get().draft.notes,'Working draft retained');
  first.get().drafts[0].previewHtml='<p>Exact edited text — accents é</p>';
  const blob=new Blob(['original photo bytes'],{type:'image/png'});first.files.set('clm-media:photo-id',{blob,name:'Original filename.png',type:'image/png'});
