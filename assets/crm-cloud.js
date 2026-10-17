@@ -17,6 +17,7 @@
   const skip=new Set(['workspaceSavedAt','dailyActionQueue','activeDraftId','selected','draft','_cloudAcceptedAt']);
   let version=null, baseline={}, queue=Promise.resolve(), hooks, connected=false, conflict=false, connecting=false, connectionError='';
   let pendingSnapshot=null,saveWaiters=[],draining=false;
+  const verifiedMedia={};let mediaCacheQueue=Promise.resolve();
   function parts(data){
     const out={};for(const [key,value] of Object.entries(data))if(!skip.has(key)&&key!=='drafts'&&key!=='photoLibrary')out[key]=value;
     for(const d of data.drafts||[])out['draft:'+d.id]=d;
@@ -60,13 +61,15 @@
   async function digest(blob){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer())),x=>x.toString(16).padStart(2,'0')).join('');}
   function refs(data){const found=new Set();const visit=v=>{if(typeof v==='string'){for(const m of v.matchAll(/clm-media:([A-Za-z0-9_-]+)/g))found.add('clm-media:'+m[1]);}else if(v&&typeof v==='object')Object.values(v).forEach(visit)};visit(data);return [...found];}
   async function uploadMedia(data,previous={},guard=()=>{}){
-    const manifest={...previous};
-    for(const ref of refs(data)){
+    const manifest={...verifiedMedia,...previous},references=refs(data);let cursor=0,completed=0,stopped=false;
+    async function worker(){while(cursor<references.length){
+      if(stopped)return;const ref=references[cursor++];
       guard();
       const record=await window.CLMMediaStore.getRecord(ref);
       if(!record?.blob)throw new Error('A photo is missing from this browser. Cloud save stopped; existing cloud photos are safe.');
       const hash=await digest(record.blob),path=OWNER+'/'+ref.slice(10)+'/'+hash+'/'+encodeURIComponent(record.name||'Uploaded image');
-      if(manifest[ref]?.sha256===hash)continue;
+      if(manifest[ref]?.sha256===hash){completed++;continue;}
+      message('Syncing photo '+(completed+1)+' of '+references.length+' in the background — you can keep editing.');
       const existing=await client.storage.from(BUCKET).download(path);
       guard();
       if(existing.error){
@@ -77,7 +80,12 @@
         if(await digest(verified)!==hash)throw new Error('Photo verification failed. Save stopped.');
       }else if(await digest(existing.data)!==hash)throw new Error('Cloud photo does not match. Save stopped.');
       manifest[ref]={path,sha256:hash,name:record.name};
-    }return manifest;
+      verifiedMedia[ref]=manifest[ref];
+      mediaCacheQueue=mediaCacheQueue.catch(()=>{}).then(()=>backup({...verifiedMedia},'verified-media-v1'));
+      await bounded(mediaCacheQueue,'Verified photo progress',12000);completed++;
+    }}
+    try{await Promise.all(Array.from({length:Math.min(3,references.length)},()=>worker()));}catch(error){stopped=true;throw error;}
+    guard();return manifest;
   }
   async function hydrateMedia(data){
     for(const ref of refs(data)){
@@ -187,13 +195,14 @@
     const recovery=document.createElement('button');recovery.type='button';recovery.id='crmCloudRecover';recovery.textContent='Recover missing browser packages';panel.querySelector('details').append(recovery);recovery.onclick=()=>recoverMissing();
     document.getElementById('crmCloudLogin').onsubmit=async event=>{event.preventDefault();try{message('Signing in to your work account…');check(await client.auth.signInWithPassword({email:'justin.neal.chezlesmannequins@gmail.com',password:document.getElementById('crmCloudPassword').value}));document.getElementById('crmCloudPassword').value='';await connect();}catch(error){connectionError='Sign-in failed: '+error.message;message(connectionError,true)}};
     document.getElementById('crmCloudInspect').onclick=()=>connect();document.getElementById('crmCloudLoad').onclick=()=>connect('cloud');document.getElementById('crmCloudKeep').onclick=()=>connect('browser');
+    Object.assign(verifiedMedia,await bounded(loadBaseline('verified-media-v1'),'Verified photo progress',12000).catch(()=>null)||{});
     // Auto-resume only the exact cloud revision this browser last confirmed.
     const session=await bounded(client.auth.getSession(),'Sign-in session',12000);if(session.data?.session?.user?.id===OWNER){
       const remembered=await bounded(loadBaseline(),'Saved cloud revision',12000);if(remembered){try{const remote=check(await client.from('crm_cloud_state').select('version').eq('owner_id',OWNER).single());if(remote.version===remembered.version){version=remote.version;baseline=remembered.parts;connected=true;message('Cloud connected · pending changes sync in the background');return;}}catch{}}
       await connect();
     }
   }
-  async function loadBaseline(){return new Promise(resolve=>{const request=indexedDB.open('clm-cloud-safety',1);request.onupgradeneeded=()=>request.result.createObjectStore('copies');request.onerror=()=>resolve(null);request.onsuccess=()=>{const db=request.result,tx=db.transaction('copies','readonly'),get=tx.objectStore('copies').get('confirmed');get.onsuccess=()=>resolve(get.result||null);get.onerror=()=>resolve(null);tx.oncomplete=()=>db.close()}})}
+  async function loadBaseline(key='confirmed'){return new Promise(resolve=>{const request=indexedDB.open('clm-cloud-safety',1);request.onupgradeneeded=()=>request.result.createObjectStore('copies');request.onerror=()=>resolve(null);request.onsuccess=()=>{const db=request.result,tx=db.transaction('copies','readonly'),get=tx.objectStore('copies').get(key);get.onsuccess=()=>resolve(get.result||null);get.onerror=()=>resolve(null);tx.oncomplete=()=>db.close()}})}
     // Baselines live in IndexedDB alongside safety copies, never in small localStorage quotas.
   window.CLMCloud={init,save,parts,assemble,canonical,mergeBrowser,connect,recoverMissing,isConnected:()=>connected};
 })();

@@ -10,10 +10,11 @@ function page(factory=new IDBFactory()){
  const localFiles=new Map();ctx.CLMMediaStore={getRecord:async ref=>localFiles.get(ref),putBlob:async(blob,meta)=>{localFiles.set('clm-media:'+meta.id,{blob,name:meta.name});return 'clm-media:'+meta.id}};
  ctx.supabase={createClient:()=>({auth:{getUser:async()=>success({user:{id:cloud.user}}),getSession:async()=>success({session:cloud.user?{user:{id:cloud.user}}:null}),signInWithPassword:async()=>success({})},from:query,rpc:async(name,args)=>{
    cloud.rpcCalls=(cloud.rpcCalls||0)+1;cloud.enteredRpc?.();if(cloud.holdRpc)await cloud.holdRpc;
+   if(cloud.failNextRpc){cloud.failNextRpc=false;return {error:new Error('Interrupted before package commit')}}
    if(cloud.offline)return {error:new Error('Network unavailable')};
    if(args.p_expected!==cloud.version)return {error:new Error('CRM_CONFLICT')};
    cloud.history.push(structuredClone(cloud.parts));Object.assign(cloud.parts,structuredClone(args.p_parts));return success(++cloud.version);
- },storage:{from:()=>({download:async path=>cloud.files.has(path)?success(cloud.files.get(path)):{error:new Error('Not found')},upload:async(path,blob)=>{if(cloud.files.has(path))return {error:new Error('Already exists')};cloud.files.set(path,blob);return success({path})},list:async()=>success([])})}})};
+ },storage:{from:()=>({download:async path=>{cloud.downloads=(cloud.downloads||0)+1;return cloud.files.has(path)?success(cloud.files.get(path)):{error:new Error('Not found')}},upload:async(path,blob)=>{if(cloud.files.has(path))return {error:new Error('Already exists')};cloud.files.set(path,blob);return success({path})},list:async()=>success([])})}})};
  vm.runInContext(fs.readFileSync('assets/crm-cloud.js','utf8'),ctx);
  let workspace={models:[{id:'m',name:'Model'}],drafts:[{id:'existing',previewHtml:'Exact original text'}],photoLibrary:{m:[]},draft:{notes:'Working draft retained'}};
  return {dom,ctx,files:localFiles,factory,get:()=>workspace,set:value=>workspace=value,async init(){await ctx.CLMCloud.init({get:()=>workspace,replace:async value=>{workspace=structuredClone(value)}})}};
@@ -60,6 +61,13 @@ function page(factory=new IDBFactory()){
  cloud.holdRpc=new Promise(()=>{});recovery.get().drafts[0].previewHtml='Retained during timeout';
  assert.equal(await recovery.ctx.CLMCloud.save(recovery.get()),false);assert.match(recovery.dom.window.document.querySelector('#crmCloudStatus').textContent,/timed out/);assert.equal(recovery.get().drafts[0].previewHtml,'Retained during timeout');
  cloud.holdRpc=null;recovery.ctx.setTimeout=normalTimer;
- for(const p of [first,second,refresh,recovery])p.dom.window.close();
+ // Verified photo progress survives a failed package commit and browser refresh.
+ const progress=page();await progress.init();await progress.ctx.CLMCloud.connect('cloud');
+ progress.files.set('clm-media:resumable',{blob:new Blob(['Resumable original bytes'],{type:'image/png'}),name:'resumable.png',type:'image/png'});
+ progress.get().photoLibrary.m.push({url:'clm-media:resumable'});cloud.failNextRpc=true;
+ assert.equal(await progress.ctx.CLMCloud.save(progress.get()),false);
+ const resumed=page(progress.factory);await resumed.init();resumed.set(structuredClone(progress.get()));for(const [key,value] of progress.files)resumed.files.set(key,value);
+ const downloadsBefore=cloud.downloads;assert.equal(await resumed.ctx.CLMCloud.save(resumed.get()),true);assert.equal(cloud.downloads,downloadsBefore,'Verified files must not be downloaded again on retry');
+ for(const p of [first,second,refresh,recovery,progress,resumed])p.dom.window.close();
  console.log('PASS: verified cloud text, private original photo bytes, cold restore, refresh reconnect, offline retry, stale conflict, missing photo protection, work-account restriction and version history.');
 })().catch(error=>{console.error(error);process.exitCode=1});
