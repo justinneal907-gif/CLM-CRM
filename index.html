@@ -283,7 +283,7 @@ th,td{padding:8px}
 <script src="assets/data/casting-director-brand-matches-20261012.js?v=20261012-brand-model-matches-2"></script>
 <script src="assets/crm-media-store.js?v=20261016-private-cloud"></script>
 <script src="assets/vendor/supabase-2.57.4.js"></script>
-<script src="assets/crm-cloud.js?v=20261016-private-cloud-recovery-2"></script>
+<script src="assets/crm-cloud.js?v=20261016-nonblocking-save-3"></script>
 <script src="assets/crm-bridal-materials.js?v=20261005-photo-persistence-2"></script>
 <script src="assets/data/gallery-gmail-recovery-20261009.js?v=2"></script>
 <script>
@@ -6321,17 +6321,18 @@ async function bootstrapWorkspace(){
   compactPackageActions();
   const casting=$('#castingLeadsPanel');if(casting)casting.addEventListener('toggle',()=>{if(casting.open)ensureCastingLeadsLoaded()});
   window.addEventListener('clm:media-cache-updated',()=>{if(active==='models')renderModels();else if(active==='email'){renderPhotoLibrary();renderEmailSelection()}});
-  if(window.CLMCloud)await window.CLMCloud.init({
+  // Local loading is complete. Cloud I/O must never keep the editor inert.
+  window.__clmWorkspaceReady=true;
+  if(workspaceApp)workspaceApp.inert=false;
+  const cloudStartup=window.CLMCloud?window.CLMCloud.init({
     get:()=>db,
     confirmed:()=>packageSaveFeedback('Saved and verified in Supabase.',false),
     replace:async snapshot=>{
       await idbWriteWorkspace(structuredClone(snapshot));
       db=snapshot;selected=[...(db.selected||[])];hydrateDraft();renderAll();
     }
-  });
-  window.__clmWorkspaceReady=true;
-  await persistWorkspaceSafe(false);
-  if(workspaceApp)workspaceApp.inert=false;
+  }):Promise.resolve();
+  cloudStartup.then(()=>persistWorkspaceSafe(false)).catch(err=>console.warn('Cloud startup postponed; browser workspace remains editable.',err));
   try{window.dispatchEvent(new CustomEvent('clm:workspace-ready'))}catch{}
   startGmailSessionKeeper();
   restoreWorkGmailSession().catch(err=>console.info('Gmail session restore skipped',err));

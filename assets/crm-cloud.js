@@ -2,9 +2,21 @@
 (function(){
   'use strict';
   const OWNER='7752d038-f954-4223-8e19-d7485fb30710', BUCKET='clm-crm-private';
-  const client=window.supabase.createClient('https://coipdgmfuervnuqnfiud.supabase.co','sb_publishable_-3GGsWtASGt6dyTet6TWjg_CoZf7Xqs');
+  function bounded(promise,label,ms=20000){let timer;return Promise.race([Promise.resolve(promise),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' timed out. Your browser copy is retained; you can keep editing and retry.')),ms)})]).finally(()=>clearTimeout(timer));}
+  const activeRequests=new Set();
+  function deadline(task,label,ms=45000){let cancelled=false,timer;const failure=()=>new Error(label+' timed out. Browser copy retained; check cloud before retrying.');const guard=()=>{if(cancelled)throw failure()};return Promise.race([task(guard),new Promise((_,reject)=>{timer=setTimeout(()=>{cancelled=true;for(const controller of activeRequests)controller.abort();reject(failure())},ms)})]).finally(()=>clearTimeout(timer));}
+  async function cloudFetch(input,options={}){
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
+    activeRequests.add(controller);
+    const abort=()=>controller.abort();options.signal?.addEventListener('abort',abort,{once:true});
+    if(options.signal?.aborted)controller.abort();
+    try{const response=await fetch(input,{...options,signal:controller.signal});const bytes=await response.arrayBuffer();return new Response([204,205,304].includes(response.status)?null:bytes,{status:response.status,statusText:response.statusText,headers:response.headers});}
+    finally{activeRequests.delete(controller);clearTimeout(timer);options.signal?.removeEventListener('abort',abort);}
+  }
+  const client=window.supabase.createClient('https://coipdgmfuervnuqnfiud.supabase.co','sb_publishable_-3GGsWtASGt6dyTet6TWjg_CoZf7Xqs',{global:{fetch:cloudFetch}});
   const skip=new Set(['workspaceSavedAt','dailyActionQueue','activeDraftId','selected','draft','_cloudAcceptedAt']);
   let version=null, baseline={}, queue=Promise.resolve(), hooks, connected=false, conflict=false, connecting=false, connectionError='';
+  let pendingSnapshot=null,saveWaiters=[],draining=false;
   function parts(data){
     const out={};for(const [key,value] of Object.entries(data))if(!skip.has(key)&&key!=='drafts'&&key!=='photoLibrary')out[key]=value;
     for(const d of data.drafts||[])out['draft:'+d.id]=d;
@@ -26,15 +38,16 @@
   }
   function message(text,error=false){const el=document.getElementById('crmCloudStatus');if(el){el.textContent=text;el.style.color=error?'#a62424':'';}window.dispatchEvent(new CustomEvent('clm:cloud-status',{detail:{text,error}}));}
   function check(result){if(result.error)throw result.error;return result.data;}
-  async function signedIn(){const user=check(await client.auth.getUser())?.user;if(user?.id!==OWNER)throw new Error('Sign in with your work account to save to Supabase.');return user;}
-  async function read(keys){
-    await signedIn();
+  async function signedIn(){const user=check(await bounded(client.auth.getUser(),'Account check',12000))?.user;if(user?.id!==OWNER)throw new Error('Sign in with your work account to save to Supabase.');return user;}
+  async function read(keys,guard=()=>{}){
+    await signedIn();guard();
     for(let attempt=0;attempt<3;attempt++){
       const before=check(await client.from('crm_cloud_state').select('version,updated_at').eq('owner_id',OWNER).single());
+      guard();
       const rows=[];const groups=keys?Array.from({length:Math.ceil(keys.length/30)},(_,i)=>keys.slice(i*30,i*30+30)):[null];
-      for(const group of groups)for(let offset=0;;offset+=100){let query=client.from('crm_cloud_parts').select('part_key,data').eq('owner_id',OWNER);if(group)query=query.in('part_key',group);const page=check(await query.order('part_key').range(offset,offset+99));rows.push(...page);if(page.length<100)break;}
+      for(const group of groups)for(let offset=0;;offset+=100){guard();let query=client.from('crm_cloud_parts').select('part_key,data').eq('owner_id',OWNER);if(group)query=query.in('part_key',group);const page=check(await query.order('part_key').range(offset,offset+99));guard();rows.push(...page);if(page.length<100)break;}
       const after=check(await client.from('crm_cloud_state').select('version,updated_at').eq('owner_id',OWNER).single());
-      if(before.version===after.version)return {version:after.version,parts:Object.fromEntries(rows.map(r=>[r.part_key,r.data]))};
+      guard();if(before.version===after.version)return {version:after.version,parts:Object.fromEntries(rows.map(r=>[r.part_key,r.data]))};
     }
     throw new Error('Cloud is changing. Retry shortly; your browser copy is safe.');
   }
@@ -46,17 +59,21 @@
   });}
   async function digest(blob){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer())),x=>x.toString(16).padStart(2,'0')).join('');}
   function refs(data){const found=new Set();const visit=v=>{if(typeof v==='string'){for(const m of v.matchAll(/clm-media:([A-Za-z0-9_-]+)/g))found.add('clm-media:'+m[1]);}else if(v&&typeof v==='object')Object.values(v).forEach(visit)};visit(data);return [...found];}
-  async function uploadMedia(data,previous={}){
+  async function uploadMedia(data,previous={},guard=()=>{}){
     const manifest={...previous};
     for(const ref of refs(data)){
+      guard();
       const record=await window.CLMMediaStore.getRecord(ref);
       if(!record?.blob)throw new Error('A photo is missing from this browser. Cloud save stopped; existing cloud photos are safe.');
       const hash=await digest(record.blob),path=OWNER+'/'+ref.slice(10)+'/'+hash+'/'+encodeURIComponent(record.name||'Uploaded image');
       if(manifest[ref]?.sha256===hash)continue;
       const existing=await client.storage.from(BUCKET).download(path);
+      guard();
       if(existing.error){
         check(await client.storage.from(BUCKET).upload(path,record.blob,{upsert:false,contentType:record.type,metadata:{originalName:record.name,sha256:hash}}));
+        guard();
         const verified=check(await client.storage.from(BUCKET).download(path));
+        guard();
         if(await digest(verified)!==hash)throw new Error('Photo verification failed. Save stopped.');
       }else if(await digest(existing.data)!==hash)throw new Error('Cloud photo does not match. Save stopped.');
       manifest[ref]={path,sha256:hash,name:record.name};
@@ -81,38 +98,53 @@
       if(!restored)throw new Error('A cloud photo has not uploaded yet. Keep the original browser copy open.');
     }
   }
-  async function commit(snapshot,expected,old){
-    await signedIn();const media=await uploadMedia(snapshot,old.cloudMediaManifest||{});
+  async function commit(snapshot,expected,old,guard=()=>{}){
+    await signedIn();guard();const media=await uploadMedia(snapshot,old.cloudMediaManifest||{},guard);guard();
     const next={...parts(snapshot),cloudMediaManifest:media},patch={};for(const [key,value] of Object.entries(next))if(canonical(value)!==canonical(old[key]))patch[key]=value;
-    if(!Object.keys(patch).length){const state=check(await client.from('crm_cloud_state').select('version').eq('owner_id',OWNER).single());if(state.version!==expected)throw new Error('CRM_CONFLICT: Another browser saved changes. Your copy is retained.');baseline=old;return expected;}
+    if(!Object.keys(patch).length){const state=check(await client.from('crm_cloud_state').select('version').eq('owner_id',OWNER).single());guard();if(state.version!==expected)throw new Error('CRM_CONFLICT: Another browser saved changes. Your copy is retained.');baseline=old;return expected;}
     const saved=check(await client.rpc('crm_commit',{p_expected:expected,p_parts:patch}));
-    const remote=await read(Object.keys(patch));
+    guard();const remote=await read(Object.keys(patch),guard);guard();
     if(remote.version!==saved||Object.keys(patch).some(key=>canonical(remote.parts[key])!==canonical(patch[key])))throw new Error('Cloud changed during verification. Your browser copy is retained.');
     baseline={...old,...remote.parts};return saved;
   }
-  async function save(snapshot){
-    const copy=structuredClone(snapshot);
-    const operation=queue.then(async()=>{
+  async function saveOnce(copy){
       if(!connected||conflict){if(!connecting&&!connectionError)message(conflict?'Save conflict — browser copy retained. Review cloud copies below.':'Saved in this browser only — connect cloud saving above.',true);return false;}
-      try{message('Saving to Supabase…');version=await commit(copy,version,baseline);await backup({version,parts:baseline},'confirmed');message('Saved and verified in Supabase · '+new Date().toLocaleTimeString());hooks.confirmed?.();return true;}
-      catch(error){if(String(error.message).includes('CRM_CONFLICT')){conflict=true;connected=false;}message('Cloud NOT saved: '+error.message+' Browser copy retained.',true);return false;}
-    });queue=operation.catch(()=>false);return operation;
+      try{message('Saving to Supabase in the background — you can keep editing.');version=await deadline(guard=>commit(copy,version,baseline,guard),'Cloud save');await bounded(backup({version,parts:baseline},'confirmed'),'Local sync confirmation',12000);if(!pendingSnapshot){message('Saved and verified in Supabase · '+new Date().toLocaleTimeString());hooks.confirmed?.();}return true;}
+      catch(error){if(String(error.message).includes('CRM_CONFLICT')){conflict=true;connected=false;}if(/timed out|abort/i.test(error.message)){connected=false;connectionError='Cloud confirmation interrupted. Check cloud to reconnect; browser copy retained.';}message('Cloud NOT saved: '+error.message+' Browser copy retained.',true);return false;}
+  }
+  function save(snapshot){
+    // One active save plus one latest snapshot. Do not build an unbounded queue.
+    pendingSnapshot=structuredClone(snapshot);
+    const result=new Promise(resolve=>saveWaiters.push(resolve));
+    if(!draining){
+      draining=true;queue=Promise.resolve().then(async()=>{
+        let saved=false;
+        try{while(pendingSnapshot){const copy=pendingSnapshot;pendingSnapshot=null;saved=await saveOnce(copy);if(!saved){pendingSnapshot=null;break;}}}
+        catch(error){message('Cloud NOT saved: '+error.message+' Browser copy retained.',true);}
+        finally{draining=false;const waiting=saveWaiters;saveWaiters=[];for(const resolve of waiting)resolve(saved);}
+        return saved;
+      });
+    }
+    return result;
   }
   async function connect(mode){
     if(connecting)return;
     connecting=true;connectionError='';
     try{
       message(mode?'Checking cloud and preserving both copies…':'Checking work-account connection…');
-      await queue;const snapshot=structuredClone(hooks.get()),remote=await read();
+      await queue;const snapshot=structuredClone(hooks.get()),remote=await bounded(read(),'Cloud connection',45000);
       const remotePackages=Object.keys(remote.parts).filter(k=>k.startsWith('draft:')).length;
       document.getElementById('crmCloudReview').textContent='Cloud: '+remotePackages+' packages. This browser: '+(snapshot.drafts||[]).length+' packages. Both copies are preserved before changing copies.';
       if(!mode){message('Signed in. Choose which copy to open below; no data has been replaced.');return;}
-      await backup(snapshot);
+      await bounded(backup(snapshot),'Browser safety backup',12000);
       if(mode==='browser'){
         // Preserve cloud-only records. Never infer deletions from a missing browser row.
         message('Uploading and verifying private photos, then saving packages…');
         const local=mergeBrowser(parts(snapshot),remote.parts);
-        const combined=assemble(local,snapshot);await hydrateMedia(combined);version=await commit(combined,remote.version,remote.parts);await hooks.replace(combined);
+        const combined=assemble(local,snapshot);await bounded(hydrateMedia(combined),'Photo recovery',45000);version=await deadline(guard=>commit(combined,remote.version,remote.parts,guard),'Cloud connection save');
+        // Editing continues during network I/O. Never replace edits made since
+        // this connection snapshot was captured.
+        if((hooks.get().workspaceSavedAt||0)===(snapshot.workspaceSavedAt||0))await hooks.replace(combined);
       }else{
         // The cloud version wins for matching records. Browser-only records
         // and gallery entries remain accessible instead of disappearing.
@@ -120,9 +152,11 @@
         // Do not carry a stale editable draft over the cloud package being opened.
         const active=next.drafts.find(d=>d.id===snapshot.activeDraftId);
         if(active){next.draft=structuredClone(active);next.selected=[...(active.modelIds||[])];}
-        await hydrateMedia(next);await hooks.replace(next);version=remote.version;baseline=remote.parts;
+        await bounded(hydrateMedia(next),'Photo recovery',45000);
+        if((hooks.get().workspaceSavedAt||0)!==(snapshot.workspaceSavedAt||0))throw new Error('You edited while the cloud copy was loading. Current edits are retained; use Save this browser copy to cloud.');
+        await hooks.replace(next);version=remote.version;baseline=remote.parts;
       }
-      await backup({version,parts:baseline},'confirmed');connected=true;conflict=false;
+      await bounded(backup({version,parts:baseline},'confirmed'),'Local sync confirmation',12000);connected=true;conflict=false;
       await save(hooks.get());
     }catch(error){connected=false;connectionError='Cloud connection stopped: '+error.message+' Your browser copy is safe.';message(connectionError,true);}
     finally{connecting=false;}
@@ -154,8 +188,8 @@
     document.getElementById('crmCloudLogin').onsubmit=async event=>{event.preventDefault();try{message('Signing in to your work account…');check(await client.auth.signInWithPassword({email:'justin.neal.chezlesmannequins@gmail.com',password:document.getElementById('crmCloudPassword').value}));document.getElementById('crmCloudPassword').value='';await connect();}catch(error){connectionError='Sign-in failed: '+error.message;message(connectionError,true)}};
     document.getElementById('crmCloudInspect').onclick=()=>connect();document.getElementById('crmCloudLoad').onclick=()=>connect('cloud');document.getElementById('crmCloudKeep').onclick=()=>connect('browser');
     // Auto-resume only the exact cloud revision this browser last confirmed.
-    const session=await client.auth.getSession();if(session.data?.session?.user?.id===OWNER){
-      const remembered=await loadBaseline();if(remembered){try{const remote=await read();if(remote.version===remembered.version){version=remote.version;baseline=remembered.parts;connected=true;message('Cloud connected · checking pending browser changes');return;}}catch{}}
+    const session=await bounded(client.auth.getSession(),'Sign-in session',12000);if(session.data?.session?.user?.id===OWNER){
+      const remembered=await bounded(loadBaseline(),'Saved cloud revision',12000);if(remembered){try{const remote=check(await client.from('crm_cloud_state').select('version').eq('owner_id',OWNER).single());if(remote.version===remembered.version){version=remote.version;baseline=remembered.parts;connected=true;message('Cloud connected · pending changes sync in the background');return;}}catch{}}
       await connect();
     }
   }

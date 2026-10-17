@@ -9,6 +9,7 @@ function page(factory=new IDBFactory()){
  Object.assign(ctx,{structuredClone,indexedDB:factory,Blob,console});Object.defineProperty(ctx,'crypto',{value:webcrypto});
  const localFiles=new Map();ctx.CLMMediaStore={getRecord:async ref=>localFiles.get(ref),putBlob:async(blob,meta)=>{localFiles.set('clm-media:'+meta.id,{blob,name:meta.name});return 'clm-media:'+meta.id}};
  ctx.supabase={createClient:()=>({auth:{getUser:async()=>success({user:{id:cloud.user}}),getSession:async()=>success({session:cloud.user?{user:{id:cloud.user}}:null}),signInWithPassword:async()=>success({})},from:query,rpc:async(name,args)=>{
+   cloud.rpcCalls=(cloud.rpcCalls||0)+1;cloud.enteredRpc?.();if(cloud.holdRpc)await cloud.holdRpc;
    if(cloud.offline)return {error:new Error('Network unavailable')};
    if(args.p_expected!==cloud.version)return {error:new Error('CRM_CONFLICT')};
    cloud.history.push(structuredClone(cloud.parts));Object.assign(cloud.parts,structuredClone(args.p_parts));return success(++cloud.version);
@@ -47,6 +48,18 @@ function page(factory=new IDBFactory()){
  assert.equal(await recovery.ctx.CLMCloud.recoverMissing(),1);assert.equal(cloud.parts['draft:browser-only'].previewHtml,'Browser-only text');
  cloud.user=null;await recovery.ctx.CLMCloud.connect();const connectionError=recovery.dom.window.document.querySelector('#crmCloudStatus').textContent;
  assert.equal(await recovery.ctx.CLMCloud.save(recovery.get()),false);assert.equal(recovery.dom.window.document.querySelector('#crmCloudStatus').textContent,connectionError,'Background autosave must retain connection errors');
+ // A burst of edits behind a slow network keeps only the newest pending copy.
+ cloud.user=owner;await recovery.ctx.CLMCloud.connect('cloud');
+ let release,entered;cloud.holdRpc=new Promise(resolve=>release=resolve);const started=new Promise(resolve=>entered=resolve);cloud.enteredRpc=entered;
+ const initialCalls=cloud.rpcCalls;recovery.get().drafts[0].previewHtml='First slow edit';const writes=[recovery.ctx.CLMCloud.save(recovery.get())];await started;
+ for(let i=0;i<20;i++){recovery.get().drafts[0].previewHtml='Latest edit '+i;writes.push(recovery.ctx.CLMCloud.save(recovery.get()));}
+ cloud.holdRpc=null;cloud.enteredRpc=null;release();assert.ok((await Promise.all(writes)).every(Boolean));
+ assert.ok(cloud.rpcCalls-initialCalls<=2,'Only active plus latest pending save may be sent');assert.equal(cloud.parts['draft:'+recovery.get().drafts[0].id].previewHtml,'Latest edit 19');
+ // A stalled RPC must time out, release callers, and never claim success later.
+ const normalTimer=recovery.ctx.setTimeout;recovery.ctx.setTimeout=(callback,ms,...args)=>normalTimer(callback,ms===45000?40:ms,...args);
+ cloud.holdRpc=new Promise(()=>{});recovery.get().drafts[0].previewHtml='Retained during timeout';
+ assert.equal(await recovery.ctx.CLMCloud.save(recovery.get()),false);assert.match(recovery.dom.window.document.querySelector('#crmCloudStatus').textContent,/timed out/);assert.equal(recovery.get().drafts[0].previewHtml,'Retained during timeout');
+ cloud.holdRpc=null;recovery.ctx.setTimeout=normalTimer;
  for(const p of [first,second,refresh,recovery])p.dom.window.close();
  console.log('PASS: verified cloud text, private original photo bytes, cold restore, refresh reconnect, offline retry, stale conflict, missing photo protection, work-account restriction and version history.');
 })().catch(error=>{console.error(error);process.exitCode=1});

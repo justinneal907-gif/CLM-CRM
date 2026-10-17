@@ -23,9 +23,10 @@ function page(){
  const stored=await p.run('idbReadWorkspace()');assert.equal(stored.drafts.length,2);assert.equal(stored.drafts.find(d=>d.id===saved.id).previewHtml,saved.previewHtml);
  assert.equal(stored.drafts.find(d=>d.id==='legacy').lastEditedAt,undefined);
  // Exercise the actual asynchronous bootstrap while a runtime tries to save seed data.
- const boot=page();boot.run(`window.__clmWorkspaceReady=false;db=structuredClone(seed);ensureMilanArchiveLoaded=async()=>{};startGmailSessionKeeper=()=>{};restoreWorkGmailSession=async()=>{};window.CLMMediaStore={init:()=>new Promise(resolve=>window.releaseBoot=resolve)};`);
+ const boot=page();boot.run(`window.__clmWorkspaceReady=false;db=structuredClone(seed);ensureMilanArchiveLoaded=async()=>{};startGmailSessionKeeper=()=>{};restoreWorkGmailSession=async()=>{};window.CLMCloud={init:()=>new Promise(()=>{}),save:()=>new Promise(()=>{})};window.CLMMediaStore={init:()=>new Promise(resolve=>window.releaseBoot=resolve)};`);
  const booting=boot.run('bootstrapWorkspace()');assert.equal(await boot.run('persistWorkspaceSafe(true)'),false);
- boot.run('window.releaseBoot()');await booting;
+ boot.run('window.releaseBoot()');await Promise.race([booting,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Cloud stalled bootstrap')),2000))]);
+ assert.equal(boot.run('window.__clmWorkspaceReady'),true);assert.equal(boot.run('document.querySelector(".app").inert'),false);
  assert.equal(boot.run('db.models.length'),1);assert.equal(boot.run('db.models[0].id'),'m');assert.equal(boot.run('db.drafts.length'),2);boot.dom.window.close();
  // A runtime extension firing before bootstrap finishes cannot write seed data.
  p.run('window.__clmWorkspaceReady=false');assert.equal(await p.run('persistWorkspaceSafe(true)'),false);assert.equal((await p.run('idbReadWorkspace()')).drafts.length,2);p.run('window.__clmWorkspaceReady=true');
