@@ -38,6 +38,7 @@
     return out;
   }
   function message(text,error=false){const el=document.getElementById('crmCloudStatus');if(el){el.textContent=text;el.style.color=error?'#a62424':'';}window.dispatchEvent(new CustomEvent('clm:cloud-status',{detail:{text,error}}));}
+  function browserChanged(snapshot){const live=hooks.get();return (live.workspaceSavedAt||0)!==(snapshot.workspaceSavedAt||0)||canonical(parts(live))!==canonical(parts(snapshot))||canonical(live.draft)!==canonical(snapshot.draft)||live.activeDraftId!==snapshot.activeDraftId;}
   function check(result){if(result.error)throw result.error;return result.data;}
   async function signedIn(){const user=check(await bounded(client.auth.getUser(),'Account check',12000))?.user;if(user?.id!==OWNER)throw new Error('Sign in with your work account to save to Supabase.');return user;}
   async function read(keys,guard=()=>{}){
@@ -152,7 +153,7 @@
         const combined=assemble(local,snapshot);await bounded(hydrateMedia(combined),'Photo recovery',45000);version=await deadline(guard=>commit(combined,remote.version,remote.parts,guard),'Cloud connection save');
         // Editing continues during network I/O. Never replace edits made since
         // this connection snapshot was captured.
-        if((hooks.get().workspaceSavedAt||0)===(snapshot.workspaceSavedAt||0))await hooks.replace(combined);
+        if(!browserChanged(snapshot))await hooks.replace(combined);
       }else{
         // The cloud version wins for matching records. Browser-only records
         // and gallery entries remain accessible instead of disappearing.
@@ -161,7 +162,7 @@
         const active=next.drafts.find(d=>d.id===snapshot.activeDraftId);
         if(active){next.draft=structuredClone(active);next.selected=[...(active.modelIds||[])];}
         await bounded(hydrateMedia(next),'Photo recovery',45000);
-        if((hooks.get().workspaceSavedAt||0)!==(snapshot.workspaceSavedAt||0))throw new Error('You edited while the cloud copy was loading. Current edits are retained; use Save this browser copy to cloud.');
+        if(browserChanged(snapshot))throw new Error('You edited while the cloud copy was loading. Current edits are retained; use Save this browser copy to cloud.');
         await hooks.replace(next);version=remote.version;baseline=remote.parts;
       }
       await bounded(backup({version,parts:baseline},'confirmed'),'Local sync confirmation',12000);connected=true;conflict=false;
