@@ -37,7 +37,11 @@
     if(record.contentHash)contentKeys.set(id,record.contentHash);
     metadata.set(id,{type:record.type||record.blob?.type||'',name:record.name||'',size:record.size||record.blob?.size||0,sourceUrl:record.sourceUrl||'',contentHash:record.contentHash||''});
     if(record.blob instanceof Blob){
-      objectUrls.set(id,await blobToDataUrl(record.blob));
+      // Avoid a base64 copy of every image in the JS heap. Blob URLs are
+      // browser-managed and keep the original IndexedDB bytes unchanged.
+      const previous=objectUrls.get(id);
+      if(previous)URL.revokeObjectURL(previous);
+      objectUrls.set(id,URL.createObjectURL(record.blob));
     }
   }
   function dataUrlToBlob(dataUrl){
@@ -162,6 +166,8 @@
   }
   async function remove(value){
     const id=idFromRef(value);if(!id)return;
+    const url=objectUrls.get(id);
+    if(url)URL.revokeObjectURL(url);
     objectUrls.delete(id);metadata.delete(id);contentKeys.delete(id);
     await tx('readwrite',store=>store.delete(id));
   }
