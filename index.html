@@ -4433,6 +4433,25 @@ function generateInitialEmailHtml(){
     const modelLink=draftModelLinkForModel(m);
     return `<div data-clm-model-id="${esc(m.id)}" style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&forcedStats?' | '+formatStats(forcedStats,d.units):''}</div>${d.sources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftExtraHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`;
   }).join('');
+  // For this finite set of Bergdorf drafts, reuse the exact prose pattern from
+  // Justin's October 15 sent Coach, Givenchy, Jil Sander and Proenza messages.
+  // Only names, company and actual portfolio/stat/media blocks are dynamic.
+  if(activeRecord?.recentSubmissionTemplate20261015||working.recentSubmissionTemplate20261015){
+    const brand=esc(identity.brand||d.brand);
+    const nicknames=picked.map(m=>String(m.name||'').split(/\s+/)[0]).filter(Boolean);
+    const joined=nicknames.length===1?nicknames[0]:nicknames.length===2?nicknames.join(' and '):nicknames.slice(0,-1).join(', ')+', and '+(nicknames[nicknames.length-1]||'');
+    const contact=String(activeRecord?.greetingName||working.greetingName||'').trim();
+    const salutation=contact?'Hi '+esc(contact)+',':'Hi,';
+    const website=esc(d.link||'https://www.chezlesmannequins.com/');
+    const intro='<div>'+salutation+'</div><br><div>I wanted to send '+esc(joined||'our models')+' for any upcoming '+brand+' projects. Their info is below.</div><br>'+
+      '<div>You can find the rest of our models <a data-clm-package-link="1" href="'+website+'">here</a>.</div><br>';
+    const signature='<div>Let me know if you want to see any of them.</div><br>'+
+      '<div>Thank you,</div><br><div>Justin</div><br><div>WhatsApp:</div><div>+1(907)317 3791</div><br>'+
+      '<div><b>Chez Les Mannequins · Creative Agency</b></div>'+
+      '<div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div>';
+    return '<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">'+intro+
+      (blocks||'<div>Select one or more models in this package.</div>')+signature+'</div>';
+  }
   const extra='';
   const more=(isBridalFollowup||!!initialMessage||useMiamiSentFormat||!d.link)?'':`Again, you can see more models <a data-clm-package-link="1" href="${esc(d.link)}"><strong><em>HERE</em></strong></a>.`;
   const modelSection=blocks||(d.purpose==='followup'?'':'<div>[Select one or more models]</div>');
@@ -6458,5 +6477,5 @@ $('#exportBtn').onclick=exportAll;$('#exportDataBtn').onclick=exportAll;$('#expo
 <script src="assets/data/bergdorf-additional-packages-20261015.js?v=2-email-format"></script>
 <script src="assets/data/casting-packages-20261016.js?v=4-bergdorf-only"></script>
 <script src="assets/data/bergdorf-replacement-packages-20261016.js?v=2-saved"></script>
-<script src="assets/data/bergdorf-ten-prospects-20261019.js?v=20261019-1"></script>
+<script src="assets/data/bergdorf-ten-prospects-20261019.js?v=20261019-2"></script>
 </body></html>
