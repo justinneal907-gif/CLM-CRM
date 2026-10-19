@@ -86,16 +86,31 @@
   }
   async function init(){
     try{
-      const rows=[];
+      // Hydrate display URLs one record at a time instead of retaining an
+      // array of every full image Blob (and its base64 representation).
+      const missingHashes=[];
       const db=await openDb();
       await new Promise((resolve,reject)=>{
         const tr=db.transaction(STORE,'readonly'), store=tr.objectStore(STORE), req=store.openCursor();
-        req.onsuccess=()=>{const cur=req.result;if(!cur)return;rows.push([String(cur.key),cur.value||{}]);cur.continue()};
+        req.onsuccess=()=>{
+          const cur=req.result;if(!cur)return;
+          const id=String(cur.key), record=cur.value||{};
+          remember(id,record);
+          if(record.blob instanceof Blob&&!record.contentHash)missingHashes.push(id);
+          cur.continue();
+        };
         req.onerror=()=>reject(req.error);tr.oncomplete=()=>{db.close();resolve()};tr.onerror=()=>{db.close();reject(tr.error)};
       });
-      for(const [id,record] of rows){
-        if(record.blob instanceof Blob&&!record.contentHash){record.contentHash=await contentHash(record.blob);await tx('readwrite',store=>store.put(record,id))}
-        await remember(id,record);
+      // Only legacy records need hashing; fetch them individually after the
+      // cursor closes so the whole photo library is never duplicated in JS.
+      for(const id of missingHashes){
+        const record=await getRecord(makeRef(id));
+        if(record?.blob instanceof Blob&&!record.contentHash){
+          record.contentHash=await contentHash(record.blob);
+          await tx('readwrite',store=>store.put(record,id));
+          contentKeys.set(id,record.contentHash);
+          const meta=metadata.get(id);if(meta)meta.contentHash=record.contentHash;
+        }
       }
     }catch(err){console.info('CLM media store unavailable',err)}
   }
