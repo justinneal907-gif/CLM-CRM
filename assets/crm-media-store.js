@@ -3,6 +3,33 @@
   'use strict';
   const DB_NAME='jn-agency-crm', DB_VERSION=2, STORE='media', PREFIX='clm-media:';
   const objectUrls=new Map(), metadata=new Map(), contentKeys=new Map();
+  const pendingLoads=new Map();
+  const MAX_DISPLAY_URLS=96;
+  let refreshQueued=false;
+  function refreshVisiblePhotos(){
+    if(refreshQueued)return;
+    refreshQueued=true;
+    setTimeout(()=>{refreshQueued=false;window.dispatchEvent(new Event('clm:media-cache-updated'));},100);
+  }
+  function limitDisplayUrls(){
+    while(objectUrls.size>MAX_DISPLAY_URLS){
+      const [oldId,oldUrl]=objectUrls.entries().next().value;
+      objectUrls.delete(oldId);URL.revokeObjectURL(oldUrl);
+    }
+  }
+  async function loadDisplayUrl(id){
+    if(objectUrls.has(id))return;
+    if(pendingLoads.has(id))return pendingLoads.get(id);
+    const job=(async()=>{
+      const record=await getRecord(makeRef(id));
+      if(!record?.blob)return;
+      metadata.set(id,{type:record.type||record.blob.type||'',name:record.name||'',size:record.size||record.blob.size||0,sourceUrl:record.sourceUrl||'',contentHash:record.contentHash||''});
+      if(record.contentHash)contentKeys.set(id,record.contentHash);
+      objectUrls.set(id,URL.createObjectURL(record.blob));
+      limitDisplayUrls();refreshVisiblePhotos();
+    })().catch(err=>console.warn('Could not load requested CRM photo',err)).finally(()=>pendingLoads.delete(id));
+    pendingLoads.set(id,job);return job;
+  }
 
   function openDb(){
     return new Promise((resolve,reject)=>{
@@ -36,13 +63,8 @@
   async function remember(id,record){
     if(record.contentHash)contentKeys.set(id,record.contentHash);
     metadata.set(id,{type:record.type||record.blob?.type||'',name:record.name||'',size:record.size||record.blob?.size||0,sourceUrl:record.sourceUrl||'',contentHash:record.contentHash||''});
-    if(record.blob instanceof Blob){
-      // Avoid a base64 copy of every image in the JS heap. Blob URLs are
-      // browser-managed and keep the original IndexedDB bytes unchanged.
-      const previous=objectUrls.get(id);
-      if(previous)URL.revokeObjectURL(previous);
-      objectUrls.set(id,URL.createObjectURL(record.blob));
-    }
+    // Only user-requested/visible images receive object URLs.
+    // Keeping metadata does not force every image into the browser's image cache.
   }
   function dataUrlToBlob(dataUrl){
     const parts=String(dataUrl||'').split(','), head=parts.shift()||'';
@@ -95,6 +117,7 @@
         req.onsuccess=()=>{
           const cur=req.result;if(!cur)return;
           const id=String(cur.key), record=cur.value||{};
+          // Retain the metadata needed for legacy photo matching, not an object URL.
           remember(id,record);
           if(record.blob instanceof Blob&&!record.contentHash)missingHashes.push(id);
           cur.continue();
@@ -110,7 +133,12 @@
   function displayUrl(value){
     const raw=String(value||'');
     const id=idFromRef(raw);
-    if(id)return objectUrls.get(id)||'';
+    if(id){
+      const cached=objectUrls.get(id);
+      if(cached){objectUrls.delete(id);objectUrls.set(id,cached);return cached;}
+      void loadDisplayUrl(id);
+      return '';
+    }
     return raw;
   }
   function isGif(value){
