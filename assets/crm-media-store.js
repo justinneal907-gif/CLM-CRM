@@ -107,28 +107,9 @@
     }));
   }
   async function init(){
-    try{
-      // Hydrate display URLs one record at a time instead of retaining an
-      // array of every full image Blob (and its base64 representation).
-      const missingHashes=[];
-      const db=await openDb();
-      await new Promise((resolve,reject)=>{
-        const tr=db.transaction(STORE,'readonly'), store=tr.objectStore(STORE), req=store.openCursor();
-        req.onsuccess=()=>{
-          const cur=req.result;if(!cur)return;
-          const id=String(cur.key), record=cur.value||{};
-          // Retain the metadata needed for legacy photo matching, not an object URL.
-          remember(id,record);
-          if(record.blob instanceof Blob&&!record.contentHash)missingHashes.push(id);
-          cur.continue();
-        };
-        req.onerror=()=>reject(req.error);tr.oncomplete=()=>{db.close();resolve()};tr.onerror=()=>{db.close();reject(tr.error)};
-      });
-      // Never decode and SHA-256 the entire legacy gallery at startup.
-      // Existing image bytes remain in IndexedDB; uploads compute their hashes
-      // when actually needed, so opening the CRM does not freeze on all photos.
-      if(missingHashes.length)console.info('CLM media: deferred legacy hashes for',missingHashes.length,'saved images');
-    }catch(err){console.info('CLM media store unavailable',err)}
+    // Do not scan or deserialize hundreds of image blobs at startup.
+    // Individual photo records are read only when their display is requested.
+    return true;
   }
   function displayUrl(value){
     const raw=String(value||'');
