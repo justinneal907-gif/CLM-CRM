@@ -47,7 +47,7 @@
       const before=check(await client.from('crm_cloud_state').select('version,updated_at').eq('owner_id',OWNER).single());
       guard();
       const rows=[];const groups=keys?Array.from({length:Math.ceil(keys.length/30)},(_,i)=>keys.slice(i*30,i*30+30)):[null];
-      for(const group of groups)for(let offset=0;;offset+=100){guard();let query=client.from('crm_cloud_parts').select('part_key,data').eq('owner_id',OWNER);if(group)query=query.in('part_key',group);const page=check(await query.order('part_key').range(offset,offset+99));guard();rows.push(...page);if(page.length<100)break;}
+      for(const group of groups)for(let offset=0;;offset+=10){guard();let query=client.from('crm_cloud_parts').select('part_key,data').eq('owner_id',OWNER);if(group)query=query.in('part_key',group);const page=check(await query.order('part_key').range(offset,offset+9));guard();rows.push(...page);if(page.length<10)break;}
       const after=check(await client.from('crm_cloud_state').select('version,updated_at').eq('owner_id',OWNER).single());
       guard();if(before.version===after.version)return {version:after.version,parts:Object.fromEntries(rows.map(r=>[r.part_key,r.data]))};
     }
@@ -123,6 +123,9 @@
   }
   function save(snapshot){
     // One active save plus one latest snapshot. Do not build an unbounded queue.
+    // Do not duplicate the entire photo-heavy workspace when cloud saving is inactive.
+    // The browser's own persistence still runs independently.
+    if(!connected||conflict)return Promise.resolve(false);
     pendingSnapshot=structuredClone(snapshot);
     const result=new Promise(resolve=>saveWaiters.push(resolve));
     if(!draining){
