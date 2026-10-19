@@ -281,7 +281,7 @@ th,td{padding:8px}
 <script src="assets/data/campaign-casting-drafts-20261009.js?v=20261009-campaign-casting-1"></script>
 <script src="assets/data/casting-director-packages-20261012.js?v=20261012-directors-1"></script>
 <script src="assets/data/casting-director-brand-matches-20261012.js?v=20261012-brand-model-matches-2"></script>
-<script src="assets/crm-media-store.js?v=20261016-private-cloud"></script>
+<script src="assets/crm-media-store.js?v=20261019-inline-refs-1"></script>
 <script src="assets/crm-bridal-materials.js?v=20261005-photo-persistence-2"></script>
 <script src="assets/data/gallery-gmail-recovery-20261009.js?v=2"></script>
 <script src="assets/data/bergdorf-director-drafts-20261019.js?v=20261019-bergdorf-ten-1"></script>
@@ -2005,6 +2005,17 @@ function idbReadWorkspaceAtKey(key=IDB_STATE_KEY){
   }));
 }
 function idbReadWorkspace(){return idbReadWorkspaceAtKey(IDB_STATE_KEY)}
+// Cheap existence check. Never deserializes the (possibly very large) record.
+function idbHasKey(key=IDB_STATE_KEY){
+  return openCRMDatabase().then(database=>new Promise((resolve,reject)=>{
+    const tx=database.transaction(IDB_STORE,'readonly');
+    const req=tx.objectStore(IDB_STORE).getKey(key);
+    req.onsuccess=()=>resolve(req.result!==undefined);
+    req.onerror=()=>reject(req.error||new Error('Could not check IndexedDB.'));
+    tx.oncomplete=()=>database.close();
+    tx.onerror=()=>{database.close();reject(tx.error||new Error('IndexedDB check failed.'))};
+  }));
+}
 function idbWriteWorkspaceAtKey(snapshot,key=IDB_STATE_KEY){
   return openCRMDatabase().then(database=>new Promise((resolve,reject)=>{
     const tx=database.transaction(IDB_STORE,'readwrite');
@@ -2764,6 +2775,12 @@ async function freezePreviewImagesForReview(){
   for(const img of t.content.querySelectorAll('img')){
     const src=img.getAttribute('src')||'';
     if(/^data:image\//i.test(src))continue;
+    // Saved photos are stored as durable media references. Gmail needs the real bytes, so resolve them here.
+    if(window.CLMMediaStore?.isMediaRef?.(src)){
+      const bytes=await window.CLMMediaStore.toDataUrl(src);
+      if(!/^data:image\//i.test(bytes))throw new Error('A saved photo ('+(img.getAttribute('alt')||'preview image')+') is missing from this browser. Upload it again; no Gmail draft was created.');
+      img.setAttribute('src',bytes);changed=true;continue;
+    }
     // A CID or Gmail attachment URL belongs to another MIME document. Never reuse it.
     if(!/^(https?:|blob:)/i.test(src)||/https?:\/\/(?:mail\.google\.com|(?:ci\d+\.)?googleusercontent\.com)\//i.test(src))
       throw new Error('This preview contains an image linked to another Gmail message or unavailable media. Replace that image with an uploaded photo; no Gmail draft was created.');
@@ -3497,9 +3514,41 @@ function bindSubmissionSortControls(){
 
 function renderToday(){const open=db.tasks.filter(t=>String(t.status||'Open').toLowerCase()!=='done').slice(0,5),subs=db.submissions.slice(-5).reverse(),books=db.bookings.slice(-5).reverse();const box=(title,rows,fmt)=>`<div class="panel"><h3>${title}</h3>${rows.length?rows.map(fmt).join(''):'<div class="empty">Nothing here yet.</div>'}</div>`;$('#todayPipeline').innerHTML=box('Open tasks',open,t=>`<div class="selected-model"><b>${esc(t.task||'Task')}</b><div class="muted">${esc(t.due||'')} · ${esc(t.priority||'Normal')}</div>${[t.contact,t.company].filter(Boolean).length?`<div class="muted" style="margin-top:4px">${esc([t.contact,t.company].filter(Boolean).join(' · '))}</div>`:''}${t.details?`<div class="muted" style="margin-top:4px">${esc(t.details)}</div>`:''}</div>`)+box('Recent submissions',subs,s=>`<div class="selected-model"><b>${esc(s.project||'Submission')}</b><div class="muted">${esc(s.status||'Submitted')} · ${esc(s.contact||'')} · ${esc(Array.isArray(s.models)?s.models.join(', '):s.models||'')}</div></div>`)+box('Bookings',books,b=>`<div class="selected-model"><b>${esc(b.project||b.client||'Booking')}</b><div class="muted">${esc(b.model||'')} · ${esc(b.status||'')} · ${esc(fmtMoney(bookingTotal(b)))}</div></div>`);renderRevenueDashboard();renderPerformanceDashboard()}
 function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
-function exportAll(){download('justin-agency-crm-upgraded-copy.json',JSON.stringify(db,null,2),'application/json')}
+// The backup now carries the photo bytes for every saved media reference (under "clmMedia"), because packages
+// keep photos in browser media storage rather than inside the workspace text. Without this an export would
+// contain references but no images. Older exports (without clmMedia) still import unchanged.
+async function exportAll(){
+  try{
+    const store=window.CLMMediaStore,refs=store?.refsInUse?await store.refsInUse(db):[];
+    const json=JSON.stringify(db,null,2),head=json.slice(0,json.lastIndexOf('}')).trimEnd(),parts=[head];
+    const missing=[];let written=0;
+    if(refs.length){
+      parts.push((head.endsWith('{')?'':',')+'\n  "clmMedia": {');
+      for(const ref of refs){
+        const record=await store.getRecord(ref).catch(()=>null);
+        if(!record?.blob){missing.push(ref);continue}
+        const dataUrl=await store.blobToDataUrl(record.blob);
+        parts.push((written++?',':'')+'\n    '+JSON.stringify(ref)+': '+JSON.stringify({type:record.type||record.blob.type||'',name:record.name||'',dataUrl}));
+      }
+      parts.push('\n  }');
+    }
+    parts.push('\n}\n');
+    download('justin-agency-crm-upgraded-copy.json',new Blob(parts,{type:'application/json'}),'application/json');
+    if(missing.length)setStatus('Backup downloaded. '+missing.length+' photo reference(s) had no stored image in this browser and are listed as references only.');
+  }catch(err){console.error('Backup export failed',err);alert('Could not create the backup file: '+(err?.message||err))}
+}
 function exportRoster(){const rows=[['Name','Location','Division','Main Niche','Secondary Niche','Hair','Eyes','Availability','Status From','Status To','Hold / Booking Project','Measurements','Profile URL','Photo URL','Active Board'],...db.models.map(m=>[m.name,m.location,m.division,m.niche||'',m.secondaryNiche||'',m.hair||'',m.eyes||'',m.availabilityStatus||'Unknown',m.statusFrom||'',m.statusTo||'',m.holdProject||'',m.stats||m.measurements,m.profile||m.profileUrl,getPhoto(m),m.activeBoard!==false])];download('chez-les-mannequins-global-roster.csv',rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv')}
-async function importAll(file){try{let data=JSON.parse(await file.text());if(data&&data.state)data=migrateLegacy(data.state);if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('Invalid CRM backup');db=applyRecovered(data);selected=[...(db.selected||[])];save();alert('CRM backup imported.')}catch(e){console.error(e);alert('Could not import that JSON file.')}}
+async function importAll(file){try{let data=JSON.parse(await file.text());if(data&&data.state)data=migrateLegacy(data.state);if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('Invalid CRM backup');
+  if(data.clmMedia&&typeof data.clmMedia==='object'){
+    const media=data.clmMedia;delete data.clmMedia;const store=window.CLMMediaStore;
+    for(const [ref,item] of Object.entries(media)){
+      if(!store?.isMediaRef?.(ref)||typeof item?.dataUrl!=='string')continue;
+      if((await store.getRecord(ref).catch(()=>null))?.blob)continue; // never overwrite a photo already stored here
+      await store.putBlob(await (await fetch(item.dataUrl)).blob(),{id:ref.slice(10),name:item.name||'Restored image',optimize:false});
+    }
+  }
+  try{await externalizeInlineDraftImages20261019(data)}catch(err){console.warn('Inline photo externalization skipped on import.',err)}
+  db=applyRecovered(data);selected=[...(db.selected||[])];save();alert('CRM backup imported.')}catch(e){console.error(e);alert('Could not import that JSON file.')}}
 async function resetWorkspace(){if(!confirm('Reset contacts, submissions, bookings, tasks, drafts, selected models, and custom photos in this copy? The seeded roster remains.'))return;await idbWriteWorkspaceAtKey({},MAIN_GALLERY_ADDITIONS_KEY);db=structuredClone(seed);selected=[];save()}
 function renderAll(){if(active==='gallery'){renderModelGallery();return;}if(maintenanceSweep())persistWorkspaceSafe(false);renderStats();if(active==='today'){renderToday();return}if(active==='models'){setupFilters();renderModels();return}if(['contacts','submissions','bookings','tasks'].includes(active)){renderTables();return}if(active==='email'){setupFilters();renderContactOptions();renderDrafts();if(packagePreviewPaused){const preview=$('#emailPreview');if(preview){preview.replaceChildren();preview.textContent='Open a saved package to load its full preview.';preview.dataset.manualRefreshInitialized='';}return;}renderEmail();return}}
 function captureDraft(){db.draft={...(db.draft||{}),eventName:$('#emailEvent').value.trim(),purpose:$('#emailPurpose').value,contactId:$('#emailContact').value,contactName:$('#emailContactName').value,company:$('#emailCompany').value,recipientEmail:$('#emailRecipient').value,brandProject:$('#emailBrand').value,packageLink:$('#emailLink').value,brief:$('#emailContext').value,notes:$('#emailPrivateNotes')?.value||'',castingBriefRaw:$('#castingBriefRaw')?.value||db.draft?.castingBriefRaw||'',parsedBrief:db.draft?.parsedBrief||null,subject:$('#emailSubject').value,includeStats:$('#includeStats').checked,measurementUnits:normalizeMeasurementUnits($('#measurementUnits')?.value),includePhotos:$('#includePhotos').checked,includeSources:$('#includeSources').checked,modelIds:[...selected]}}
@@ -4330,7 +4379,7 @@ function editPreviewModels(previousIds,photoModelId=''){
 }
 function storeDraftPreview(html,changed=true){
   db.draft=db.draft||structuredClone(seed.draft);
-  db.draft.previewHtml=uniformEmailPhotoSizes(stripCanvaLinksText(html));
+  db.draft.previewHtml=uniformEmailPhotoSizes(stripCanvaLinksText(window.CLMMediaStore?.restoreBlobUrls?window.CLMMediaStore.restoreBlobUrls(html):html));
   delete db.draft.initialMessage;
   // Main gallery is never changed by package-preview saves.
   const active=activeSavedDraftRecord();
@@ -4617,7 +4666,9 @@ async function copyFormattedPreview(){
 let emailPreviewEditTimer=0;
 function sanitizeEditableEmailHtml(html){
   const template=document.createElement('template');
-  template.innerHTML=uniformEmailPhotoSizes(stripCanvaLinksText(html));
+  // Displayed photos use temporary blob: URLs. Map them back to their durable media refs before anything
+  // (image identifiers, comparisons, saving) sees them, so a saved package never stores a dead blob: URL.
+  template.innerHTML=uniformEmailPhotoSizes(stripCanvaLinksText(window.CLMMediaStore?.restoreBlobUrls?window.CLMMediaStore.restoreBlobUrls(html):html));
   // The visible src is authoritative. Hidden attributes must never substitute another image.
   template.content.querySelectorAll('img').forEach(img=>{['data-gif-src','data-gif-playing','data-gif-bound','data-media-ref','title','role','tabindex'].forEach(name=>img.removeAttribute(name));img.style.removeProperty('cursor')});
   template.content.querySelectorAll('script,style,iframe,object,embed,form,input,textarea,button,meta,link').forEach(el=>el.remove());
@@ -4992,7 +5043,7 @@ function renderEmailSelection(){
   const quick=picked.length>1?`<div class="quick-order-panel"><div class="quick-order-title"><b>Quick reorder</b><span class="muted tiny">Send any model straight to a position.</span></div><div class="quick-order-list">${picked.map((m,index)=>`<label class="quick-order-row"><span>${index+1}. ${esc(m.name)}</span><select aria-label="Position for ${esc(m.name)}" onchange="setSelectedModelPosition('${m.id}',this.value)">${modelPositionOptions(index,picked.length)}</select></label>`).join('')}</div></div>`:'';
   $('#selectedModels').innerHTML=(picked.length?'<div class="drag-hint">Email order follows this list. Select as many photos as you want for each model.</div>':'')+quick+picked.map((m,index)=>{
     const picks=draftPhotosForModel(m),pick=picks[0]||'',selectedKeys=new Set(picks.map(galleryPhotoKey)),opts=draftPhotoOptions(m);
-    return `<div class="draft-model-card"><div class="draft-model-head">${pick?`<img class="draft-model-thumb" loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(pick))}" alt="${esc(m.name)} draft photo">`:`<div class="draft-model-thumb placeholder" style="display:flex;align-items:center;justify-content:center">${esc(initials(m.name))}</div>`}<div><div><b>${index+1}. ${esc(m.name)}</b> · ${esc(m.location)} / ${esc(m.division)}</div><div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div><div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div>${modelDraftExtraHtml(m,true)}${modelDraftExtraControlsHtml(m)}<div class="draft-model-controls"><label class="draft-position-control"><span>Position</span><select onchange="setSelectedModelPosition('${m.id}',this.value)">${modelPositionOptions(index,picked.length)}</select></label><span class="pill">${picks.length} photo${picks.length===1?'':'s'}</span><button class="btn danger" type="button" onclick="removeFromEmail('${m.id}')">Remove</button></div></div></div>${opts.length?`<div class="draft-photo-strip">${opts.map((p,i)=>{const active=selectedKeys.has(galleryPhotoKey(p.url));return `<button class="draft-photo-choice ${active?'active':''}" type="button" title="${active?'Remove':'Add'} ${esc(p.label)}" onclick="togglePackagePhoto('${m.id}',${i})"><img src="${esc(packageThumbnailUrl(p.url))}" alt="${esc(m.name)} photo"><span class="multi-photo-badge">${active?'✓':'+'}</span></button>`}).join('')}</div>`:''}<div class="draft-photo-controls"><input type="url" placeholder="Paste photo URL — adds to package" onchange="setDraftPhotoUrl('${m.id}',this.value);this.value=''"><button class="btn" type="button" onclick="resetDraftPhoto('${m.id}')">Clear selected photos</button></div><div class="draft-link-controls"><label>${esc(m.profileLabel||'Portfolio')} link override</label><div class="draft-link-row"><input type="url" value="${esc(draftModelLinkForModel(m))}" placeholder="Paste a link, or clear to hide it" onchange="setDraftModelLink('${m.id}',this.value)"><button class="btn" type="button" onclick="resetDraftModelLink('${m.id}')">Use default</button></div></div><div class="draft-photo-upload"><input type="file" accept="image/*" multiple onchange="setDraftPhotoFile('${m.id}',this)"><button class="btn" type="button" onclick="pasteClipboardImageToModel('${m.id}')">Paste copied image</button><span tabindex="0" onpaste="handleModelImagePaste(event,'${m.id}')" style="display:inline-block;margin-left:6px;padding:6px 8px;border:1px dashed #aab4ad;border-radius:6px;cursor:text" title="Click here, then press Ctrl+V">Ctrl+V image here</span><span class="muted tiny"> Select or paste one or multiple images. They save to the photo library and are added to this draft.</span></div></div>`;
+    return `<div class="draft-model-card"><div class="draft-model-head">${pick?`<img class="draft-model-thumb" loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(pick))}" alt="${esc(m.name)} draft photo">`:`<div class="draft-model-thumb placeholder" style="display:flex;align-items:center;justify-content:center">${esc(initials(m.name))}</div>`}<div><div><b>${index+1}. ${esc(m.name)}</b> · ${esc(m.location)} / ${esc(m.division)}</div><div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div><div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div>${modelDraftExtraHtml(m,true)}${modelDraftExtraControlsHtml(m)}<div class="draft-model-controls"><label class="draft-position-control"><span>Position</span><select onchange="setSelectedModelPosition('${m.id}',this.value)">${modelPositionOptions(index,picked.length)}</select></label><span class="pill">${picks.length} photo${picks.length===1?'':'s'}</span><button class="btn danger" type="button" onclick="removeFromEmail('${m.id}')">Remove</button></div></div></div>${opts.length?`<div class="draft-photo-strip">${opts.map((p,i)=>{const active=selectedKeys.has(galleryPhotoKey(p.url));return `<button class="draft-photo-choice ${active?'active':''}" type="button" title="${active?'Remove':'Add'} ${esc(p.label)}" onclick="togglePackagePhoto('${m.id}',${i})"><img loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(p.url))}" alt="${esc(m.name)} photo"><span class="multi-photo-badge">${active?'✓':'+'}</span></button>`}).join('')}</div>`:''}<div class="draft-photo-controls"><input type="url" placeholder="Paste photo URL — adds to package" onchange="setDraftPhotoUrl('${m.id}',this.value);this.value=''"><button class="btn" type="button" onclick="resetDraftPhoto('${m.id}')">Clear selected photos</button></div><div class="draft-link-controls"><label>${esc(m.profileLabel||'Portfolio')} link override</label><div class="draft-link-row"><input type="url" value="${esc(draftModelLinkForModel(m))}" placeholder="Paste a link, or clear to hide it" onchange="setDraftModelLink('${m.id}',this.value)"><button class="btn" type="button" onclick="resetDraftModelLink('${m.id}')">Use default</button></div></div><div class="draft-photo-upload"><input type="file" accept="image/*" multiple onchange="setDraftPhotoFile('${m.id}',this)"><button class="btn" type="button" onclick="pasteClipboardImageToModel('${m.id}')">Paste copied image</button><span tabindex="0" onpaste="handleModelImagePaste(event,'${m.id}')" style="display:inline-block;margin-left:6px;padding:6px 8px;border:1px dashed #aab4ad;border-radius:6px;cursor:text" title="Click here, then press Ctrl+V">Ctrl+V image here</span><span class="muted tiny"> Select or paste one or multiple images. They save to the photo library and are added to this draft.</span></div></div>`;
   }).join('')||'<div class="empty">No models selected.</div>';
   renderSubmissionWarnings();renderPhotoLibrary();
 }
@@ -6270,14 +6321,39 @@ function addCampaignPackages20261013(data){
  data.recovery={...(data.recovery||{}),[marker]:1}; return data;
 }
 
+// Moves base64 photos embedded in saved packages into the blob store (see CLMMediaStore.externalizeValue).
+// Lossless and idempotent: each image is written, read back and hash-verified before its text is replaced,
+// and anything that cannot be proven identical stays inline. Runs while the app is still inert at startup.
+async function externalizeInlineDraftImages20261019(data){
+  const store=window.CLMMediaStore;
+  if(!store?.externalizeValue||!data)return null;
+  const stats={images:0,skipped:0,drafts:0},cache=new Map();
+  for(const record of [data.draft,...(data.drafts||[])]){
+    if(!record||typeof record!=='object')continue;
+    const before=stats.images;
+    await store.externalizeValue(record,cache,stats);
+    if(stats.images>before)stats.drafts++;
+  }
+  if(stats.images){
+    const previous=data.recovery?.inlineImageMigration20261019;
+    data.recovery={...(data.recovery||{}),inlineImageMigration20261019:{
+      firstRunAt:previous?.firstRunAt||new Date().toISOString(),lastRunAt:new Date().toISOString(),
+      images:(previous?.images||0)+stats.images,drafts:(previous?.drafts||0)+stats.drafts,leftInline:stats.skipped}};
+  }
+  return stats;
+}
 async function bootstrapWorkspace(){
   const workspaceApp=document.querySelector('.app');if(workspaceApp)workspaceApp.inert=true;
   try{await window.CLMMediaStore?.init?.()}catch(err){console.info('Media store init skipped',err)}
   await ensureMilanArchiveLoaded();
   try{
-    const raw=await idbReadWorkspace();
-    if(raw&&!raw.recovery?.safeGallerySnapshot20260929){
-      await idbWriteWorkspaceAtKey(structuredClone(raw),'backup-before-gallery-repair-20260929');
+    // Write once. This used to rewrite the backup on every load until a flag was set, which silently replaced
+    // the "before repair" copy with the current state. An existing backup is never touched. The existence
+    // checks also avoid deserializing the whole workspace twice at every start.
+    const backupKey='backup-before-gallery-repair-20260929';
+    if(await idbHasKey(IDB_STATE_KEY)&&!(await idbHasKey(backupKey))){
+      const raw=await idbReadWorkspace();
+      if(raw&&!raw.recovery?.safeGallerySnapshot20260929)await idbWriteWorkspaceAtKey(structuredClone(raw),backupKey);
     }
   }catch(err){console.info('Pre-repair workspace backup skipped',err)}
   db=await loadWorkspaceIndexedDB();
@@ -6333,7 +6409,16 @@ async function bootstrapWorkspace(){
   db=migrateAssistantGeneratedDraftPhotos20261009(db);
   db=await restoreMainGalleryExplicit20261009(db);
   }
-  // Never re-serialize a photo-heavy workspace on every startup.
+  // Never re-serialize a photo-heavy workspace on every startup. The one exception is the
+  // one-off move of inline base64 photos into the media store: that shrinks the workspace
+  // instead of rewriting it, and it only writes on the boot where it actually moved something.
+  try{
+    const migrated=await externalizeInlineDraftImages20261019(db);
+    if(migrated?.images){
+      console.info('Inline package photos moved to media storage:',migrated);
+      try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Inline photo cleanup could not be saved; saved packages are unchanged.',err)}
+    }
+  }catch(err){console.warn('Inline photo cleanup skipped; saved packages are unchanged.',err)}
   db.recovery={...(db.recovery||{}),authoritativeEdits20261008:1};
   selected=[...(db.selected||[])];
   initNav();
@@ -6437,7 +6522,7 @@ $('#exportBtn').onclick=exportAll;$('#exportDataBtn').onclick=exportAll;$('#expo
     try{
       setRuntimeStatus('Loading Gmail sync and open-tracking tools…');
       await loadScript('clm-gmail-throttle-runtime','assets/crm-gmail-throttle.js?v=20260929-timeout-20260925-1','__clmGmailThrottleLoaded');
-      await loadScript('clm-email-sync-runtime','assets/crm-email-sync.js?v=20261016-save-recovery-1','__clmEmailSyncLoaded');
+      await loadScript('clm-email-sync-runtime','assets/crm-email-sync.js?v=20261019-media-refs-1','__clmEmailSyncLoaded');
       await loadScript('clm-open-tracking-runtime','assets/crm-open-tracking.js?v=20261016-await-save-1','__clmOpenTrackingLoaded');
       await loadScript('clm-response-time-runtime','assets/crm-response-time.js?v=20260925-2','__clmResponseTimeLoaded');
       await loadScript('clm-model-responses-runtime','assets/crm-model-responses.js?v=20260925-2','__clmModelResponsesLoaded');

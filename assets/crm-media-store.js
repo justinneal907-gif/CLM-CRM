@@ -2,7 +2,7 @@
 (function(){
   'use strict';
   const DB_NAME='jn-agency-crm', DB_VERSION=2, STORE='media', PREFIX='clm-media:';
-  const objectUrls=new Map(), metadata=new Map(), contentKeys=new Map();
+  const objectUrls=new Map(), metadata=new Map(), contentKeys=new Map(), urlToId=new Map();
   const pendingLoads=new Map();
   const MAX_DISPLAY_URLS=96;
   let refreshQueued=false;
@@ -14,7 +14,7 @@
   function limitDisplayUrls(){
     while(objectUrls.size>MAX_DISPLAY_URLS){
       const [oldId,oldUrl]=objectUrls.entries().next().value;
-      objectUrls.delete(oldId);URL.revokeObjectURL(oldUrl);
+      objectUrls.delete(oldId);urlToId.delete(oldUrl);URL.revokeObjectURL(oldUrl);
     }
   }
   async function loadDisplayUrl(id){
@@ -25,7 +25,8 @@
       if(!record?.blob)return;
       metadata.set(id,{type:record.type||record.blob.type||'',name:record.name||'',size:record.size||record.blob.size||0,sourceUrl:record.sourceUrl||'',contentHash:record.contentHash||''});
       if(record.contentHash)contentKeys.set(id,record.contentHash);
-      objectUrls.set(id,URL.createObjectURL(record.blob));
+      const created=URL.createObjectURL(record.blob);
+      objectUrls.set(id,created);urlToId.set(created,id);
       limitDisplayUrls();refreshVisiblePhotos();
     })().catch(err=>console.warn('Could not load requested CRM photo',err)).finally(()=>pendingLoads.delete(id));
     pendingLoads.set(id,job);return job;
@@ -185,9 +186,73 @@
     const id=idFromRef(value);if(!id)return;
     const url=objectUrls.get(id);
     if(url)URL.revokeObjectURL(url);
+    if(url)urlToId.delete(url);
     objectUrls.delete(id);metadata.delete(id);contentKeys.delete(id);
     await tx('readwrite',store=>store.delete(id));
   }
-  window.CLMMediaStore={init,storeFile,putBlob,getRecord,displayUrl,toDataUrl,migrateWorkspace,isGif,contentKey,findRefByHashes,mediaMeta,isMediaRef:v=>!!idFromRef(v),remove};
+  const DATA_IMAGE=/data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+\/]+={0,2}/g;
+  const DATA_IMAGE_ONE=/^data:(image\/[a-zA-Z0-9.+-]+);base64,([A-Za-z0-9+\/]+={0,2})$/;
+  const BLOB_URL=/blob:[^"'\s<>)]+/g;
+  function bytesToBase64(bytes){let s='';for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));return btoa(s)}
+  async function sha256Hex(source){const buffer=source instanceof Blob?await source.arrayBuffer():source;return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',buffer)),b=>b.toString(16).padStart(2,'0')).join('')}
+  // Stores exact bytes under a content-addressed id and returns its ref, or '' if it cannot be verified.
+  async function refFromBytes(bytes,type,name){
+    if(!bytes?.length||!/^image\//i.test(type||''))return '';
+    const hash=await sha256Hex(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength)),id='sha256-'+hash,ref=makeRef(id);
+    const existing=await getRecord(ref).catch(()=>null);
+    if(existing?.blob&&existing.contentHash===hash&&existing.blob.size===bytes.length){
+      if(!objectUrls.has(id))await remember(id,existing);
+      return ref;
+    }
+    const record={contentHash:hash,blob:new Blob([bytes],{type}),name:name||'Migrated CRM image',type,size:bytes.length,createdAt:Date.now(),sourceUrl:''};
+    await tx('readwrite',store=>store.put(record,id));
+    const back=await getRecord(ref);
+    if(!back?.blob||back.blob.size!==bytes.length||await sha256Hex(back.blob)!==hash)return '';
+    await remember(id,back);
+    return ref;
+  }
+  // Only converts when the decoded bytes re-encode to the identical base64 text; otherwise leaves it inline.
+  async function refFromDataUrl(dataUrl){
+    const match=DATA_IMAGE_ONE.exec(String(dataUrl||''));if(!match)return '';
+    let bytes;
+    try{const binary=atob(match[2]);bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i)}catch{return ''}
+    if(!bytes.length||bytesToBase64(bytes)!==match[2])return '';
+    return refFromBytes(bytes,match[1]);
+  }
+  async function externalizeText(text,cache,stats){
+    if(typeof text!=='string'||text.indexOf('data:image/')<0)return text;
+    const matches=[...text.matchAll(DATA_IMAGE)];if(!matches.length)return text;
+    cache=cache||new Map();let out='',last=0;
+    for(const m of matches){
+      let ref=cache.get(m[0]);
+      if(ref===undefined){try{ref=await refFromDataUrl(m[0])}catch(err){ref='';console.info('Inline image left unchanged',err)}cache.set(m[0],ref)}
+      if(ref){if(stats)stats.images++;out+=text.slice(last,m.index)+ref}else{if(stats)stats.skipped++;out+=text.slice(last,m.index)+m[0]}
+      last=m.index+m[0].length;
+    }
+    return out+text.slice(last);
+  }
+  async function externalizeValue(value,cache,stats){
+    if(typeof value==='string')return externalizeText(value,cache,stats);
+    if(Array.isArray(value)){for(let i=0;i<value.length;i++)value[i]=await externalizeValue(value[i],cache,stats);return value}
+    if(value&&typeof value==='object'){for(const key of Object.keys(value))value[key]=await externalizeValue(value[key],cache,stats);return value}
+    return value;
+  }
+  // Display URLs are blob: object URLs that die with the page. Saved HTML must keep the durable ref.
+  function restoreBlobUrls(html){
+    if(typeof html!=='string'||html.indexOf('blob:')<0)return html;
+    return html.replace(BLOB_URL,url=>{const id=urlToId.get(url);return id?PREFIX+id:url});
+  }
+  function isRef(value){return !!idFromRef(value)}
+  async function refsInUse(data){
+    const found=new Set();
+    (function visit(v){
+      if(typeof v==='string'){for(const m of v.matchAll(/clm-media:[A-Za-z0-9_-]+/g))found.add(m[0])}
+      else if(Array.isArray(v))v.forEach(visit);
+      else if(v&&typeof v==='object')Object.values(v).forEach(visit);
+    })(data);
+    return [...found];
+  }
+  window.CLMMediaStore={init,storeFile,putBlob,getRecord,displayUrl,toDataUrl,migrateWorkspace,isGif,contentKey,findRefByHashes,mediaMeta,isMediaRef:v=>!!idFromRef(v),remove,
+    refFromBytes,refFromDataUrl,externalizeText,externalizeValue,restoreBlobUrls,refsInUse,blobToDataUrl};
 })();
 

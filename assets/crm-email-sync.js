@@ -178,7 +178,16 @@
         data=(await response.json()).data;
       }
       if(!data)throw new Error('Sent photo bytes are missing. Recovery will retry.');
-      img.setAttribute('src','data:'+part.mimeType+';base64,'+data.replace(/-/g,'+').replace(/_/g,'/'));
+      const base64=data.replace(/-/g,'+').replace(/_/g,'/');
+      // Keep recovered sent photos in browser media storage (hash-verified bytes) instead of inlining megabytes of
+      // base64 into the workspace, which is what made the CRM slow and crash. Falls back to inline if unavailable.
+      let source='';
+      try{
+        const binary=atob(base64),bytes=new Uint8Array(binary.length);
+        for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+        source=(await window.CLMMediaStore?.refFromBytes?.(bytes,part.mimeType,part.filename||'Recovered sent photo'))||'';
+      }catch{source=''}
+      img.setAttribute('src',source||('data:'+part.mimeType+';base64,'+base64));
       manifest.push({contentId:cid,originalFilename:part.filename||''});
     }
     template.content.querySelectorAll('script,iframe,object,embed,form').forEach(el=>el.remove());
