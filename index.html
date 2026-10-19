@@ -1929,8 +1929,10 @@ function applyRecovered(incoming){
   // A saved workspace is authoritative. Retired seed/recovery routines must not
   // remove, retarget, or rewrite packages, models, text, or photo galleries.
   if(incoming&&Array.isArray(incoming.drafts)){
-    const saved=structuredClone(incoming);
-    return {...structuredClone(seed),...saved,settings:{...seed.settings,...saved.settings},draft:saved.draft||structuredClone(seed.draft),activeDraftId:saved.activeDraftId||'',selected:saved.selected||saved.draft?.modelIds||[]};
+    // The IndexedDB read already provides an independent workspace object.
+    // Cloning it again doubles peak memory, particularly for legacy inline photos.
+    const saved=incoming;
+    return {...seed,...saved,settings:{...seed.settings,...saved.settings},draft:saved.draft||structuredClone(seed.draft),activeDraftId:saved.activeDraftId||'',selected:saved.selected||saved.draft?.modelIds||[]};
   }
   const gallerySnapshot=captureMainGalleryState(incoming);
   const saved=incoming?structuredClone(incoming):null;
@@ -6275,9 +6277,11 @@ async function bootstrapWorkspace(){
       await idbWriteWorkspaceAtKey(structuredClone(raw),'backup-before-gallery-repair-20260929');
     }
   }catch(err){console.info('Pre-repair workspace backup skipped',err)}
-  const existingWorkspace=await idbReadWorkspace().catch(()=>null)||JSON.parse(localStorage.getItem(NEW_KEY)||'null');
   db=await loadWorkspaceIndexedDB();
-  const mainGalleryBeforeAutomaticSetup=captureMainGalleryState(db);
+  const existingWorkspace=!!(db&&Array.isArray(db.drafts));
+  // Do not deep-copy the main gallery on ordinary startup. Only legacy
+  // first-time migration paths may modify the recovered gallery.
+  const mainGalleryBeforeAutomaticSetup=null;
   if(!existingWorkspace){
   db=removeCanvaLinksFromWorkspace(db);
   db.recovery={...(db.recovery||{}),safeGallerySnapshot20260929:true};
@@ -6326,7 +6330,7 @@ async function bootstrapWorkspace(){
   db=migrateAssistantGeneratedDraftPhotos20261009(db);
   db=await restoreMainGalleryExplicit20261009(db);
   }
-  try{await idbWriteWorkspace(structuredClone(db))}catch(err){console.warn('Authoritative gallery repair save skipped',err)}
+  // Never re-serialize a photo-heavy workspace on every startup.
   db.recovery={...(db.recovery||{}),authoritativeEdits20261008:1};
   selected=[...(db.selected||[])];
   initNav();
