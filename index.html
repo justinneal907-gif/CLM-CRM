@@ -6336,7 +6336,7 @@ async function bootstrapWorkspace(){
   renderAll();
   compactPackageActions();
   const casting=$('#castingLeadsPanel');if(casting)casting.addEventListener('toggle',()=>{if(casting.open)ensureCastingLeadsLoaded()});
-  window.addEventListener('clm:media-cache-updated',()=>{if(active==='models')renderModels();else if(active==='email'){renderPhotoLibrary();renderEmailSelection()}});
+  window.addEventListener('clm:media-cache-updated',()=>{if(active==='models')renderModels();else if(active==='gallery')renderModelGallery();else if(active==='email'){renderPhotoLibrary();renderEmailSelection()}});
   // Local loading is complete. Cloud I/O must never keep the editor inert.
   window.__clmWorkspaceReady=true;
   if(workspaceApp)workspaceApp.inert=false;
