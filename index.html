@@ -2104,7 +2104,9 @@ async function restoreSavedGalleryAdditions(data){
   }
   return data;
 }
+let workspaceFoundAtLoad=false;
 async function loadWorkspaceIndexedDB(){
+  workspaceFoundAtLoad=false;
   try{
     let stored=await idbReadWorkspace();
     // A fallback exists only when a more recent database save failed.
@@ -2113,6 +2115,7 @@ async function loadWorkspaceIndexedDB(){
       if(fallback&&(!stored||(fallback.workspaceSavedAt||0)>=(stored.workspaceSavedAt||0)))stored=fallback;
     }catch(err){console.warn('Fallback workspace could not be read',err)}
     if(stored){
+      workspaceFoundAtLoad=true;
       idbUnavailable=false;
       stored.recovery={...(stored.recovery||{})};
       if(!stored.recovery.photoDeleteQuarantine20260929){
@@ -6278,10 +6281,10 @@ async function bootstrapWorkspace(){
     }
   }catch(err){console.info('Pre-repair workspace backup skipped',err)}
   db=await loadWorkspaceIndexedDB();
-  const existingWorkspace=!!(db&&Array.isArray(db.drafts));
+  const existingWorkspace=workspaceFoundAtLoad;
   // Do not deep-copy the main gallery on ordinary startup. Only legacy
   // first-time migration paths may modify the recovered gallery.
-  const mainGalleryBeforeAutomaticSetup=null;
+  const mainGalleryBeforeAutomaticSetup=existingWorkspace?null:captureMainGalleryState(db);
   if(!existingWorkspace){
   db=removeCanvaLinksFromWorkspace(db);
   db.recovery={...(db.recovery||{}),safeGallerySnapshot20260929:true};
