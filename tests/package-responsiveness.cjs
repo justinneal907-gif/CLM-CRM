@@ -9,7 +9,7 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
  assert.equal(requests,0);assert.equal(starts,0);
  values.clear();await governor.fetch('test',{}, {onRequest:()=>starts++});assert.equal(requests,1);assert.equal(starts,1);
  const source=fs.readFileSync('index.html','utf8');
- const thumb=source.match(/function packageThumbnailUrl\(value\)\{[^\n]+/)[0];
+ const thumb=source.match(/function packageThumbnailUrl\([^)]*\)\{[^\n]+/)[0];
  Object.assign(ctx,{isAnimatedGifSource:v=>v==='animation',DRAFT_GIF_PAUSED_PREVIEW:'paused',photoDisplayUrl:v=>'display:'+v});vm.runInContext(thumb,ctx);
  assert.equal(ctx.packageThumbnailUrl('animation'),'paused');assert.equal(ctx.packageThumbnailUrl('photo'),'display:photo');
  const start=source.lastIndexOf('function saveDraft('),end=source.indexOf('function loadDraft(',start);let renders=0,saves=0;
