@@ -101,17 +101,10 @@
         };
         req.onerror=()=>reject(req.error);tr.oncomplete=()=>{db.close();resolve()};tr.onerror=()=>{db.close();reject(tr.error)};
       });
-      // Only legacy records need hashing; fetch them individually after the
-      // cursor closes so the whole photo library is never duplicated in JS.
-      for(const id of missingHashes){
-        const record=await getRecord(makeRef(id));
-        if(record?.blob instanceof Blob&&!record.contentHash){
-          record.contentHash=await contentHash(record.blob);
-          await tx('readwrite',store=>store.put(record,id));
-          contentKeys.set(id,record.contentHash);
-          const meta=metadata.get(id);if(meta)meta.contentHash=record.contentHash;
-        }
-      }
+      // Never decode and SHA-256 the entire legacy gallery at startup.
+      // Existing image bytes remain in IndexedDB; uploads compute their hashes
+      // when actually needed, so opening the CRM does not freeze on all photos.
+      if(missingHashes.length)console.info('CLM media: deferred legacy hashes for',missingHashes.length,'saved images');
     }catch(err){console.info('CLM media store unavailable',err)}
   }
   function displayUrl(value){
