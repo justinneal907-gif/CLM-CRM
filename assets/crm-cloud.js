@@ -10,7 +10,7 @@
     activeRequests.add(controller);
     const abort=()=>controller.abort();options.signal?.addEventListener('abort',abort,{once:true});
     if(options.signal?.aborted)controller.abort();
-    try{const response=await fetch(input,{...options,signal:controller.signal});const bytes=await response.arrayBuffer();return new Response([204,205,304].includes(response.status)?null:bytes,{status:response.status,statusText:response.statusText,headers:response.headers});}
+    try{return await fetch(input,{...options,signal:controller.signal});}
     finally{activeRequests.delete(controller);clearTimeout(timer);options.signal?.removeEventListener('abort',abort);}
   }
   const client=window.supabase.createClient('https://coipdgmfuervnuqnfiud.supabase.co','sb_publishable_-3GGsWtASGt6dyTet6TWjg_CoZf7Xqs',{global:{fetch:cloudFetch}});
