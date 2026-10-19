@@ -2151,19 +2151,20 @@ function writeLocalStorageFallback(snapshot,showError=true){
     return false;
   }
 }
+async function writeIndexedDBSnapshotNow(snapshot,showError=true){
+  try{
+    await idbWriteWorkspace(snapshot);
+    idbUnavailable=false;
+    try{localStorage.removeItem(NEW_KEY)}catch{}
+    return true;
+  }catch(err){
+    console.error('IndexedDB save failed; using localStorage fallback.',err);
+    idbUnavailable=true;
+    return writeLocalStorageFallback(snapshot,true);
+  }
+}
 function queueIndexedDBWrite(snapshot,showError=true){
-  idbWriteQueue=idbWriteQueue.catch(()=>false).then(async()=>{
-    try{
-      await idbWriteWorkspace(snapshot);
-      idbUnavailable=false;
-      try{localStorage.removeItem(NEW_KEY)}catch{}
-      return true;
-    }catch(err){
-      console.error('IndexedDB save failed; using localStorage fallback.',err);
-      idbUnavailable=true;
-      return writeLocalStorageFallback(snapshot,true);
-    }
-  });
+  idbWriteQueue=idbWriteQueue.catch(()=>false).then(()=>writeIndexedDBSnapshotNow(snapshot,showError));
   return idbWriteQueue;
 }
 /* END CRM INDEXEDDB STORAGE V1 */
@@ -5052,10 +5053,26 @@ function removeCanvaLinksFromWorkspace(data){
 
 /* INDEXEDDB RUNTIME OVERRIDES */
 let workspacePersistTimer=0;
+// Saves are coalesced: while one workspace write is running, every further
+// save shares a single follow-up write that snapshots the latest workspace
+// when it starts. Previously each keystroke cloned and queued the full
+// workspace, so typing piled up hundreds of MB of snapshots and crashed the tab.
+let workspaceWritePending=null;
 function writeWorkspaceSnapshot(showError=false){
-  let snapshot;
-  try{removeCanvaLinksFromWorkspace(db);snapshot=structuredClone(db)}catch{snapshot=JSON.parse(JSON.stringify(db))}
-  return queueIndexedDBWrite(snapshot,showError);
+  if(workspaceWritePending){
+    if(showError)workspaceWritePending.showError=true;
+    return workspaceWritePending.promise;
+  }
+  const pending={showError};
+  pending.promise=idbWriteQueue.catch(()=>false).then(()=>{
+    workspaceWritePending=null;
+    let snapshot;
+    try{removeCanvaLinksFromWorkspace(db);snapshot=structuredClone(db)}catch{snapshot=JSON.parse(JSON.stringify(db))}
+    return writeIndexedDBSnapshotNow(snapshot,pending.showError);
+  });
+  workspaceWritePending=pending;
+  idbWriteQueue=pending.promise;
+  return pending.promise;
 }
 function persistWorkspaceSafe(showError=true){
   // Runtime extensions can load while IndexedDB/media are still opening. They
@@ -6467,7 +6484,7 @@ $('#exportBtn').onclick=exportAll;$('#exportDataBtn').onclick=exportAll;$('#expo
 <script src="assets/data/email-actions-20261014.js?v=20261014-mail-tasks-1"></script>
 <script src="assets/data/brand-picks-20261015.js?v=20261014-six-tomorrow-1"></script>
 <script src="assets/crm-daily-queue-core.js?v=20261013-4"></script>
-<script src="assets/crm-daily-queue.js?v=20261014-mail-tasks-1"></script>
+<script src="assets/crm-daily-queue.js?v=20261019-coalesced-saves-1"></script>
 <script src="assets/data/bergdorf-reviewed-packages-20261015.js?v=1"></script>
 <script src="assets/data/bergdorf-additional-packages-20261015.js?v=2-email-format"></script>
 <script src="assets/data/casting-packages-20261016.js?v=4-bergdorf-only"></script>
