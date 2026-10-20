@@ -97,6 +97,15 @@ document.getElementById('runBtn').onclick=async()=>{
     if(journal)collect(journal,found);
     say('Embedded photo copies found: '+found.size+' unique strings');
 
+    // Links already in the packages, before anything is moved.
+    const priorRefs=new Set([...JSON.stringify(primary.drafts||[]).matchAll(/clm-media:[0-9a-fA-F-]{8,}/g)].map(m=>m[0]));
+    let priorBroken=0;
+    for(const ref of priorRefs){
+      const rec=await get(db,MEDIA,ref.slice(PREFIX.length));
+      if(!rec||!rec.blob)priorBroken++;
+    }
+    say('Photo links already in packages: '+priorRefs.size+(priorBroken?', of which '+priorBroken+' are already broken':', all working'));
+
     const byHash=new Map();      // content hash -> reference
     const refFor=new Map();      // exact data URL -> reference
     const expect=new Map();      // reference -> content hash
@@ -145,20 +154,30 @@ document.getElementById('runBtn').onclick=async()=>{
     const beforeDrafts=primary.drafts||[],afterDrafts=newPrimary.drafts||[];
     if(beforeDrafts.length!==afterDrafts.length)throw new Error('Package count changed. Nothing was saved.');
     const cache=new Map();
+    const MISSING='missing';
+    const broken=new Set(),brokenPackages=new Set();
     let checked=0;
     for(let d=0;d<beforeDrafts.length;d++){
       const was=new Set(),now=new Set();
       collect(beforeDrafts[d],was);collect(afterDrafts[d],now);
       if(now.size)throw new Error('Package '+(afterDrafts[d].id||d)+' still holds an embedded photo. Nothing was saved.');
-      // every original photo must be reachable from the rewritten package, byte for byte
+      // Every photo this run moved must come back byte for byte. References
+      // that were already in the package are checked too, but a broken one is
+      // reported rather than treated as a failure of this migration: it was
+      // already pointing at a photo the store does not hold.
       const refs=[...JSON.stringify(afterDrafts[d]).matchAll(/clm-media:[0-9a-fA-F-]{8,}/g)].map(m=>m[0]);
       const wantHashes=new Set();for(const u of was)wantHashes.add(await hashOf(bytesOf(u)));
       const gotHashes=new Set();
       for(const ref of refs){
         let h=cache.get(ref);
+        if(h===MISSING){broken.add(ref);brokenPackages.add(String(afterDrafts[d].id||d));continue}
         if(!h){
           const rec=await get(db,MEDIA,ref.slice(PREFIX.length));
-          if(!rec||!rec.blob)throw new Error('A stored photo is missing for package '+(afterDrafts[d].id||d)+'. Nothing was saved.');
+          if(!rec||!rec.blob){
+            if(expect.has(ref))throw new Error('A photo this migration stored could not be read back for package '+(afterDrafts[d].id||d)+'. Nothing was saved.');
+            cache.set(ref,MISSING);broken.add(ref);brokenPackages.add(String(afterDrafts[d].id||d));
+            continue;
+          }
           h=await hashOf(new Uint8Array(await rec.blob.arrayBuffer()));
           cache.set(ref,h);
           if(expect.has(ref)&&expect.get(ref)!==h)throw new Error('Stored photo bytes do not match the original. Nothing was saved.');
@@ -169,7 +188,15 @@ document.getElementById('runBtn').onclick=async()=>{
       checked++;
       if(checked%40===0)say('  checked '+checked+' of '+beforeDrafts.length);
     }
-    say('All '+checked+' packages verified: every photo still reachable and byte for byte identical.');
+    say('All '+checked+' packages verified: every photo this migration moved is reachable and byte for byte identical.');
+    if(broken.size){
+      say('');
+      say('NOTE: '+broken.size+' photo link(s) in '+brokenPackages.size+' package(s) were already broken before this migration.');
+      say('They point at photos the CRM photo store no longer holds, so they were already showing as missing.');
+      say('This migration did not create them and does not change them. Affected packages:');
+      for(const id of [...brokenPackages].slice(0,20))say('  '+id);
+      if(brokenPackages.size>20)say('  ...and '+(brokenPackages.size-20)+' more');
+    }
 
     // ---------- 5. save ----------
     await put(db,WS,newPrimary,'primary');
