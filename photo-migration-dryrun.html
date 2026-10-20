@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CLM CRM Photo Migration Dry Run</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:980px;margin:40px auto;padding:0 20px;color:#1d2521;background:#f6f7f6}
+.card{background:#fff;border:1px solid #d8ddd9;border-radius:14px;padding:24px;margin:18px 0}
+button{border:0;border-radius:9px;padding:12px 18px;font-weight:700;cursor:pointer;background:#1f2923;color:white}
+button:disabled{opacity:.5;cursor:default}
+pre{white-space:pre-wrap;background:#f2f4f2;padding:14px;border-radius:8px;max-height:680px;overflow:auto;font-size:13px}
+.warn{background:#fff8e8;border-color:#ead49a}
+</style>
+</head>
+<body>
+<h1>CLM CRM Photo Migration Dry Run</h1>
+<div class="card">
+<p><b>This page changes nothing.</b> It opens the CRM database read only and reports what a photo migration would do: how much space each package would save, and exactly which photos would move.</p>
+<p>It shows counts, sizes and photo fingerprints only. No email text, contacts or photo content is displayed.</p>
+<p>Close other CRM tabs first. On a large workspace this takes a minute.</p>
+<button id="runBtn">Run the dry run</button>
+</div>
+<div class="card warn">
+<b>What a migration would do, if you approve it later</b>
+<p>Each photo stored as text inside a package would be stored once in the CRM photo store, with packages pointing at that one copy. Photos would be stored exactly as they are now, with no resizing or recompression, and identical photos would share a single copy.</p>
+</div>
+<div class="card"><b>Report</b><pre id="out">Ready.</pre></div>
+<script>
+const out=document.getElementById('out');
+const say=s=>{out.textContent+=('\n'+s);out.scrollTop=out.scrollHeight};
+const MB=n=>(n/1048576).toFixed(1)+' MB';
+const pct=(a,b)=>b?Math.round(100*a/b)+'%':'0%';
+
+function openDb(){return new Promise((res,rej)=>{const q=indexedDB.open('jn-agency-crm');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error||new Error('Could not open the CRM database'));q.onblocked=()=>rej(new Error('The CRM database is busy. Close other CRM tabs and try again.'))})}
+function get(db,store,key){return new Promise((res,rej)=>{const t=db.transaction(store,'readonly');const q=t.objectStore(store).get(key);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+
+const IMG=/data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+\/=]+/gi;
+const REF_LEN='clm-media:'.length+36; // what a reference costs instead of the photo
+
+// SHA-256 of the decoded bytes: the same test a migration would use to decide
+// that two embedded copies are one photo, and to match photos already stored.
+async function photoHash(dataUrl){
+  const comma=dataUrl.indexOf(',');
+  const bin=atob(dataUrl.slice(comma+1));
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  const digest=await crypto.subtle.digest('SHA-256',bytes);
+  return {hex:Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join(''),bytes:bytes.length};
+}
+
+// Walks a value, collecting every embedded photo with the field it sits in.
+async function scan(value,field,found,seen=new WeakSet()){
+  if(typeof value==='string'){
+    if(!value.includes('data:image'))return value.length;
+    for(const m of value.matchAll(IMG))found.push({field,dataUrl:m[0]});
+    return value.length;
+  }
+  if(value===null||typeof value!=='object')return 0;
+  if(seen.has(value))return 0;seen.add(value);
+  let bytes=0;
+  if(Array.isArray(value)){for(const v of value)bytes+=await scan(v,field,found,seen);return bytes}
+  for(const [k,v] of Object.entries(value)){bytes+=k.length;bytes+=await scan(v,field==='*'?k:field,found,seen)}
+  return bytes;
+}
+
+document.getElementById('runBtn').onclick=async()=>{
+  const btn=document.getElementById('runBtn');btn.disabled=true;out.textContent='Running (nothing is being changed)...';
+  try{
+    const db=await openDb();
+
+    // photos already in the photo store, by content
+    const storedHashes=new Set();let storedBytes=0,storedCount=0;
+    await new Promise((res,rej)=>{const t=db.transaction('media','readonly');const q=t.objectStore('media').openCursor();
+      q.onsuccess=()=>{const c=q.result;if(!c)return;storedCount++;storedBytes+=c.value?.blob?.size||0;if(c.value?.contentHash)storedHashes.add(c.value.contentHash);c.continue()};
+      t.oncomplete=res;t.onerror=()=>rej(t.error)});
+    say('\nPHOTO STORE TODAY: '+storedCount+' photos, '+MB(storedBytes)+', '+storedHashes.size+' distinct by content');
+
+    const primary=await get(db,'workspace','primary');
+    const drafts=primary?.drafts||[];
+    say('\nSCANNING '+drafts.length+' PACKAGES...');
+
+    const all=new Map();      // photo fingerprint -> {bytes, copies}
+    const byField=new Map();  // field name -> {copies, chars}
+    const rows=[];
+    let totalChars=0,totalEmbedded=0,totalCopies=0;
+    for(let i=0;i<drafts.length;i++){
+      const d=drafts[i];const found=[];
+      const chars=await scan(d,'*',found);
+      let embedded=0;
+      for(const f of found){
+        const h=await photoHash(f.dataUrl);
+        embedded+=f.dataUrl.length;
+        const entry=all.get(h.hex)||{bytes:h.bytes,copies:0};entry.copies++;all.set(h.hex,entry);
+        const fe=byField.get(f.field)||{copies:0,chars:0};fe.copies++;fe.chars+=f.dataUrl.length;byField.set(f.field,fe);
+      }
+      totalChars+=chars;totalEmbedded+=embedded;totalCopies+=found.length;
+      rows.push({id:String(d&&d.id||'?'),chars,count:found.length,after:chars-embedded+found.length*REF_LEN});
+      if((i+1)%40===0)say('  scanned '+(i+1)+' of '+drafts.length);
+    }
+
+    const distinct=[...all.entries()];
+    const newPhotos=distinct.filter(([h])=>!storedHashes.has(h));
+    const newBytes=newPhotos.reduce((t,[,v])=>t+v.bytes,0);
+    const afterChars=totalChars-totalEmbedded+totalCopies*REF_LEN;
+
+    say('\nWHAT THE PACKAGES HOLD NOW');
+    say('  packages total: '+MB(totalChars));
+    say('  of that, photos stored as text: '+MB(totalEmbedded)+' ('+pct(totalEmbedded,totalChars)+')');
+    say('  embedded copies: '+totalCopies+', of '+distinct.length+' distinct photos');
+    say('  by field:');
+    for(const [f,v] of [...byField.entries()].sort((a,b)=>b[1].chars-a[1].chars))say('    '+f+': '+v.copies+' copies, '+MB(v.chars));
+
+    say('\nWHAT WOULD CHANGE');
+    say('  packages after migration: '+MB(afterChars)+'  (from '+MB(totalChars)+')');
+    say('  space saved in the workspace: '+MB(totalChars-afterChars)+' ('+pct(totalChars-afterChars,totalChars)+')');
+    say('  distinct photos to store: '+distinct.length);
+    say('    already in the photo store, reused as is: '+(distinct.length-newPhotos.length));
+    say('    newly added to the photo store: '+newPhotos.length+', '+MB(newBytes)+' of real image data');
+    say('  net change on disk: '+MB(newBytes-(totalChars-afterChars))+' (negative means smaller)');
+    const dupes=distinct.filter(([,v])=>v.copies>1);
+    say('  photos stored more than once today: '+dupes.length+', worst case '+Math.max(0,...distinct.map(([,v])=>v.copies))+' copies of one photo');
+
+    say('\nLARGEST PACKAGES, BEFORE AND AFTER');
+    for(const r of rows.slice().sort((a,b)=>b.chars-a.chars).slice(0,12))say('  '+r.id+': '+MB(r.chars)+' -> '+MB(r.after)+'  ('+r.count+' photos)');
+    say('  packages with no embedded photos, left untouched: '+rows.filter(r=>!r.count).length+' of '+rows.length);
+
+    // the journal holds its own copies of the same packages
+    const journal=await get(db,'workspace','saved-package-journal-v1');
+    if(journal){
+      const found=[];const jChars=await scan(journal,'*',found);
+      let jEmbedded=0;for(const f of found)jEmbedded+=f.dataUrl.length;
+      say('\nPACKAGE JOURNAL (a second copy of every package)');
+      say('  now: '+MB(jChars)+', '+found.length+' embedded photos');
+      say('  after the same migration: '+MB(jChars-jEmbedded+found.length*REF_LEN));
+    }
+    db.close();
+    say('\nNothing was changed. Please send Claude a screenshot of this report.');
+  }catch(err){console.error(err);say('ERROR: '+(err&&err.message?err.message:String(err)))}
+  finally{btn.disabled=false}
+};
+</script>
+</body>
+</html>
