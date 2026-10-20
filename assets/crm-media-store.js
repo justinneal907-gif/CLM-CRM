@@ -104,10 +104,48 @@
       return out&&out.size<blob.size?out:blob;
     }catch(err){console.info('Image optimization skipped for',name,err);return blob}
   }
+  // Returns the id of a stored photo with exactly these bytes, if there is
+  // one. The store has no index on contentHash, so this walks the records; it
+  // runs only when a photo is saved, never on a render.
+  function findIdByHash(hash){
+    for(const [id,value] of contentKeys.entries())if(value===hash)return id;
+    return '';
+  }
+  function scanForHash(hash){
+    return openDb().then(database=>new Promise((resolve,reject)=>{
+      const transaction=database.transaction(STORE,'readonly');
+      const request=transaction.objectStore(STORE).openCursor();
+      let match='';
+      request.onsuccess=()=>{
+        const cursor=request.result;
+        if(!cursor||match)return resolve(match);
+        if(cursor.value&&cursor.value.contentHash===hash){match=cursor.key;return resolve(match)}
+        cursor.continue();
+      };
+      request.onerror=()=>reject(request.error);
+      transaction.oncomplete=()=>{database.close();resolve(match)};
+      transaction.onerror=()=>{database.close();reject(transaction.error)};
+    })).catch(()=>'');
+  }
   async function putBlob(blob,meta={}){
     const optimized=meta.optimize===false?blob:await optimizeBlob(blob,meta.name);
     const id=meta.id||makeId();
     const hash=await contentHash(optimized);
+    // The same photo used to be stored again on every upload, recovery pass or
+    // re-save, because the content hash was recorded but never looked up. A
+    // workspace ended up holding many copies of one image. An identical photo
+    // already in the store is reused instead, unless the caller asked for a
+    // specific id.
+    if(!meta.id){
+      const known=findIdByHash(hash)||await scanForHash(hash);
+      if(known){
+        const existing=await getRecord(makeRef(known));
+        if(existing&&existing.blob&&existing.blob.size===optimized.size){
+          await remember(known,existing);
+          return makeRef(known);
+        }
+      }
+    }
     const record={contentHash:hash,blob:optimized,name:meta.name||'Uploaded image',type:optimized.type||blob.type||'',size:optimized.size,createdAt:Date.now(),sourceUrl:meta.sourceUrl||''};
     await tx('readwrite',store=>store.put(record,id));
     await remember(id,record);
