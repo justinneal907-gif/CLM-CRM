@@ -69,12 +69,29 @@ document.getElementById('runBtn').onclick=async()=>{
     const used=new Set();
     const wsKeys=await keys(db,'workspace');
     const records=[];
+    // Walk each record instead of turning it into one string: a 466 MB
+    // workspace exceeds the longest string a browser can hold, which is what
+    // "Invalid string length" meant here.
+    const REF=/clm-media:([0-9a-zA-Z-]{8,})/g;
+    function walk(value,acc,seen){
+      if(typeof value==='string'){
+        acc.size+=value.length;
+        if(value.includes('clm-media:')){REF.lastIndex=0;let m;while((m=REF.exec(value))){used.add(m[1]);acc.photos++}}
+        if(value.includes('data:image'))acc.embedded+=(value.match(/data:image/g)||[]).length;
+        return;
+      }
+      if(value===null||typeof value!=='object')return;
+      if(value instanceof Blob){acc.size+=value.size;return}
+      if(seen.has(value))return;seen.add(value);
+      if(Array.isArray(value)){for(const v of value)walk(v,acc,seen);return}
+      for(const [k,v] of Object.entries(value)){acc.size+=k.length;walk(v,acc,seen)}
+    }
     for(const k of wsKeys){
       const v=await get(db,'workspace',k);
-      const text=JSON.stringify(v||{});
-      for(const m of text.matchAll(/clm-media:([0-9a-zA-Z-]{8,})/g))used.add(m[1]);
-      records.push({key:String(k),size:text.length,saved:v&&v.workspaceSavedAt||v&&v.createdAt||0,
-        photos:(text.match(/clm-media:/g)||[]).length,embedded:text.split('data:image').length-1});
+      const acc={size:0,photos:0,embedded:0};
+      walk(v,acc,new WeakSet());
+      records.push({key:String(k),size:acc.size,saved:v&&v.workspaceSavedAt||v&&v.createdAt||0,
+        photos:acc.photos,embedded:acc.embedded});
     }
     let orphanCount=0,orphanBytes=0;
     for(const [,v] of byHash)for(const id of v.ids)if(!used.has(id)){orphanCount++;orphanBytes+=v.bytes}
