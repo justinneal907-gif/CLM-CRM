@@ -10,7 +10,10 @@ const ctx={console,crypto:require("node:crypto").webcrypto,document,window:{},Bl
  gmailMimeHeader:s=>s,gmailBase64Utf8:s=>Buffer.from(s).toString('base64'),gmailBase64UrlUtf8:b64,gmailWrapBase64:s=>s.match(/.{1,76}/g)?.join('\r\n')||'',gmailPlainText:s=>s,
  storeDraftPreview:s=>{ctx.saved=s},persistWorkspaceSafe(){},FileReader:class{readAsDataURL(blob){blob.arrayBuffer().then(b=>{this.result='data:'+blob.type+';base64,'+Buffer.from(b).toString('base64');this.onload()})}}};
 vm.createContext(ctx);vm.runInContext('let lastGmailPackage=null;const verifiedGmailPackages=new Map();',ctx);
-for(const n of ['freezePreviewImagesForReview','normalizedPackageHtml','verifyStoredGmailPackage','gmailInlineDataImages','buildGmailDraftRaw','sanitizeEditableEmailHtml','draftPreviewHtml'])vm.runInContext(fn(n),ctx);
+// Helpers that sanitizeEditableEmailHtml and draftPreviewHtml call. Without them the first
+// sanitize call threw a ReferenceError and none of the checks below ever ran.
+const helpers=['clmImageSlug','clmImageFingerprint','clmLegacyGenericImageIdentifier','clmPackageImageIdentifier','assignPackageImageIdentifiers','uniformEmailPhotoSizes','stripCanvaLinksText','photoDisplayUrl','previewDisplayWidth','previewDisplaySrc','restorePreviewFullSizeImages'];
+for(const n of [...helpers,'freezePreviewImagesForReview','normalizedPackageHtml','verifyStoredGmailPackage','gmailInlineDataImages','buildGmailDraftRaw','sanitizeEditableEmailHtml','draftPreviewHtml'])vm.runInContext(fn(n),ctx);
 ctx.currentEmailPreviewHtml=()=>ctx.sanitizeEditableEmailHtml(preview.innerHTML);
 const one='data:image/png;base64,'+Buffer.from('reviewed photo A').toString('base64');
 const two='data:image/gif;base64,'+Buffer.from('reviewed GIF B').toString('base64');
@@ -19,9 +22,10 @@ function stored(){return vm.runInContext(`(()=>{const e=lastGmailPackage;verifie
  // The displayed image wins even when a stale hidden reference points at another image.
  const visible='<p>My edit.</p><img src="'+one+'" data-media-ref="clm-media:wrong" data-gif-src="'+two+'">';
  const cleaned=ctx.sanitizeEditableEmailHtml(visible);assert.ok(cleaned.includes(one));assert.ok(!cleaned.includes(two));assert.ok(!cleaned.includes('data-media-ref'));
- preview.innerHTML='<p>Hi Team, my exact edit.</p><img alt="Aliana" src="'+one+'"><img alt="GIF" src="'+two+'">';
+ // Since 590c11a every sent image must sit inside a model block, as real packages do.
+ preview.innerHTML='<p>Hi Team, my exact edit.</p><div data-clm-model-id="aliana"><img alt="Aliana" src="'+one+'"></div><div data-clm-model-id="gif-model"><img alt="GIF" src="'+two+'"></div>';
  await ctx.freezePreviewImagesForReview();
- const raw=await ctx.buildGmailDraftRaw('client@example.com','Subject',preview.innerHTML,'',true).text();fs.writeFileSync('/tmp/clm-package-integrity.eml',raw);
+ const raw=await ctx.buildGmailDraftRaw('client@example.com','Subject',preview.innerHTML,'',true).text();fs.writeFileSync(require('node:path').join(require('node:os').tmpdir(),'clm-package-integrity.eml'),raw);
  assert.ok(raw.includes('Content-Transfer-Encoding: base64'));assert.ok(!raw.includes('Content-Transfer-Encoding: 8bit'));
  returned=stored();await ctx.verifyStoredGmailPackage('g1');
  let good=structuredClone(returned);
