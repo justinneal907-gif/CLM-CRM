@@ -40,6 +40,7 @@ const IMG=/data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+\/=]+/gi;
 
 function openDb(){return new Promise((res,rej)=>{const q=indexedDB.open(DB);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error||new Error('Could not open the CRM database'));q.onblocked=()=>rej(new Error('The CRM database is busy. Close other CRM tabs and try again.'))})}
 function get(db,store,key){return new Promise((res,rej)=>{const t=db.transaction(store,'readonly');const q=t.objectStore(store).get(key);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+function keys(db,store){return new Promise((res,rej)=>{const t=db.transaction(store,'readonly');const q=t.objectStore(store).getAllKeys();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
 function put(db,store,value,key){return new Promise((res,rej)=>{const t=db.transaction(store,'readwrite');t.objectStore(store).put(value,key);t.oncomplete=()=>res(true);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error||new Error('Write aborted'))})}
 
 function bytesOf(dataUrl){
@@ -87,9 +88,29 @@ document.getElementById('runBtn').onclick=async()=>{
     const primary=await get(db,WS,'primary');
     if(!primary)throw new Error('No CRM workspace found in this browser.');
     const journal=await get(db,WS,'saved-package-journal-v1');
-    const backupKey='before-photo-migration-'+stamp;
-    await put(db,WS,{primary,journal:journal||null,createdAt:Date.now()},backupKey);
-    say('Backup written: '+backupKey);
+    // One backup per state of the workspace. Each run used to write another
+    // full copy, and four stopped runs left about 3.7 GB of identical
+    // snapshots behind. An existing backup of this exact workspace is reused.
+    const existingBackups=(await keys(db,WS)).map(String).filter(k=>k.startsWith('before-photo-migration-')).sort();
+    let backupKey='';
+    for(const key of existingBackups){
+      const candidate=await get(db,WS,key);
+      // Reuse only a backup that is demonstrably of this same workspace. The
+      // CRM moves workspaceSavedAt forward on every save; a workspace that has
+      // never been saved has no such marker, so a fresh backup is written.
+      const saved=primary.workspaceSavedAt||0;
+      if(!saved)continue;
+      const c=candidate&&candidate.primary;
+      if(c&&(c.workspaceSavedAt||0)===saved&&(c.drafts||[]).length===(primary.drafts||[]).length){backupKey=key;break}
+    }
+    if(backupKey)say('Reusing the backup already saved for this workspace: '+backupKey);
+    else{
+      backupKey='before-photo-migration-'+stamp;
+      await put(db,WS,{primary,journal:journal||null,createdAt:Date.now()},backupKey);
+      say('Backup written: '+backupKey);
+    }
+    const stale=existingBackups.filter(k=>k!==backupKey);
+    if(stale.length)say('Note: '+stale.length+' older migration backup(s) are still stored. storage-report.html shows what they cost; they can be removed once this has run.');
 
     // ---------- 2. one stored photo per distinct image ----------
     const found=new Set();
