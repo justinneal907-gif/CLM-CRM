@@ -18,14 +18,14 @@ label{display:block;margin:10px 0}
 <h1>CLM CRM Photo Migration</h1>
 <div class="card">
 <p>This moves each photo that is stored as text inside a package into the CRM photo store, and points the package at that one copy. Photos are stored <b>exactly as they are</b>: no resizing, no recompression, no change to which photo belongs to which model.</p>
-<p>Run the dry run first and close every other CRM tab. Keep this tab open until it finishes.</p>
-<p><b>Order of work:</b> a full backup is written first, then photos are stored, then packages are updated, then every package is checked photo by photo. If any check fails, nothing is saved.</p>
+<p>Close every other CRM tab and keep this tab open until it finishes.</p>
+<p><b>Order of work:</b> the packages are backed up and converted and checked first, and only saved once every check passes. The package journal is then done the same way, separately, so the two are never held in memory together.</p>
 <label><input type="checkbox" id="ok"> I have an export saved and the dry run looked right.</label>
 <button id="runBtn" disabled>Migrate my photos</button>
 </div>
 <div class="card warn">
 <b>If anything goes wrong</b>
-<p>Your packages are only overwritten at the very end, after every check has passed. The backup written at the start stays in the database under a key beginning <b>before-photo-migration-</b>, so the earlier state can always be read back.</p>
+<p>Nothing is overwritten until every check has passed. The backup written at the start stays in the database under a key beginning <b>before-photo-migration-</b>, so the earlier state can always be read back.</p>
 </div>
 <div class="card"><b>Progress</b><pre id="out">Ready.</pre></div>
 <script>
@@ -34,8 +34,7 @@ const say=s=>{out.textContent+=('\n'+s);out.scrollTop=out.scrollHeight};
 const MB=n=>(n/1048576).toFixed(1)+' MB';
 document.getElementById('ok').onchange=e=>{document.getElementById('runBtn').disabled=!e.target.checked};
 
-const DB='jn-agency-crm',WS='workspace',MEDIA='media';
-const PREFIX='clm-media:';
+const DB='jn-agency-crm',WS='workspace',MEDIA='media',PREFIX='clm-media:';
 const IMG=/data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+\/=]+/gi;
 
 function openDb(){return new Promise((res,rej)=>{const q=indexedDB.open(DB);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error||new Error('Could not open the CRM database'));q.onblocked=()=>rej(new Error('The CRM database is busy. Close other CRM tabs and try again.'))})}
@@ -55,178 +54,199 @@ async function hashOf(u8){
 function typeOf(dataUrl){return (dataUrl.match(/data:([^;,]+)/)||[])[1]||'image/png'}
 function newId(){return crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)}
 
-// Replaces every embedded photo in a value with its reference. Returns a new
-// value; the original is left untouched so nothing is lost if a check fails.
-function rewrite(value,refFor,seen=new Map()){
+// Converts in a single pass and never keeps a photo after it is stored. The
+// earlier version pulled every embedded photo out into a set, held the
+// workspace and the journal at the same time, and ran the tab out of memory on
+// a real workspace. Each photo here is read, stored and released one at a
+// time, and the converted package is built as it goes.
+async function convert(value,onPhoto,seen){
   if(typeof value==='string'){
     if(!value.includes('data:image'))return value;
-    return value.replace(IMG,m=>refFor.get(m)||m);
+    let result='',last=0,m;IMG.lastIndex=0;
+    while((m=IMG.exec(value))){
+      result+=value.slice(last,m.index);
+      result+=await onPhoto(m[0]);
+      last=m.index+m[0].length;
+    }
+    return result+value.slice(last);
   }
   if(value===null||typeof value!=='object')return value;
+  if(value instanceof Blob)return value;
   if(seen.has(value))return seen.get(value);
-  if(Array.isArray(value)){const arr=[];seen.set(value,arr);for(const v of value)arr.push(rewrite(v,refFor,seen));return arr}
+  if(Array.isArray(value)){
+    const arr=[];seen.set(value,arr);
+    for(const v of value)arr.push(await convert(v,onPhoto,seen));
+    return arr;
+  }
   const obj={};seen.set(value,obj);
-  for(const [k,v] of Object.entries(value))obj[k]=rewrite(v,refFor,seen);
+  for(const [k,v] of Object.entries(value))obj[k]=await convert(v,onPhoto,seen);
   return obj;
 }
-function collect(value,found,seen=new WeakSet()){
-  if(typeof value==='string'){if(value.includes('data:image'))for(const m of value.matchAll(IMG))found.add(m[0]);return}
+function refsIn(value,found,seen=new WeakSet()){
+  if(typeof value==='string'){
+    if(value.includes(PREFIX)){const re=/clm-media:([0-9a-zA-Z-]{8,})/g;let m;while((m=re.exec(value)))found.add(m[1])}
+    return;
+  }
   if(value===null||typeof value!=='object')return;
   if(seen.has(value))return;seen.add(value);
-  if(Array.isArray(value)){for(const v of value)collect(v,found,seen);return}
-  for(const v of Object.values(value))collect(v,found,seen);
+  if(Array.isArray(value)){for(const v of value)refsIn(v,found,seen);return}
+  for(const v of Object.values(value))refsIn(v,found,seen);
 }
-const sizeOf=v=>{try{return JSON.stringify(v).length}catch{return 0}};
+function stillEmbedded(value,seen=new WeakSet()){
+  if(typeof value==='string')return value.includes('data:image');
+  if(value===null||typeof value!=='object')return false;
+  if(seen.has(value))return false;seen.add(value);
+  if(Array.isArray(value))return value.some(v=>stillEmbedded(v,seen));
+  return Object.values(value).some(v=>stillEmbedded(v,seen));
+}
+const approxSize=(v,seen=new WeakSet())=>{
+  if(typeof v==='string')return v.length;
+  if(v===null||typeof v!=='object')return 0;
+  if(v instanceof Blob)return v.size;
+  if(seen.has(v))return 0;seen.add(v);
+  if(Array.isArray(v))return v.reduce((t,x)=>t+approxSize(x,seen),0);
+  return Object.entries(v).reduce((t,[k,x])=>t+k.length+approxSize(x,seen),0);
+};
 
 document.getElementById('runBtn').onclick=async()=>{
   const btn=document.getElementById('runBtn');btn.disabled=true;out.textContent='Starting...';
+  const byHash=new Map();     // photo fingerprint -> reference
+  const expect=new Map();     // reference -> fingerprint
+  let added=0,reused=0,addedBytes=0,seenPhotos=0;
   try{
     const db=await openDb();
 
-    // ---------- 1. back up everything that will be touched ----------
-    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
-    const primary=await get(db,WS,'primary');
-    if(!primary)throw new Error('No CRM workspace found in this browser.');
-    const journal=await get(db,WS,'saved-package-journal-v1');
-    // One backup per state of the workspace. Each run used to write another
-    // full copy, and four stopped runs left about 3.7 GB of identical
-    // snapshots behind. An existing backup of this exact workspace is reused.
-    const existingBackups=(await keys(db,WS)).map(String).filter(k=>k.startsWith('before-photo-migration-')).sort();
-    let backupKey='';
-    for(const key of existingBackups){
-      const candidate=await get(db,WS,key);
-      // Reuse only a backup that is demonstrably of this same workspace. The
-      // CRM moves workspaceSavedAt forward on every save; a workspace that has
-      // never been saved has no such marker, so a fresh backup is written.
-      const saved=primary.workspaceSavedAt||0;
-      if(!saved)continue;
-      const c=candidate&&candidate.primary;
-      if(c&&(c.workspaceSavedAt||0)===saved&&(c.drafts||[]).length===(primary.drafts||[]).length){backupKey=key;break}
-    }
-    if(backupKey)say('Reusing the backup already saved for this workspace: '+backupKey);
-    else{
-      backupKey='before-photo-migration-'+stamp;
-      await put(db,WS,{primary,journal:journal||null,createdAt:Date.now()},backupKey);
-      say('Backup written: '+backupKey);
-    }
-    const stale=existingBackups.filter(k=>k!==backupKey);
-    if(stale.length)say('Note: '+stale.length+' older migration backup(s) are still stored. storage-report.html shows what they cost; they can be removed once this has run.');
-
-    // ---------- 2. one stored photo per distinct image ----------
-    const found=new Set();
-    collect(primary.drafts||[],found);
-    if(journal)collect(journal,found);
-    say('Embedded photo copies found: '+found.size+' unique strings');
-
-    // Links already in the packages, before anything is moved.
-    const priorRefs=new Set([...JSON.stringify(primary.drafts||[]).matchAll(/clm-media:[0-9a-fA-F-]{8,}/g)].map(m=>m[0]));
-    let priorBroken=0;
-    for(const ref of priorRefs){
-      const rec=await get(db,MEDIA,ref.slice(PREFIX.length));
-      if(!rec||!rec.blob)priorBroken++;
-    }
-    say('Photo links already in packages: '+priorRefs.size+(priorBroken?', of which '+priorBroken+' are already broken':', all working'));
-
-    const byHash=new Map();      // content hash -> reference
-    const refFor=new Map();      // exact data URL -> reference
-    const expect=new Map();      // reference -> content hash
-    // reuse photos the store already holds
+    // Photos already in the store, by content, so nothing is stored twice.
     const existing=new Map();
     await new Promise((res,rej)=>{const t=db.transaction(MEDIA,'readonly');const q=t.objectStore(MEDIA).openCursor();
       q.onsuccess=()=>{const c=q.result;if(!c)return;if(c.value&&c.value.contentHash&&!existing.has(c.value.contentHash))existing.set(c.value.contentHash,c.key);c.continue()};
       t.oncomplete=res;t.onerror=()=>rej(t.error)});
     say('Photos already in the store: '+existing.size);
 
-    let reused=0,added=0,addedBytes=0,i=0;
-    for(const dataUrl of found){
-      i++;
+    // Stores one photo and returns the reference that replaces it.
+    const currentWanted=new Set();
+    const onPhoto=async dataUrl=>{
       const u8=bytesOf(dataUrl);
       const hash=await hashOf(u8);
+      currentWanted.add(hash);
+      seenPhotos++;
       let ref=byHash.get(hash);
       if(!ref){
         const have=existing.get(hash);
         if(have){ref=PREFIX+have;reused++}
         else{
           const id=newId();
-          // Stored exactly as it is. putBlob is deliberately not used: it
-          // resizes above 1800px and re-encodes to WebP, which would alter
+          // Stored exactly as it is. The CRM's own putBlob is not used here:
+          // it resizes above 1800px and re-encodes to WebP, which would alter
           // photos that have already been sent to clients.
           const blob=new Blob([u8],{type:typeOf(dataUrl)});
           await put(db,MEDIA,{contentHash:hash,blob,name:'Migrated package photo',type:blob.type,size:blob.size,createdAt:Date.now(),sourceUrl:''},id);
           ref=PREFIX+id;added++;addedBytes+=u8.length;
         }
-        byHash.set(hash,ref);
+        byHash.set(hash,ref);expect.set(ref,hash);
       }
-      refFor.set(dataUrl,ref);
-      expect.set(ref,hash);
-      if(i%20===0||i===found.size)say('  stored '+i+' of '+found.size+' (new '+added+', reused '+reused+')');
-    }
+      if(seenPhotos%25===0)say('  photos handled: '+seenPhotos+' (new '+added+', reused '+reused+')');
+      return ref;
+    };
 
-    // ---------- 3. rewrite packages in memory ----------
-    const beforeSize=sizeOf(primary);
-    const newPrimary={...primary,drafts:rewrite(primary.drafts||[],refFor)};
-    if(primary.draft)newPrimary.draft=rewrite(primary.draft,refFor);
-    const newJournal=journal?rewrite(journal,refFor):null;
-    const afterSize=sizeOf(newPrimary);
-    say('\nPackages: '+MB(beforeSize)+' -> '+MB(afterSize));
-
-    // ---------- 4. check every package before saving anything ----------
-    say('Checking every package photo by photo...');
-    const beforeDrafts=primary.drafts||[],afterDrafts=newPrimary.drafts||[];
-    if(beforeDrafts.length!==afterDrafts.length)throw new Error('Package count changed. Nothing was saved.');
-    const cache=new Map();
-    const MISSING='missing';
+    // Checks one converted record against the originals it came from.
+    const cache=new Map(),MISSING='missing';
     const broken=new Set(),brokenPackages=new Set();
-    let checked=0;
-    for(let d=0;d<beforeDrafts.length;d++){
-      const was=new Set(),now=new Set();
-      collect(beforeDrafts[d],was);collect(afterDrafts[d],now);
-      if(now.size)throw new Error('Package '+(afterDrafts[d].id||d)+' still holds an embedded photo. Nothing was saved.');
-      // Every photo this run moved must come back byte for byte. References
-      // that were already in the package are checked too, but a broken one is
-      // reported rather than treated as a failure of this migration: it was
-      // already pointing at a photo the store does not hold.
-      const refs=[...JSON.stringify(afterDrafts[d]).matchAll(/clm-media:[0-9a-fA-F-]{8,}/g)].map(m=>m[0]);
-      const wantHashes=new Set();for(const u of was)wantHashes.add(await hashOf(bytesOf(u)));
-      const gotHashes=new Set();
-      for(const ref of refs){
+    async function verify(label,after,wanted){
+      if(stillEmbedded(after))throw new Error(label+' still holds an embedded photo. Nothing was saved.');
+      const refs=new Set();refsIn(after,refs);
+      const got=new Set();
+      for(const id of refs){
+        const ref=PREFIX+id;
         let h=cache.get(ref);
-        if(h===MISSING){broken.add(ref);brokenPackages.add(String(afterDrafts[d].id||d));continue}
+        if(h===MISSING){broken.add(ref);brokenPackages.add(label);continue}
         if(!h){
-          const rec=await get(db,MEDIA,ref.slice(PREFIX.length));
+          const rec=await get(db,MEDIA,id);
           if(!rec||!rec.blob){
-            if(expect.has(ref))throw new Error('A photo this migration stored could not be read back for package '+(afterDrafts[d].id||d)+'. Nothing was saved.');
-            cache.set(ref,MISSING);broken.add(ref);brokenPackages.add(String(afterDrafts[d].id||d));
-            continue;
+            if(expect.has(ref))throw new Error('A photo this migration stored could not be read back for '+label+'. Nothing was saved.');
+            cache.set(ref,MISSING);broken.add(ref);brokenPackages.add(label);continue;
           }
           h=await hashOf(new Uint8Array(await rec.blob.arrayBuffer()));
           cache.set(ref,h);
-          if(expect.has(ref)&&expect.get(ref)!==h)throw new Error('Stored photo bytes do not match the original. Nothing was saved.');
+          if(expect.has(ref)&&expect.get(ref)!==h)throw new Error('Stored photo bytes do not match the original for '+label+'. Nothing was saved.');
         }
-        gotHashes.add(h);
+        got.add(h);
       }
-      for(const h of wantHashes)if(!gotHashes.has(h))throw new Error('A photo from package '+(afterDrafts[d].id||d)+' is not reachable after the change. Nothing was saved.');
-      checked++;
-      if(checked%40===0)say('  checked '+checked+' of '+beforeDrafts.length);
+      for(const h of wanted)if(!got.has(h))throw new Error('A photo from '+label+' is not reachable after the change. Nothing was saved.');
     }
-    say('All '+checked+' packages verified: every photo this migration moved is reachable and byte for byte identical.');
+
+    // ---------------- packages ----------------
+    say('\nReading your packages...');
+    let primary=await get(db,WS,'primary');
+    if(!primary)throw new Error('No CRM workspace found in this browser.');
+    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+    // What a backup is of is recorded in its name, so deciding whether one can
+    // be reused never reads it. Loading a backup to compare a timestamp meant
+    // pulling a whole second workspace into memory, which is what crashed the
+    // tab on a real workspace.
+    const saved=primary.workspaceSavedAt||0;
+    const marker='--ws'+saved+'-n'+(primary.drafts||[]).length;
+    const existingBackups=(await keys(db,WS)).map(String).filter(k=>k.startsWith('before-photo-migration-')).sort();
+    let backupKey=saved?existingBackups.find(k=>k.endsWith(marker))||'':'';
+    if(backupKey)say('Reusing the backup already saved for this workspace: '+backupKey);
+    else{
+      backupKey='before-photo-migration-'+stamp+marker;
+      await put(db,WS,{primary,createdAt:Date.now()},backupKey);
+      say('Backup of your packages written: '+backupKey);
+    }
+
+    const beforeSize=approxSize(primary.drafts||[]);
+    const drafts=primary.drafts||[];
+    say('Converting '+drafts.length+' packages...');
+    const newDrafts=[];
+    for(let i=0;i<drafts.length;i++){
+      currentWanted.clear();
+      const converted=await convert(drafts[i],onPhoto,new Map());
+      await verify('package '+(drafts[i]&&drafts[i].id||i),converted,currentWanted);
+      newDrafts.push(converted);
+      drafts[i]=null;               // release the original as soon as it is done
+      if((i+1)%40===0)say('  converted and checked '+(i+1)+' of '+drafts.length);
+    }
+    currentWanted.clear();
+    const newDraft=primary.draft?await convert(primary.draft,onPhoto,new Map()):primary.draft;
+    const newPrimary={...primary,drafts:newDrafts,draft:newDraft};
+    const afterSize=approxSize(newDrafts);
+    say('All '+newDrafts.length+' packages converted and checked.');
+    say('Packages: '+MB(beforeSize)+' -> '+MB(afterSize));
+    await put(db,WS,newPrimary,'primary');
+    say('Packages saved.');
+    primary=null;
+
+    // ---------------- package journal ----------------
+    say('\nReading the package journal...');
+    let journal=await get(db,WS,'saved-package-journal-v1');
+    if(journal){
+      const journalBackupKey=backupKey+'--journal';
+      if(!(await keys(db,WS)).map(String).includes(journalBackupKey)){
+        await put(db,WS,{journal,createdAt:Date.now()},journalBackupKey);
+        say('Backup of the journal written: '+journalBackupKey);
+      }else say('Reusing the journal backup: '+journalBackupKey);
+      const jBefore=approxSize(journal);
+      currentWanted.clear();
+      const newJournal=await convert(journal,onPhoto,new Map());
+      await verify('the package journal',newJournal,currentWanted);
+      journal=null;
+      await put(db,WS,newJournal,'saved-package-journal-v1');
+      say('Journal: '+MB(jBefore)+' -> '+MB(approxSize(newJournal)));
+    }else say('No package journal found.');
+
+    db.close();
+    say('\nDone.');
+    say('  photos newly stored: '+added+' ('+MB(addedBytes)+'), reused: '+reused);
+    say('  backup kept as: '+backupKey);
     if(broken.size){
       say('');
-      say('NOTE: '+broken.size+' photo link(s) in '+brokenPackages.size+' package(s) were already broken before this migration.');
+      say('NOTE: '+broken.size+' photo link(s) in '+brokenPackages.size+' place(s) were already broken before this migration.');
       say('They point at photos the CRM photo store no longer holds, so they were already showing as missing.');
-      say('This migration did not create them and does not change them. Affected packages:');
+      say('This migration did not create them and did not change them. Affected:');
       for(const id of [...brokenPackages].slice(0,20))say('  '+id);
       if(brokenPackages.size>20)say('  ...and '+(brokenPackages.size-20)+' more');
     }
-
-    // ---------- 5. save ----------
-    await put(db,WS,newPrimary,'primary');
-    if(newJournal)await put(db,WS,newJournal,'saved-package-journal-v1');
-    db.close();
-    say('\nDone.');
-    say('  packages: '+MB(beforeSize)+' -> '+MB(afterSize));
-    say('  photos newly stored: '+added+' ('+MB(addedBytes)+'), reused: '+reused);
-    say('  backup kept as: '+backupKey);
     say('\nClose this tab and reload the CRM.');
   }catch(err){
     console.error(err);
