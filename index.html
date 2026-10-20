@@ -4405,8 +4405,37 @@ function draftPreviewHtml(html){
   t.content.querySelectorAll('img').forEach(img=>{
     const src=img.getAttribute('src')||'';
     if(window.CLMMediaStore?.isMediaRef?.(src))img.setAttribute('src',photoDisplayUrl(src));
-    ['data-media-ref','data-gif-src','data-gif-playing','data-gif-bound'].forEach(k=>img.removeAttribute(k));
+    ['data-media-ref','data-gif-src','data-gif-playing','data-gif-bound',PREVIEW_FULL_SRC_ATTR].forEach(k=>img.removeAttribute(k));
+    // On screen only: show a downscaled copy. Package photos are stored at
+    // 1300-2500px but displayed around 440px, so decoding the originals cost
+    // hundreds of MB per opened package. The authoritative URL is parked on
+    // PREVIEW_FULL_SRC_ATTR and restored by sanitizeEditableEmailHtml, so the
+    // HTML that is saved or handed to Gmail still carries the full-size photo.
+    const authority=img.getAttribute('src')||'';
+    if(!authority)return;
+    const small=previewDisplaySrc(authority,img);
+    if(small&&small!==authority){img.setAttribute(PREVIEW_FULL_SRC_ATTR,authority);img.setAttribute('src',small)}
   });return t.innerHTML;
+}
+const PREVIEW_FULL_SRC_ATTR='data-clm-preview-full-src';
+function previewDisplayWidth(img){
+  const attr=parseInt(img.getAttribute('width')||'',10);
+  if(attr>0)return attr;
+  const styled=/(?:^|[^-\w])width\s*:\s*(\d+)px/i.exec(img.getAttribute('style')||'');
+  if(styled)return parseInt(styled[1],10);
+  return 440;
+}
+function previewDisplaySrc(src,img){
+  try{return window.CLMThumbnails?.url?.(src,previewDisplayWidth(img))||''}
+  catch{return ''}
+}
+// The stored and sent HTML must never contain a downscaled preview copy.
+function restorePreviewFullSizeImages(root){
+  root.querySelectorAll('img['+PREVIEW_FULL_SRC_ATTR+']').forEach(img=>{
+    const full=img.getAttribute(PREVIEW_FULL_SRC_ATTR);
+    if(full)img.setAttribute('src',full);
+    img.removeAttribute(PREVIEW_FULL_SRC_ATTR);
+  });
 }
 function bindDraftPreviewGifs(){}
 function setEmailPreviewRefreshPending(pending=true){
@@ -4519,6 +4548,8 @@ let emailPreviewEditTimer=0;
 function sanitizeEditableEmailHtml(html){
   const template=document.createElement('template');
   template.innerHTML=uniformEmailPhotoSizes(stripCanvaLinksText(html));
+  // Undo the screen-only downscaling before anything reads this HTML back.
+  restorePreviewFullSizeImages(template.content);
   // The visible src is authoritative. Hidden attributes must never substitute another image.
   template.content.querySelectorAll('img').forEach(img=>{['data-gif-src','data-gif-playing','data-gif-bound','data-media-ref','title','role','tabindex'].forEach(name=>img.removeAttribute(name));img.style.removeProperty('cursor')});
   template.content.querySelectorAll('script,style,iframe,object,embed,form,input,textarea,button,meta,link').forEach(el=>el.remove());
