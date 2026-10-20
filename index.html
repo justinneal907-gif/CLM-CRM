@@ -1977,6 +1977,18 @@ function idbReadWorkspaceAtKey(key=IDB_STATE_KEY){
   }));
 }
 function idbReadWorkspace(){return idbReadWorkspaceAtKey(IDB_STATE_KEY)}
+const PRE_REPAIR_BACKUP_KEY='backup-before-gallery-repair-20260929';
+// Whether a workspace record exists, without reading its contents.
+function idbHasWorkspaceKey(key){
+  return openCRMDatabase().then(database=>new Promise((resolve,reject)=>{
+    const tx=database.transaction(IDB_STORE,'readonly');
+    const req=tx.objectStore(IDB_STORE).count(key);
+    req.onsuccess=()=>resolve(req.result>0);
+    req.onerror=()=>reject(req.error||new Error('Could not check CRM data in IndexedDB.'));
+    tx.oncomplete=()=>database.close();
+    tx.onerror=()=>{database.close();reject(tx.error||new Error('IndexedDB read transaction failed.'))};
+  }));
+}
 function idbWriteWorkspaceAtKey(snapshot,key=IDB_STATE_KEY){
   return openCRMDatabase().then(database=>new Promise((resolve,reject)=>{
     const tx=database.transaction(IDB_STORE,'readwrite');
@@ -6190,10 +6202,16 @@ async function bootstrapWorkspace(){
   const workspaceApp=document.querySelector('.app');if(workspaceApp)workspaceApp.inert=true;
   try{await window.CLMMediaStore?.init?.()}catch(err){console.info('Media store init skipped',err)}
   await ensureMilanArchiveLoaded();
+  // The pre-repair snapshot is written once and never replaced. It used to be
+  // rewritten on every startup whenever the workspace lacked
+  // safeGallerySnapshot20260929, which since October 9 is only set for new
+  // browsers: that overwrote the September 29 snapshot with current data and
+  // read and copied the whole workspace on each visit. Checking the key
+  // first skips reading the workspace entirely once the snapshot exists.
   try{
-    const raw=await idbReadWorkspace();
-    if(raw&&!raw.recovery?.safeGallerySnapshot20260929){
-      await idbWriteWorkspaceAtKey(structuredClone(raw),'backup-before-gallery-repair-20260929');
+    if(!await idbHasWorkspaceKey(PRE_REPAIR_BACKUP_KEY)){
+      const raw=await idbReadWorkspace();
+      if(raw&&!raw.recovery?.safeGallerySnapshot20260929)await idbWriteWorkspaceAtKey(raw,PRE_REPAIR_BACKUP_KEY);
     }
   }catch(err){console.info('Pre-repair workspace backup skipped',err)}
   db=await loadWorkspaceIndexedDB();
