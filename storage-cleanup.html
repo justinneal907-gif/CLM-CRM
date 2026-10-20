@@ -41,15 +41,19 @@ function get(db,store,key){return new Promise((res,rej)=>{const t=db.transaction
 function keys(db,store){return new Promise((res,rej)=>{const t=db.transaction(store,'readonly');const q=t.objectStore(store).getAllKeys();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
 function del(db,store,key){return new Promise((res,rej)=>{const t=db.transaction(store,'readwrite');t.objectStore(store).delete(key);t.oncomplete=()=>res(true);t.onerror=()=>rej(t.error)})}
 
-// Measures without building one huge string: a workspace record can be larger
-// than the longest string a browser can hold.
-function measure(value,acc,seen){
-  if(typeof value==='string'){acc.size+=value.length;return}
-  if(value===null||typeof value!=='object')return;
-  if(value instanceof Blob){acc.size+=value.size;return}
-  if(seen.has(value))return;seen.add(value);
-  if(Array.isArray(value)){for(const v of value)measure(v,acc,seen);return}
-  for(const [k,v] of Object.entries(value)){acc.size+=k.length;measure(v,acc,seen)}
+// Backups are never read here. Each one holds a whole workspace, hundreds of
+// megabytes, and loading them only to measure them ran the tab out of memory.
+// The date comes from the key, and the space actually freed is reported from
+// the browser's own storage figures after the deletion.
+function dateFromKey(key){
+  const m=/^before-photo-migration-(.+)$/.exec(key);
+  if(!m)return '';
+  const iso=m[1].replace(/-(\d\d)-(\d\d)-(\d\d\d)Z$/,':$1:$2.$3Z');
+  const d=new Date(iso);
+  return isNaN(d)?'':d.toLocaleString();
+}
+async function usedBytes(){
+  try{const e=await navigator.storage.estimate();return e.usage||0}catch{return 0}
 }
 
 document.getElementById('ok').onchange=e=>{document.getElementById('runBtn').disabled=!e.target.checked};
@@ -66,15 +70,11 @@ document.getElementById('listBtn').onclick=async()=>{
     const keep=all[all.length-1];
     plan=all.slice(0,-1);
     say('\nKEEPING the newest migration backup:');
-    const k=await get(db,WS,keep);const ka={size:0};measure(k,ka,new WeakSet());
-    say('  '+keep+': '+MB(ka.size)+', made '+when(k&&k.createdAt));
+    say('  '+keep+(dateFromKey(keep)?'   made '+dateFromKey(keep):''));
     say('\nWOULD REMOVE '+plan.length+' older one(s):');
-    let total=0;
-    for(const key of plan){
-      const v=await get(db,WS,key);const a={size:0};measure(v,a,new WeakSet());total+=a.size;
-      say('  '+key+': '+MB(a.size)+', made '+when(v&&v.createdAt));
-    }
-    say('\nThat would free about '+MB(total)+'.');
+    for(const key of plan)say('  '+key+(dateFromKey(key)?'   made '+dateFromKey(key):''));
+    say('\nThe CRM is currently using '+( (await usedBytes())/1073741824 ).toFixed(2)+' GB.');
+    say('Each of these holds a whole copy of the workspace, so this usually frees a few GB.');
     say('Nothing has been removed yet.');
     db.close();
     document.getElementById('confirmCard').style.display='block';
@@ -91,6 +91,7 @@ document.getElementById('runBtn').onclick=async()=>{
     // never remove anything that is not one of these snapshots.
     const all=(await keys(db,WS)).map(String).filter(k=>k.startsWith('before-photo-migration-')).sort();
     const keep=all[all.length-1];
+    const before=await usedBytes();
     let removed=0;
     for(const key of plan){
       if(key===keep)continue;
@@ -99,10 +100,12 @@ document.getElementById('runBtn').onclick=async()=>{
       say('Removed '+key);
     }
     db.close();
+    await new Promise(r=>setTimeout(r,2000)); // the browser's figure lags a deletion
+    const after=await usedBytes();
     say('\nDone. Removed '+removed+' old migration backup(s). The newest one, '+keep+', was kept.');
-    if(navigator.storage&&navigator.storage.estimate){
-      const e=await navigator.storage.estimate();
-      say('The CRM is now using '+((e.usage||0)/1073741824).toFixed(2)+' GB.');
+    if(before&&after){
+      say('Storage freed: about '+((before-after)/1073741824).toFixed(2)+' GB (the browser updates this figure gradually).');
+      say('The CRM is now using about '+(after/1073741824).toFixed(2)+' GB.');
     }
     plan=[];
   }catch(err){console.error(err);say('ERROR: '+(err&&err.message?err.message:String(err)))}
