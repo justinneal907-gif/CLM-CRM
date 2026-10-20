@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CLM CRM Workspace Report</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;color:#1d2521;background:#f6f7f6}
+.card{background:#fff;border:1px solid #d8ddd9;border-radius:14px;padding:24px;margin:18px 0}
+button{border:0;border-radius:9px;padding:12px 18px;font-weight:700;cursor:pointer;background:#1f2923;color:white}
+button:disabled{opacity:.5;cursor:default}
+pre{white-space:pre-wrap;background:#f2f4f2;padding:14px;border-radius:8px;max-height:640px;overflow:auto;font-size:13px}
+</style>
+</head>
+<body>
+<h1>CLM CRM Workspace Report</h1>
+<div class="card">
+<p>This page is read only. It measures what takes up space in the CRM data saved in this browser and shows <b>counts and sizes only</b>: no email text, contacts or photos.</p>
+<p>Close other CRM tabs first. It reads one large record at a time and can take a minute.</p>
+<button id="runBtn">Measure my CRM data</button>
+</div>
+<div class="card"><b>Report</b><pre id="out">Ready.</pre></div>
+<script>
+const out=document.getElementById('out');
+const say=s=>{out.textContent+=('\n'+s);out.scrollTop=out.scrollHeight};
+const MB=n=>(n/1048576).toFixed(1)+' MB';
+const pct=(a,b)=>b?Math.round(100*a/b)+'%':'0%';
+
+function openDb(){return new Promise((res,rej)=>{const q=indexedDB.open('jn-agency-crm');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error||new Error('Could not open the CRM database'));q.onblocked=()=>rej(new Error('The CRM database is busy. Close other CRM tabs and try again.'))})}
+function get(db,store,key){return new Promise((res,rej)=>{const t=db.transaction(store,'readonly');const q=t.objectStore(store).get(key);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+function keys(db,store){return new Promise((res,rej)=>{const t=db.transaction(store,'readonly');const q=t.objectStore(store).getAllKeys();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+
+// 53-bit FNV-style fingerprint of a whole data URL, to count distinct images.
+function fingerprint(s){let h1=0x811c9dc5,h2=0x9e3779b9;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);h1=Math.imul(h1^c,16777619);h2=Math.imul(h2^c,2246822519)}return (h2>>>0).toString(36)+':'+(h1>>>0).toString(36)+':'+s.length}
+
+const IMG=/data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+\/=]+/gi;
+// Walks a record without copying it, adding up text sizes and embedded photos.
+function measure(value,acc,seen=new WeakSet()){
+  if(typeof value==='string'){
+    acc.bytes+=value.length;
+    if(value.includes('data:image')){
+      for(const m of value.matchAll(IMG)){acc.images++;acc.imageBytes+=m[0].length;const f=fingerprint(m[0]);acc.distinct.add(f);if(acc.globalDistinct)acc.globalDistinct.add(f)}
+    }
+    if(value.includes('clm-media:'))acc.mediaRefs+=(value.match(/clm-media:/g)||[]).length;
+    return;
+  }
+  if(value===null||typeof value!=='object')return;
+  if(value instanceof Blob){acc.blobBytes+=value.size;return}
+  if(seen.has(value))return;seen.add(value);
+  if(Array.isArray(value)){for(const v of value)measure(v,acc,seen);return}
+  for(const [k,v] of Object.entries(value)){acc.bytes+=k.length;measure(v,acc,seen)}
+}
+const fresh=(global)=>({bytes:0,images:0,imageBytes:0,distinct:new Set(),mediaRefs:0,blobBytes:0,globalDistinct:global});
+
+document.getElementById('runBtn').onclick=async()=>{
+  const btn=document.getElementById('runBtn');btn.disabled=true;out.textContent='Measuring...';
+  try{
+    const db=await openDb();
+    const allDistinct=new Set();
+
+    // ---- media store: blob sizes only ----
+    const mediaKeys=await keys(db,'media');let mediaBytes=0;
+    await new Promise((res,rej)=>{const t=db.transaction('media','readonly');const q=t.objectStore('media').openCursor();q.onsuccess=()=>{const c=q.result;if(!c)return;mediaBytes+=c.value?.blob?.size||c.value?.size||0;c.continue()};t.oncomplete=res;t.onerror=()=>rej(t.error)});
+    say('\nPHOTO STORE (separate image files, the efficient way)');
+    say('  '+mediaKeys.length+' photos, '+MB(mediaBytes));
+
+    // ---- primary workspace ----
+    say('\nYOUR WORKSPACE (primary): reading...');
+    let primary=await get(db,'workspace','primary');
+    const P=fresh(allDistinct);measure(primary,P);
+    say('  total text: '+MB(P.bytes));
+    say('  photos embedded as text: '+P.images+' copies of '+P.distinct.size+' distinct photos, '+MB(P.imageBytes)+' ('+pct(P.imageBytes,P.bytes)+' of the workspace)');
+    say('  references to the photo store: '+P.mediaRefs);
+    const sections=Object.entries(primary||{}).map(([k,v])=>{const a=fresh();measure(v,a);return [k,a]}).sort((a,b)=>b[1].bytes-a[1].bytes).slice(0,6);
+    say('  largest sections:');for(const [k,a] of sections)say('    '+k+': '+MB(a.bytes)+(a.images?' ('+a.images+' embedded photos)':''));
+    const drafts=primary?.drafts||[];
+    const fields={};for(const d of drafts)for(const [k,v] of Object.entries(d||{})){const a=fresh();measure(v,a);const f=fields[k]||(fields[k]={bytes:0,images:0});f.bytes+=a.bytes;f.images+=a.images}
+    say('  packages: '+drafts.length+'. Largest fields across all packages:');
+    for(const [k,f] of Object.entries(fields).sort((a,b)=>b[1].bytes-a[1].bytes).slice(0,6))say('    '+k+': '+MB(f.bytes)+(f.images?' ('+f.images+' embedded photos)':''));
+    const per=drafts.map(d=>{const a=fresh();measure(d,a);return {id:String(d?.id||'?'),bytes:a.bytes,images:a.images}}).sort((a,b)=>b.bytes-a.bytes);
+    say('  largest packages:');for(const d of per.slice(0,5))say('    '+d.id+': '+MB(d.bytes)+', '+d.images+' embedded photos');
+    const primarySavedAt=primary?.workspaceSavedAt||0;
+    const primaryFlag=!!primary?.recovery?.safeGallerySnapshot20260929;
+    say('  last saved: '+(primarySavedAt?new Date(primarySavedAt).toLocaleString():'unknown'));
+    say('  September 29 snapshot flag present: '+(primaryFlag?'yes':'NO'));
+    const primarySig=JSON.stringify([primarySavedAt,drafts.length,P.bytes]);
+    primary=null;
+
+    // ---- the "September 29" backup ----
+    say('\nSEPTEMBER 29 BACKUP: reading...');
+    let backup=await get(db,'workspace','backup-before-gallery-repair-20260929');
+    if(!backup)say('  not present');
+    else{
+      const B=fresh(allDistinct);measure(backup,B);
+      const bSaved=backup.workspaceSavedAt||0;
+      say('  total text: '+MB(B.bytes)+', packages: '+(backup.drafts||[]).length);
+      say('  last saved inside the backup: '+(bSaved?new Date(bSaved).toLocaleString():'unknown'));
+      // workspaceSavedAt was introduced on October 4 (b3262ca), so a genuine
+      // September 29 snapshot cannot contain it.
+      say('  genuine September 29 snapshot: '+(bSaved?'NO, it was written after October 4, so it holds later data':'possibly (no later save date inside)'));
+      if(JSON.stringify([bSaved,(backup.drafts||[]).length,B.bytes])===primarySig)say('  it is an exact copy of your current workspace');
+    }
+    backup=null;
+
+    // ---- package journal ----
+    say('\nPACKAGE JOURNAL: reading...');
+    let journal=await get(db,'workspace','saved-package-journal-v1');
+    if(!journal)say('  not present');
+    else{
+      const J=fresh(allDistinct);measure(journal,J);
+      say('  total text: '+MB(J.bytes)+', '+Object.keys(journal.records||{}).length+' package copies, '+Object.keys(journal.deleted||{}).length+' deletion markers');
+      say('  photos embedded as text: '+J.images+' copies, '+MB(J.imageBytes));
+    }
+    journal=null;
+
+    // ---- other workspace records ----
+    say('\nOTHER RECORDS');
+    for(const k of await keys(db,'workspace')){
+      if(['primary','backup-before-gallery-repair-20260929','saved-package-journal-v1'].includes(k))continue;
+      const v=await get(db,'workspace',k);const a=fresh(allDistinct);measure(v,a);
+      say('  '+k+': '+MB(a.bytes)+(a.images?', '+a.images+' embedded photos':'')+(v&&v.workspaceSavedAt?', saved '+new Date(v.workspaceSavedAt).toLocaleString():''));
+    }
+    db.close();
+    say('\nACROSS ALL WORKSPACE RECORDS');
+    say('  distinct photos embedded as text: '+allDistinct.size);
+    say('\nDone. Please send Claude a screenshot of this report (scroll so all of it shows, or take two).');
+  }catch(err){console.error(err);say('ERROR: '+(err&&err.message?err.message:String(err)))}
+  finally{btn.disabled=false}
+};
+</script>
+</body>
+</html>
