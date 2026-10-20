@@ -63,12 +63,18 @@ document.getElementById('listBtn').onclick=async()=>{
   try{
     const db=await openDb();
     const all=(await keys(db,WS)).map(String).filter(k=>k.startsWith('before-photo-migration-')).sort();
-    if(all.length<2){
-      say('\nThere is nothing to clean up: '+all.length+' migration backup is stored.');
+    // A run stores its packages and its journal under the same name, the
+    // journal with a "--journal" suffix. They belong together, so the newest
+    // run is kept whole.
+    const base=k=>k.replace(/--journal$/,'');
+    const groups=[...new Set(all.map(base))].sort();
+    if(groups.length<2){
+      say('\nThere is nothing to clean up: '+groups.length+' migration backup is stored.');
       db.close();return;
     }
-    const keep=all[all.length-1];
-    plan=all.slice(0,-1);
+    const newest=groups[groups.length-1];
+    const keep=all.filter(k=>base(k)===newest).join(' and ');
+    plan=all.filter(k=>base(k)!==newest);
     say('\nKEEPING the newest migration backup:');
     say('  '+keep+(dateFromKey(keep)?'   made '+dateFromKey(keep):''));
     say('\nWOULD REMOVE '+plan.length+' older one(s):');
@@ -93,8 +99,10 @@ document.getElementById('runBtn').onclick=async()=>{
     const keep=all[all.length-1];
     const before=await usedBytes();
     let removed=0;
+    const base=k=>k.replace(/--journal$/,'');
+    const newest=[...new Set(all.map(base))].sort().pop();
     for(const key of plan){
-      if(key===keep)continue;
+      if(base(key)===newest)continue;
       if(!all.includes(key))continue;
       await del(db,WS,key);removed++;
       say('Removed '+key);
@@ -102,7 +110,7 @@ document.getElementById('runBtn').onclick=async()=>{
     db.close();
     await new Promise(r=>setTimeout(r,2000)); // the browser's figure lags a deletion
     const after=await usedBytes();
-    say('\nDone. Removed '+removed+' old migration backup(s). The newest one, '+keep+', was kept.');
+    say('\nDone. Removed '+removed+' old migration backup record(s). The newest backup was kept.');
     if(before&&after){
       say('Storage freed: about '+((before-after)/1073741824).toFixed(2)+' GB (the browser updates this figure gradually).');
       say('The CRM is now using about '+(after/1073741824).toFixed(2)+' GB.');
