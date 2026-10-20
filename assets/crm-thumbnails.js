@@ -52,10 +52,13 @@
     while(active<MAX_ACTIVE&&queue.length){
       const job=queue.shift();active++;
       shrink(job.src,job.cssWidth).catch(()=>'').then(url=>{
-        const finalUrl=url||job.src;
-        // A failed blob: source may be a media URL that was just recycled; retry on the next render.
-        if(url||!job.src.startsWith('blob:'))remember(job.key,finalUrl);
         waiting.delete(job.key);
+        // A failed blob: source may be a media URL that was recycled while this
+        // job was running. Swapping it in would show a broken image, so the
+        // placeholder is left in place and the next render resolves it again.
+        if(!url&&job.src.startsWith('blob:'))return;
+        const finalUrl=url||job.src;
+        remember(job.key,finalUrl);
         swapPlaceholder(job.placeholder,finalUrl);
       }).finally(()=>{active--;pump()});
     }

@@ -11,10 +11,25 @@
     refreshQueued=true;
     setTimeout(()=>{refreshQueued=false;window.dispatchEvent(new Event('clm:media-cache-updated'));},100);
   }
+  // Never pull a photo out from under an image that is on screen. The cache
+  // used to revoke the oldest object URLs once it passed MAX_DISPLAY_URLS,
+  // whether or not the page was still showing them, so opening a package with
+  // more photos than the cache holds left broken images behind. Photos still
+  // displayed are skipped and the cache is allowed to exceed the limit for as
+  // long as they are visible; the limit still applies to everything else.
   function limitDisplayUrls(){
-    while(objectUrls.size>MAX_DISPLAY_URLS){
-      const [oldId,oldUrl]=objectUrls.entries().next().value;
-      objectUrls.delete(oldId);URL.revokeObjectURL(oldUrl);
+    if(objectUrls.size<=MAX_DISPLAY_URLS)return;
+    const onScreen=new Set();
+    try{
+      for(const img of document.images){
+        const src=img.currentSrc||img.getAttribute('src')||'';
+        if(src.startsWith('blob:'))onScreen.add(src);
+      }
+    }catch(err){/* no document: fall through and evict by age */}
+    for(const [id,url] of [...objectUrls]){
+      if(objectUrls.size<=MAX_DISPLAY_URLS)break;
+      if(onScreen.has(url))continue;
+      objectUrls.delete(id);URL.revokeObjectURL(url);
     }
   }
   async function loadDisplayUrl(id){
