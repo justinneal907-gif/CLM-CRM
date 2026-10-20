@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CLM CRM Storage Report</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:980px;margin:40px auto;padding:0 20px;color:#1d2521;background:#f6f7f6}
+.card{background:#fff;border:1px solid #d8ddd9;border-radius:14px;padding:24px;margin:18px 0}
+button{border:0;border-radius:9px;padding:12px 18px;font-weight:700;cursor:pointer;background:#1f2923;color:white}
+button:disabled{opacity:.5;cursor:default}
+pre{white-space:pre-wrap;background:#f2f4f2;padding:14px;border-radius:8px;max-height:680px;overflow:auto;font-size:13px}
+</style>
+</head>
+<body>
+<h1>CLM CRM Storage Report</h1>
+<div class="card">
+<p><b>This page changes nothing.</b> It measures what the CRM is storing in this browser and what could safely be freed: duplicate copies of the same photo, photos nothing refers to any more, and old backups.</p>
+<p>It shows counts, sizes and dates only. Close other CRM tabs first; on a large workspace this takes a minute.</p>
+<button id="runBtn">Measure my storage</button>
+</div>
+<div class="card"><b>Report</b><pre id="out">Ready.</pre></div>
+<script>
+const out=document.getElementById('out');
+const say=s=>{out.textContent+=('\n'+s);out.scrollTop=out.scrollHeight};
+const MB=n=>(n/1048576).toFixed(1)+' MB';
+const GB=n=>(n/1073741824).toFixed(2)+' GB';
+const when=t=>t?new Date(t).toLocaleString():'unknown';
+
+function openDb(){return new Promise((res,rej)=>{const q=indexedDB.open('jn-agency-crm');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error||new Error('Could not open the CRM database'));q.onblocked=()=>rej(new Error('The CRM database is busy. Close other CRM tabs and try again.'))})}
+function get(db,store,key){return new Promise((res,rej)=>{const t=db.transaction(store,'readonly');const q=t.objectStore(store).get(key);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+function keys(db,store){return new Promise((res,rej)=>{const t=db.transaction(store,'readonly');const q=t.objectStore(store).getAllKeys();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+
+document.getElementById('runBtn').onclick=async()=>{
+  const btn=document.getElementById('runBtn');btn.disabled=true;out.textContent='Measuring...';
+  try{
+    if(navigator.storage&&navigator.storage.estimate){
+      const e=await navigator.storage.estimate();
+      say('\nBROWSER STORAGE');
+      say('  the CRM is using '+GB(e.usage||0)+' of about '+GB(e.quota||0)+' available ('+Math.round(100*(e.usage||0)/(e.quota||1))+'%)');
+      const persisted=navigator.storage.persisted?await navigator.storage.persisted():false;
+      say('  storage marked as protected from automatic cleanup: '+(persisted?'yes':'NO'));
+    }
+
+    const db=await openDb();
+
+    // ---- every photo in the store, grouped by actual content ----
+    const byHash=new Map();   // hash -> {ids:[], bytes}
+    let count=0,bytes=0,noHash=0;
+    await new Promise((res,rej)=>{const t=db.transaction('media','readonly');const q=t.objectStore('media').openCursor();
+      q.onsuccess=()=>{const c=q.result;if(!c)return;
+        const size=c.value&&c.value.blob?c.value.blob.size:0;
+        count++;bytes+=size;
+        const h=c.value&&c.value.contentHash;
+        if(!h)noHash++;
+        else{const e=byHash.get(h)||{ids:[],bytes:size};e.ids.push(String(c.key));e.bytes=size;byHash.set(h,e)}
+        c.continue()};
+      t.oncomplete=res;t.onerror=()=>rej(t.error)});
+
+    let dupCopies=0,dupBytes=0;
+    for(const [,v] of byHash){if(v.ids.length>1){dupCopies+=v.ids.length-1;dupBytes+=v.bytes*(v.ids.length-1)}}
+    say('\nPHOTOS');
+    say('  records in the photo store: '+count+', '+MB(bytes));
+    say('  actually different photos: '+byHash.size);
+    say('  duplicate copies of a photo already stored: '+dupCopies+', wasting '+MB(dupBytes));
+    if(noHash)say('  records with no fingerprint (cannot be compared): '+noHash);
+
+    // ---- which photos anything still points at ----
+    const used=new Set();
+    const wsKeys=await keys(db,'workspace');
+    const records=[];
+    for(const k of wsKeys){
+      const v=await get(db,'workspace',k);
+      const text=JSON.stringify(v||{});
+      for(const m of text.matchAll(/clm-media:([0-9a-zA-Z-]{8,})/g))used.add(m[1]);
+      records.push({key:String(k),size:text.length,saved:v&&v.workspaceSavedAt||v&&v.createdAt||0,
+        photos:(text.match(/clm-media:/g)||[]).length,embedded:text.split('data:image').length-1});
+    }
+    let orphanCount=0,orphanBytes=0;
+    for(const [,v] of byHash)for(const id of v.ids)if(!used.has(id)){orphanCount++;orphanBytes+=v.bytes}
+    say('  photos nothing refers to any more: '+orphanCount+', '+MB(orphanBytes));
+    const missing=[...used].filter(id=>{for(const [,v] of byHash)if(v.ids.includes(id))return false;return true});
+    say('  photo links pointing at a photo that is gone: '+missing.length);
+
+    // ---- what each stored record costs ----
+    say('\nWHAT IS STORED, LARGEST FIRST');
+    for(const r of records.sort((a,b)=>b.size-a.size))
+      say('  '+r.key+': '+MB(r.size)+(r.saved?', saved '+when(r.saved):'')+(r.embedded?', '+r.embedded+' photos inside it':'')+(r.photos?', '+r.photos+' photo links':''));
+
+    const backups=records.filter(r=>/^before-photo-migration-/.test(r.key));
+    if(backups.length>1){
+      const extra=backups.slice(0,-1).reduce((t,r)=>t+r.size,0);
+      say('\n  '+backups.length+' migration backups are stored; keeping only the newest would free about '+MB(extra));
+    }
+    db.close();
+    say('\nNothing was changed. Please send Claude a screenshot of this report.');
+  }catch(err){console.error(err);say('ERROR: '+(err&&err.message?err.message:String(err)))}
+  finally{btn.disabled=false}
+};
+</script>
+</body>
+</html>
