@@ -63,21 +63,26 @@ function openDb(){
     req.onblocked=()=>reject(new Error('IndexedDB open was blocked. Close other CRM tabs and try again.'));
   });
 }
-async function exportStore(db,name){
+// Collect raw records first. IndexedDB closes a transaction as soon as the
+// page awaits anything else, so converting each Blob inside the cursor loop
+// ("await serialize(...)") ended the read after the first photo and failed
+// with "The transaction has finished". Blobs held here are cheap handles;
+// they are converted to data URLs after the read completes.
+function readStore(db,name){
   return new Promise((resolve,reject)=>{
     const tx=db.transaction(name,'readonly');
-    const store=tx.objectStore(name);
     const rows=[];
-    const req=store.openCursor();
-    req.onsuccess=async()=>{
+    const req=tx.objectStore(name).openCursor();
+    req.onsuccess=()=>{
       const cur=req.result;
       if(!cur)return;
-      try{rows.push({key:await serialize(cur.key),value:await serialize(cur.value)});cur.continue()}
-      catch(err){reject(err)}
+      rows.push({key:cur.key,value:cur.value});
+      cur.continue();
     };
     req.onerror=()=>reject(req.error||new Error('Could not read '+name));
     tx.oncomplete=()=>resolve(rows);
     tx.onerror=()=>reject(tx.error||new Error('Transaction failed for '+name));
+    tx.onabort=()=>reject(tx.error||new Error('Read of '+name+' was aborted'));
   });
 }
 function safeLocalStorage(){
@@ -92,44 +97,59 @@ function safeLocalStorage(){
 }
 document.getElementById('exportBtn').onclick=async()=>{
   statusEl.textContent='Starting export...';
+  const button=document.getElementById('exportBtn');button.disabled=true;
   try{
     const db=await openDb();
     const storeNames=[...db.objectStoreNames];
     say('Found stores: '+storeNames.join(', '));
-    const stores={};
+    const raw={};
     for(const name of storeNames){
       say('Reading '+name+'...');
-      stores[name]=await exportStore(db,name);
-      say(name+': '+stores[name].length+' records');
+      raw[name]=await readStore(db,name);
+      say(name+': '+raw[name].length+' records');
     }
     db.close();
-    const payload={
+    // The file is assembled from many small strings instead of one
+    // JSON.stringify of everything. A large photo library as one string can
+    // exceed Chrome's maximum string length or exhaust the tab's memory.
+    // The output is the same CLM-CRM-Claude-Transfer-v1 JSON document.
+    const parts=[];
+    const header={
       format:'CLM-CRM-Claude-Transfer-v1',
       exportedAt:new Date().toISOString(),
       sourceOrigin:location.origin,
-      sourcePath:location.pathname,
-      database:{name:'jn-agency-crm',stores},
-      localStorage:safeLocalStorage(),
-      notes:[
-        'Read-only export of CRM browser data.',
-        'Blob records are encoded as data URLs.',
-        'Gmail session/access tokens are intentionally excluded.',
-        'Give this file to Claude together with the GitHub repository.'
-      ]
+      sourcePath:location.pathname
     };
-    const json=JSON.stringify(payload,null,2);
-    const blob=new Blob([json],{type:'application/json'});
+    parts.push(JSON.stringify(header).slice(0,-1)+',"database":{"name":"jn-agency-crm","stores":{');
+    for(let storeIndex=0;storeIndex<storeNames.length;storeIndex++){
+      const name=storeNames[storeIndex],rows=raw[name];
+      parts.push((storeIndex?',':'')+JSON.stringify(name)+':[');
+      for(let i=0;i<rows.length;i++){
+        parts.push((i?',':'')+JSON.stringify({key:await serialize(rows[i].key),value:await serialize(rows[i].value)}));
+        rows[i]=null; // release each record once it is written
+        if(rows.length>20&&(i+1)%20===0)say('Encoding '+name+': '+(i+1)+' of '+rows.length);
+      }
+      parts.push(']');
+    }
+    parts.push('}},"localStorage":'+JSON.stringify(safeLocalStorage())+',"notes":'+JSON.stringify([
+      'Read-only export of CRM browser data.',
+      'Blob records are encoded as data URLs.',
+      'Gmail session/access tokens are intentionally excluded.',
+      'Give this file to Claude together with the GitHub repository.'
+    ])+'}');
+    const blob=new Blob(parts,{type:'application/json'});
+    parts.length=0;
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
     a.href=url;
     a.download='CLM-CRM-browser-export-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
     document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),30000);
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
     say('Export complete. File size: '+(blob.size/1024/1024).toFixed(2)+' MB');
   }catch(err){
     console.error(err);
     say('ERROR: '+(err&&err.message?err.message:String(err)));
-  }
+  }finally{button.disabled=false}
 };
 </script>
 </body>
