@@ -22,7 +22,8 @@ function stored(){return vm.runInContext(`(()=>{const e=lastGmailPackage;verifie
  // The displayed image wins even when a stale hidden reference points at another image.
  const visible='<p>My edit.</p><img src="'+one+'" data-media-ref="clm-media:wrong" data-gif-src="'+two+'">';
  const cleaned=ctx.sanitizeEditableEmailHtml(visible);assert.ok(cleaned.includes(one));assert.ok(!cleaned.includes(two));assert.ok(!cleaned.includes('data-media-ref'));
- preview.innerHTML='<p>Hi Team, my exact edit.</p><img alt="Aliana" src="'+one+'"><img alt="GIF" src="'+two+'">';
+ // Since 590c11a every sent image must sit inside a model block, as real packages do.
+ preview.innerHTML='<p>Hi Team, my exact edit.</p><div data-clm-model-id="aliana"><img alt="Aliana" src="'+one+'"></div><div data-clm-model-id="gif-model"><img alt="GIF" src="'+two+'"></div>';
  await ctx.freezePreviewImagesForReview();
  const raw=await ctx.buildGmailDraftRaw('client@example.com','Subject',preview.innerHTML,'',true).text();fs.writeFileSync(require('node:path').join(require('node:os').tmpdir(),'clm-package-integrity.eml'),raw);
  assert.ok(raw.includes('Content-Transfer-Encoding: base64'));assert.ok(!raw.includes('Content-Transfer-Encoding: 8bit'));
