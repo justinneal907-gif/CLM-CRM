@@ -285,7 +285,6 @@ th,td{padding:8px}
 <script src="assets/crm-thumbnails.js?v=20261019-1"></script>
 <script src="assets/crm-bridal-materials.js?v=20261005-photo-persistence-2"></script>
 <script src="assets/data/gallery-gmail-recovery-20261009.js?v=2"></script>
-<script src="assets/data/bergdorf-director-drafts-20261019.js?v=20261019-bergdorf-ten-1"></script>
 <script>
 const SOURCE_DATE='2026-09-14';
 const BASE_ROSTER=window.CLM_CORE_ROSTER?.BASE_ROSTER||[];
@@ -1942,8 +1941,7 @@ function applyRecovered(incoming){
   const withBrandMatchedCastingPackages=window.updateCastingDirectorBrandSelections20261012
     ? window.updateCastingDirectorBrandSelections20261012(withCastingDirectorPackages)
     : withCastingDirectorPackages;
-  const withBergdorfFreshDrafts=window.addBergdorfFreshDrafts20261019?window.addBergdorfFreshDrafts20261019(withBrandMatchedCastingPackages):withBrandMatchedCastingPackages;
-  const withoutRachelBridal=removeRachelFromBridalPackages20261009(withBergdorfFreshDrafts);
+  const withoutRachelBridal=removeRachelFromBridalPackages20261009(withBrandMatchedCastingPackages);
   return restoreMainGalleryState(migrateDraftPreviewDocuments(withoutRachelBridal),gallerySnapshot);
 }
 /* CRM INDEXEDDB STORAGE V1 */
@@ -6358,6 +6356,4 @@ $('#exportBtn').onclick=exportAll;$('#exportDataBtn').onclick=exportAll;$('#expo
 <script src="assets/data/bergdorf-additional-packages-20261015.js?v=2-email-format"></script>
 <script src="assets/data/casting-packages-20261016.js?v=4-bergdorf-only"></script>
 <script src="assets/data/bergdorf-replacement-packages-20261016.js?v=2-saved"></script>
-<script src="assets/data/bergdorf-new-ten-crm-drafts-20261019.js?v=20261019-1"></script>
-<script src="assets/data/bergdorf-ten-prospects-20261019.js?v=20261019-3"></script>
 </body></html>
