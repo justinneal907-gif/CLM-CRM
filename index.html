@@ -2723,6 +2723,8 @@ async function freezePreviewImagesForReview(){
   for(const img of t.content.querySelectorAll('img')){
     const src=img.getAttribute('src')||'';
     if(/^data:image\//i.test(src))continue;
+    // Held in the CRM photo store: the exact bytes are already pinned.
+    if(window.CLMMediaStore?.isMediaRef?.(src))continue;
     // A CID or Gmail attachment URL belongs to another MIME document. Never reuse it.
     if(!/^(https?:|blob:)/i.test(src)||/https?:\/\/(?:mail\.google\.com|(?:ci\d+\.)?googleusercontent\.com)\//i.test(src))
       throw new Error('This preview contains an image linked to another Gmail message or unavailable media. Replace that image with an uploaded photo; no Gmail draft was created.');
@@ -2934,7 +2936,7 @@ async function createFormattedWorkGmailDraft(){
   const previewSnapshot=plainHtml;
   const snapshotDraftId=db.activeDraftId;
   const snapshotRecord=db.draft;
-  let html=plainHtml;
+  let html=await resolveStoredPhotosForExport(plainHtml);
   let raw=buildGmailDraftRaw(to,subject,html,'',true);
   const expectedPackage=lastGmailPackage;
   const active=db.activeDraftId?(db.drafts||[]).find(x=>x.id===db.activeDraftId):null;
@@ -4416,17 +4418,23 @@ function draftPreviewHtml(html){
   const t=document.createElement('template');t.innerHTML=String(html||'');
   t.content.querySelectorAll('img').forEach(img=>{
     const src=img.getAttribute('src')||'';
-    if(window.CLMMediaStore?.isMediaRef?.(src))img.setAttribute('src',photoDisplayUrl(src));
+    const isStored=!!window.CLMMediaStore?.isMediaRef?.(src);
     ['data-media-ref','data-gif-src','data-gif-playing','data-gif-bound',PREVIEW_FULL_SRC_ATTR].forEach(k=>img.removeAttribute(k));
     // On screen only: show a downscaled copy. Package photos are stored at
     // 1300-2500px but displayed around 440px, so decoding the originals cost
-    // hundreds of MB per opened package. The authoritative URL is parked on
+    // hundreds of MB per opened package. The authoritative source is parked on
     // PREVIEW_FULL_SRC_ATTR and restored by sanitizeEditableEmailHtml, so the
-    // HTML that is saved or handed to Gmail still carries the full-size photo.
-    const authority=img.getAttribute('src')||'';
-    if(!authority)return;
-    const small=previewDisplaySrc(authority,img);
-    if(small&&small!==authority){img.setAttribute(PREVIEW_FULL_SRC_ATTR,authority);img.setAttribute('src',small)}
+    // HTML that is saved or handed to Gmail still carries the real photo.
+    //
+    // For a photo held in the media store the authority is the reference
+    // itself, never the object URL it displays as: those URLs die with the
+    // tab, and displayUrl returns an empty string until the blob has loaded,
+    // so saving what is on screen would destroy the link to the photo.
+    const authority=src;
+    const display=isStored?photoDisplayUrl(src):src;
+    const small=display?(previewDisplaySrc(display,img)||display):'';
+    img.setAttribute('src',small);
+    if(small!==authority)img.setAttribute(PREVIEW_FULL_SRC_ATTR,authority);
   });return t.innerHTML;
 }
 const PREVIEW_FULL_SRC_ATTR='data-clm-preview-full-src';
@@ -4448,6 +4456,22 @@ function restorePreviewFullSizeImages(root){
     if(full)img.setAttribute('src',full);
     img.removeAttribute(PREVIEW_FULL_SRC_ATTR);
   });
+}
+// A photo in the media store is already fixed: its bytes cannot drift the way
+// a remote URL can. Gmail and the clipboard still need the bytes inline, so
+// they are resolved here, at the moment of use, and never saved back into the
+// package. toDataUrl returns the stored blob unchanged, with no re-encoding.
+async function resolveStoredPhotosForExport(html){
+  const t=document.createElement('template');t.innerHTML=String(html||'');
+  for(const img of t.content.querySelectorAll('img')){
+    const src=img.getAttribute('src')||'';
+    if(!window.CLMMediaStore?.isMediaRef?.(src))continue;
+    let data='';
+    try{data=await window.CLMMediaStore.toDataUrl(src)}catch(err){data=''}
+    if(!/^data:image\//i.test(data))throw new Error('A package photo could not be read from the CRM photo store. Reload the CRM and try again. No email was created.');
+    img.setAttribute('src',data);
+  }
+  return t.innerHTML;
 }
 function bindDraftPreviewGifs(){}
 function setEmailPreviewRefreshPending(pending=true){
@@ -4542,7 +4566,7 @@ async function copyFormattedPreview(){
   if(button)button.disabled=true;
   try{
     await freezePreviewImagesForReview();
-    const html=currentEmailPreviewHtml();
+    const html=await resolveStoredPhotosForExport(currentEmailPreviewHtml());
     const holder=document.createElement('div');holder.innerHTML=html;
     const plain=holder.innerText||holder.textContent||'';
     if(!navigator.clipboard?.write||!window.ClipboardItem)throw new Error('Formatted copying is unavailable in this browser. Use Create formatted Gmail draft.');

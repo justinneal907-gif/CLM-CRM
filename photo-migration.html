@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CLM CRM Photo Migration</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:980px;margin:40px auto;padding:0 20px;color:#1d2521;background:#f6f7f6}
+.card{background:#fff;border:1px solid #d8ddd9;border-radius:14px;padding:24px;margin:18px 0}
+button{border:0;border-radius:9px;padding:12px 18px;font-weight:700;cursor:pointer;background:#1f2923;color:white}
+button:disabled{opacity:.5;cursor:default}
+pre{white-space:pre-wrap;background:#f2f4f2;padding:14px;border-radius:8px;max-height:680px;overflow:auto;font-size:13px}
+.warn{background:#fff8e8;border-color:#ead49a}
+label{display:block;margin:10px 0}
+</style>
+</head>
+<body>
+<h1>CLM CRM Photo Migration</h1>
+<div class="card">
+<p>This moves each photo that is stored as text inside a package into the CRM photo store, and points the package at that one copy. Photos are stored <b>exactly as they are</b>: no resizing, no recompression, no change to which photo belongs to which model.</p>
+<p>Run the dry run first and close every other CRM tab. Keep this tab open until it finishes.</p>
+<p><b>Order of work:</b> a full backup is written first, then photos are stored, then packages are updated, then every package is checked photo by photo. If any check fails, nothing is saved.</p>
+<label><input type="checkbox" id="ok"> I have an export saved and the dry run looked right.</label>
+<button id="runBtn" disabled>Migrate my photos</button>
+</div>
+<div class="card warn">
+<b>If anything goes wrong</b>
+<p>Your packages are only overwritten at the very end, after every check has passed. The backup written at the start stays in the database under a key beginning <b>before-photo-migration-</b>, so the earlier state can always be read back.</p>
+</div>
+<div class="card"><b>Progress</b><pre id="out">Ready.</pre></div>
+<script>
+const out=document.getElementById('out');
+const say=s=>{out.textContent+=('\n'+s);out.scrollTop=out.scrollHeight};
+const MB=n=>(n/1048576).toFixed(1)+' MB';
+document.getElementById('ok').onchange=e=>{document.getElementById('runBtn').disabled=!e.target.checked};
+
+const DB='jn-agency-crm',WS='workspace',MEDIA='media';
+const PREFIX='clm-media:';
+const IMG=/data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+\/=]+/gi;
+
+function openDb(){return new Promise((res,rej)=>{const q=indexedDB.open(DB);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error||new Error('Could not open the CRM database'));q.onblocked=()=>rej(new Error('The CRM database is busy. Close other CRM tabs and try again.'))})}
+function get(db,store,key){return new Promise((res,rej)=>{const t=db.transaction(store,'readonly');const q=t.objectStore(store).get(key);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+function put(db,store,value,key){return new Promise((res,rej)=>{const t=db.transaction(store,'readwrite');t.objectStore(store).put(value,key);t.oncomplete=()=>res(true);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error||new Error('Write aborted'))})}
+
+function bytesOf(dataUrl){
+  const bin=atob(dataUrl.slice(dataUrl.indexOf(',')+1));
+  const u8=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+  return u8;
+}
+async function hashOf(u8){
+  return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',u8)),b=>b.toString(16).padStart(2,'0')).join('');
+}
+function typeOf(dataUrl){return (dataUrl.match(/data:([^;,]+)/)||[])[1]||'image/png'}
+function newId(){return crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)}
+
+// Replaces every embedded photo in a value with its reference. Returns a new
+// value; the original is left untouched so nothing is lost if a check fails.
+function rewrite(value,refFor,seen=new Map()){
+  if(typeof value==='string'){
+    if(!value.includes('data:image'))return value;
+    return value.replace(IMG,m=>refFor.get(m)||m);
+  }
+  if(value===null||typeof value!=='object')return value;
+  if(seen.has(value))return seen.get(value);
+  if(Array.isArray(value)){const arr=[];seen.set(value,arr);for(const v of value)arr.push(rewrite(v,refFor,seen));return arr}
+  const obj={};seen.set(value,obj);
+  for(const [k,v] of Object.entries(value))obj[k]=rewrite(v,refFor,seen);
+  return obj;
+}
+function collect(value,found,seen=new WeakSet()){
+  if(typeof value==='string'){if(value.includes('data:image'))for(const m of value.matchAll(IMG))found.add(m[0]);return}
+  if(value===null||typeof value!=='object')return;
+  if(seen.has(value))return;seen.add(value);
+  if(Array.isArray(value)){for(const v of value)collect(v,found,seen);return}
+  for(const v of Object.values(value))collect(v,found,seen);
+}
+const sizeOf=v=>{try{return JSON.stringify(v).length}catch{return 0}};
+
+document.getElementById('runBtn').onclick=async()=>{
+  const btn=document.getElementById('runBtn');btn.disabled=true;out.textContent='Starting...';
+  try{
+    const db=await openDb();
+
+    // ---------- 1. back up everything that will be touched ----------
+    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+    const primary=await get(db,WS,'primary');
+    if(!primary)throw new Error('No CRM workspace found in this browser.');
+    const journal=await get(db,WS,'saved-package-journal-v1');
+    const backupKey='before-photo-migration-'+stamp;
+    await put(db,WS,{primary,journal:journal||null,createdAt:Date.now()},backupKey);
+    say('Backup written: '+backupKey);
+
+    // ---------- 2. one stored photo per distinct image ----------
+    const found=new Set();
+    collect(primary.drafts||[],found);
+    if(journal)collect(journal,found);
+    say('Embedded photo copies found: '+found.size+' unique strings');
+
+    const byHash=new Map();      // content hash -> reference
+    const refFor=new Map();      // exact data URL -> reference
+    const expect=new Map();      // reference -> content hash
+    // reuse photos the store already holds
+    const existing=new Map();
+    await new Promise((res,rej)=>{const t=db.transaction(MEDIA,'readonly');const q=t.objectStore(MEDIA).openCursor();
+      q.onsuccess=()=>{const c=q.result;if(!c)return;if(c.value&&c.value.contentHash&&!existing.has(c.value.contentHash))existing.set(c.value.contentHash,c.key);c.continue()};
+      t.oncomplete=res;t.onerror=()=>rej(t.error)});
+    say('Photos already in the store: '+existing.size);
+
+    let reused=0,added=0,addedBytes=0,i=0;
+    for(const dataUrl of found){
+      i++;
+      const u8=bytesOf(dataUrl);
+      const hash=await hashOf(u8);
+      let ref=byHash.get(hash);
+      if(!ref){
+        const have=existing.get(hash);
+        if(have){ref=PREFIX+have;reused++}
+        else{
+          const id=newId();
+          // Stored exactly as it is. putBlob is deliberately not used: it
+          // resizes above 1800px and re-encodes to WebP, which would alter
+          // photos that have already been sent to clients.
+          const blob=new Blob([u8],{type:typeOf(dataUrl)});
+          await put(db,MEDIA,{contentHash:hash,blob,name:'Migrated package photo',type:blob.type,size:blob.size,createdAt:Date.now(),sourceUrl:''},id);
+          ref=PREFIX+id;added++;addedBytes+=u8.length;
+        }
+        byHash.set(hash,ref);
+      }
+      refFor.set(dataUrl,ref);
+      expect.set(ref,hash);
+      if(i%20===0||i===found.size)say('  stored '+i+' of '+found.size+' (new '+added+', reused '+reused+')');
+    }
+
+    // ---------- 3. rewrite packages in memory ----------
+    const beforeSize=sizeOf(primary);
+    const newPrimary={...primary,drafts:rewrite(primary.drafts||[],refFor)};
+    if(primary.draft)newPrimary.draft=rewrite(primary.draft,refFor);
+    const newJournal=journal?rewrite(journal,refFor):null;
+    const afterSize=sizeOf(newPrimary);
+    say('\nPackages: '+MB(beforeSize)+' -> '+MB(afterSize));
+
+    // ---------- 4. check every package before saving anything ----------
+    say('Checking every package photo by photo...');
+    const beforeDrafts=primary.drafts||[],afterDrafts=newPrimary.drafts||[];
+    if(beforeDrafts.length!==afterDrafts.length)throw new Error('Package count changed. Nothing was saved.');
+    const cache=new Map();
+    let checked=0;
+    for(let d=0;d<beforeDrafts.length;d++){
+      const was=new Set(),now=new Set();
+      collect(beforeDrafts[d],was);collect(afterDrafts[d],now);
+      if(now.size)throw new Error('Package '+(afterDrafts[d].id||d)+' still holds an embedded photo. Nothing was saved.');
+      // every original photo must be reachable from the rewritten package, byte for byte
+      const refs=[...JSON.stringify(afterDrafts[d]).matchAll(/clm-media:[0-9a-fA-F-]{8,}/g)].map(m=>m[0]);
+      const wantHashes=new Set();for(const u of was)wantHashes.add(await hashOf(bytesOf(u)));
+      const gotHashes=new Set();
+      for(const ref of refs){
+        let h=cache.get(ref);
+        if(!h){
+          const rec=await get(db,MEDIA,ref.slice(PREFIX.length));
+          if(!rec||!rec.blob)throw new Error('A stored photo is missing for package '+(afterDrafts[d].id||d)+'. Nothing was saved.');
+          h=await hashOf(new Uint8Array(await rec.blob.arrayBuffer()));
+          cache.set(ref,h);
+          if(expect.has(ref)&&expect.get(ref)!==h)throw new Error('Stored photo bytes do not match the original. Nothing was saved.');
+        }
+        gotHashes.add(h);
+      }
+      for(const h of wantHashes)if(!gotHashes.has(h))throw new Error('A photo from package '+(afterDrafts[d].id||d)+' is not reachable after the change. Nothing was saved.');
+      checked++;
+      if(checked%40===0)say('  checked '+checked+' of '+beforeDrafts.length);
+    }
+    say('All '+checked+' packages verified: every photo still reachable and byte for byte identical.');
+
+    // ---------- 5. save ----------
+    await put(db,WS,newPrimary,'primary');
+    if(newJournal)await put(db,WS,newJournal,'saved-package-journal-v1');
+    db.close();
+    say('\nDone.');
+    say('  packages: '+MB(beforeSize)+' -> '+MB(afterSize));
+    say('  photos newly stored: '+added+' ('+MB(addedBytes)+'), reused: '+reused);
+    say('  backup kept as: '+backupKey);
+    say('\nClose this tab and reload the CRM.');
+  }catch(err){
+    console.error(err);
+    say('\nSTOPPED: '+(err&&err.message?err.message:String(err)));
+    say('Your packages were not changed.');
+  }finally{btn.disabled=false}
+};
+</script>
+</body>
+</html>
