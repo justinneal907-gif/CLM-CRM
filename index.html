@@ -4490,13 +4490,43 @@ function draftPreviewHtml(html){
     // tab, and displayUrl returns an empty string until the blob has loaded,
     // so saving what is on screen would destroy the link to the photo.
     const authority=src;
-    const display=isStored?photoDisplayUrl(src):src;
-    const small=display?(previewDisplaySrc(display,img)||display):'';
+    if(isStored){
+      // A photo in the media store loads asynchronously, so on the first
+      // render there is usually nothing to show yet. The reference is always
+      // parked, and a blank placeholder is displayed until the photo arrives;
+      // refreshPreviewStoredPhotos fills it in. Leaving the reference in the
+      // src would show an empty box that never recovers.
+      img.setAttribute(PREVIEW_FULL_SRC_ATTR,authority);
+      const display=photoDisplayUrl(src);
+      const ready=display&&display!==src;
+      img.setAttribute('src',ready?(previewDisplaySrc(display,img)||display):PREVIEW_PENDING_SRC);
+      return;
+    }
+    const small=previewDisplaySrc(src,img)||src;
     img.setAttribute('src',small);
     if(small!==authority)img.setAttribute(PREVIEW_FULL_SRC_ATTR,authority);
   });return t.innerHTML;
 }
 const PREVIEW_FULL_SRC_ATTR='data-clm-preview-full-src';
+const PREVIEW_PENDING_SRC='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7#clm-photo-loading';
+// Fills in preview photos once their bytes have loaded. The preview is edited
+// in place and is the authority for what gets saved, so only the src of an
+// image already carrying its reference is touched: no re-render, and nothing
+// the user typed is disturbed.
+function refreshPreviewStoredPhotos(){
+  const preview=$('#emailPreview');
+  if(!preview)return;
+  for(const img of preview.querySelectorAll('img['+PREVIEW_FULL_SRC_ATTR+']')){
+    const ref=img.getAttribute(PREVIEW_FULL_SRC_ATTR)||'';
+    if(!window.CLMMediaStore?.isMediaRef?.(ref))continue;
+    const display=photoDisplayUrl(ref);
+    if(!display||display===ref)continue;
+    const next=previewDisplaySrc(display,img)||display;
+    // Only move away from a placeholder once there is a real photo to show.
+    if(!next||next.startsWith('data:image/gif'))continue;
+    if(img.getAttribute('src')!==next)img.setAttribute('src',next);
+  }
+}
 function previewDisplayWidth(img){
   const attr=parseInt(img.getAttribute('width')||'',10);
   if(attr>0)return attr;
@@ -6360,7 +6390,7 @@ async function bootstrapWorkspace(){
   renderAll();
   compactPackageActions();
   const casting=$('#castingLeadsPanel');if(casting)casting.addEventListener('toggle',()=>{if(casting.open)ensureCastingLeadsLoaded()});
-  window.addEventListener('clm:media-cache-updated',()=>{if(active==='models')renderModels();else if(active==='gallery')renderModelGallery();else if(active==='email'){renderPhotoLibrary();renderEmailSelection()}});
+  window.addEventListener('clm:media-cache-updated',()=>{if(active==='models')renderModels();else if(active==='gallery')renderModelGallery();else if(active==='email'){renderPhotoLibrary();renderEmailSelection();refreshPreviewStoredPhotos()}});
   // Local loading is complete. Cloud I/O must never keep the editor inert.
   window.__clmWorkspaceReady=true;
   if(workspaceApp)workspaceApp.inert=false;
