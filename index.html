@@ -4251,9 +4251,8 @@ function editPreviewModels(previousIds,photoModelId=''){
   const preview=$('#emailPreview');if(preview){preview.innerHTML=draftPreviewHtml(html);preview.dataset.manualRefreshInitialized='1';bindDraftPreviewGifs();}
 }
 /* CATEGORY CANVA LINKS 2026-10-21
-   Standardized public Canva packages, one per roster category. When models are
-   added to or removed from a draft, a block with the matching category links is
-   kept directly above the signature. */
+   Standardized public Canva packages, one per roster category. Any draft with
+   models gets a block with all category links directly above the signature. */
 const CATEGORY_CANVA_LINKS=[
   {key:'standard',label:'Standard',url:'https://canva.link/qotixws4g0xzcy2'},
   {key:'alternative',label:'Alternative',url:'https://canva.link/6dkl45q4x83m1ou'},
@@ -4275,9 +4274,9 @@ function modelRosterCategory(model){
   return MODEL_CATEGORY_BY_NAME[name]||MODEL_CATEGORY_BY_NAME[name.split(' ')[0]]||'';
 }
 function categoryCanvaLinksHtml(models){
-  const keys=new Set((models||[]).map(modelRosterCategory).filter(Boolean));
-  const rows=CATEGORY_CANVA_LINKS.filter(c=>keys.has(c.key));
-  if(!rows.length)return '';
+  // Every draft with models carries all category packages.
+  if(!(models||[]).length)return '';
+  const rows=CATEGORY_CANVA_LINKS;
   return '<div data-clm-category-links="1">'+rows.map(c=>'<div>View our '+c.label+' models <a href="'+c.url+'" target="_blank"><strong><em>HERE</em></strong></a>.</div>').join('')+'<br></div>';
 }
 const SIGNATURE_CLOSE_RE=/^(Thank you,|Thanks,|Best,|Best regards,|Kind regards,)/;
