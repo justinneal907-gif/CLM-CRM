@@ -4246,9 +4246,68 @@ function editPreviewModels(previousIds,photoModelId=''){
       block.appendChild(photos.content);
     }
   }
+  if(selectionChanged)syncCategoryCanvaLinks(root,selectedModels());
   const html=sanitizeEditableEmailHtml(t.innerHTML);storeDraftPreview(html);
   const preview=$('#emailPreview');if(preview){preview.innerHTML=draftPreviewHtml(html);preview.dataset.manualRefreshInitialized='1';bindDraftPreviewGifs();}
 }
+/* CATEGORY CANVA LINKS 2026-10-21
+   Standardized public Canva packages, one per roster category. When models are
+   added to or removed from a draft, a block with the matching category links is
+   kept directly above the signature. */
+const CATEGORY_CANVA_LINKS=[
+  {key:'standard',label:'Standard',url:'https://canva.link/qotixws4g0xzcy2'},
+  {key:'alternative',label:'Alternative',url:'https://canva.link/6dkl45q4x83m1ou'},
+  {key:'mature',label:'Mature',url:'https://canva.link/wcqk69xohlz0j7i'},
+  {key:'new-faces',label:'New Faces',url:'https://canva.link/wnblda107s1pdj1'},
+  {key:'commercial',label:'Commercial',url:'https://canva.link/roe42u4m15ykmz1'},
+  {key:'celebrity',label:'Celebrity',url:'https://canva.link/no4za3cv5ew9fng'}
+];
+const MODEL_CATEGORY_BY_NAME={
+  reine:'alternative',malia:'alternative',rachel:'alternative',matt:'alternative',molly:'alternative',
+  mary:'standard',seven:'standard',ambre:'standard',alex:'standard',dioulby:'standard',mathis:'standard',bianca:'standard',callie:'standard',
+  maja:'mature',anhelina:'mature',jovana:'mature',claudia:'mature',
+  'sophia pippen':'celebrity',raquel:'celebrity',
+  agang:'new-faces',ainoa:'new-faces',clara:'new-faces',
+  stevenson:'commercial',darian:'commercial',eva:'commercial'
+};
+function modelRosterCategory(model){
+  const name=normalizeName(model?.name);if(!name)return '';
+  return MODEL_CATEGORY_BY_NAME[name]||MODEL_CATEGORY_BY_NAME[name.split(' ')[0]]||'';
+}
+function categoryCanvaLinksHtml(models){
+  const keys=new Set((models||[]).map(modelRosterCategory).filter(Boolean));
+  const rows=CATEGORY_CANVA_LINKS.filter(c=>keys.has(c.key));
+  if(!rows.length)return '';
+  return '<div data-clm-category-links="1">'+rows.map(c=>'<div>View our '+c.label+' models <a href="'+c.url+'" target="_blank"><strong><em>HERE</em></strong></a>.</div>').join('')+'<br></div>';
+}
+const SIGNATURE_CLOSE_RE=/^(Thank you,|Thanks,|Best,|Best regards,|Kind regards,)/;
+function signatureStartElement(root){
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  let hit=null;
+  for(let n=walker.nextNode();n;n=walker.nextNode())if(SIGNATURE_CLOSE_RE.test(n.nodeValue.trim()))hit=n;
+  if(!hit)return null;
+  let el=hit.parentElement;
+  while(el&&!/^(DIV|P)$/.test(el.tagName))el=el.parentElement;
+  if(!el||!root.contains(el))return null;
+  // A wrapper that holds only the signature (Thank you, Justin, contact lines) moves as one.
+  while(el.parentElement&&root.contains(el.parentElement)&&el.parentElement.firstElementChild===el&&!el.parentElement.querySelector('[data-clm-model-id],img')&&SIGNATURE_CLOSE_RE.test(el.parentElement.textContent.trim()))el=el.parentElement;
+  return el;
+}
+function syncCategoryCanvaLinks(root,models){
+  root.querySelectorAll('[data-clm-category-links]').forEach(el=>el.remove());
+  const html=categoryCanvaLinksHtml(models);if(!html)return;
+  const t=document.createElement('template');t.innerHTML=html;
+  const block=t.content.firstElementChild;
+  const sig=signatureStartElement(root);
+  if(sig)sig.parentNode.insertBefore(block,sig);
+  else (root.firstElementChild||root).appendChild(block);
+}
+function withCategoryCanvaLinks(html,models){
+  const t=document.createElement('template');t.innerHTML=String(html||'');
+  syncCategoryCanvaLinks(t.content,models);
+  return t.innerHTML;
+}
+/* END CATEGORY CANVA LINKS */
 function storeDraftPreview(html,changed=true){
   db.draft=db.draft||structuredClone(seed.draft);
   db.draft.previewHtml=uniformEmailPhotoSizes(stripCanvaLinksText(html));
@@ -4315,7 +4374,7 @@ function emailHtml(){
     activeRecord.previewHtml=working.previewHtml;
     return working.previewHtml;
   }
-  const html=generateInitialEmailHtml();
+  const html=withCategoryCanvaLinks(generateInitialEmailHtml(),selectedModels());
   storeDraftPreview(html,false);
   return html;
 }
