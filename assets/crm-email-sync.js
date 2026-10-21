@@ -823,22 +823,28 @@
     return changed;
   }
 
+  // Tidying runs on every keystroke, through captureDraft. It must therefore
+  // leave alone whatever is being typed in: cleanSubject ends in trim(), so a
+  // space pressed between two words was removed the instant it was typed and
+  // the next letter landed against the previous word. A field is tidied once
+  // the caret leaves it, which still applies the no-dash rule to what is sent.
   function cleanUi(){
     if(typeof db!=='undefined'&&(db.draft?.bodyEdited||db.draft?.userOverrides?.fullHtmlLocked))return false;
     let changed=false;
+    const active=document.activeElement;
     const subject=document.getElementById('emailSubject');
-    if(subject){
+    if(subject&&active!==subject){
       const next=cleanSubject(subject.value);
       if(next!==subject.value){subject.value=next;changed=true}
     }
     for(const id of ['emailCustomBody','emailContext']){
       const el=document.getElementById(id);
-      if(!el)continue;
+      if(!el||active===el)continue;
       const next=cleanBodyText(el.value);
       if(next!==el.value){el.value=next;changed=true}
     }
     const preview=document.getElementById('emailPreview');
-    if(preview&&preview.innerHTML){
+    if(preview&&preview.innerHTML&&!(active&&preview.contains(active))){
       const next=cleanHtml(preview.innerHTML);
       if(next!==preview.innerHTML){preview.innerHTML=next;changed=true}
     }
@@ -867,6 +873,16 @@
     };
     wrapped.__clmNoDash=true;
     emailHtml=wrapped;
+  }
+
+  // Tidy on the way out, so leaving a field applies the rule straight away.
+  for(const id of ['emailSubject','emailCustomBody','emailContext']){
+    const el=document.getElementById(id);
+    if(!el||el.__clmNoDashBlur)continue;
+    el.__clmNoDashBlur=true;
+    el.addEventListener('blur',()=>{
+      if(cleanUi()&&typeof captureDraft==='function')captureDraft();
+    });
   }
 
   if(typeof captureDraft==='function'&&!captureDraft.__clmNoDash){
