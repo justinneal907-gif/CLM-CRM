@@ -48,6 +48,12 @@
     const out=canvas.convertToBlob?await canvas.convertToBlob({type:'image/jpeg',quality:0.85}):await new Promise(r=>canvas.toBlob(r,'image/jpeg',0.85));
     return out?URL.createObjectURL(out):'';
   }
+  let retryQueued=false;
+  function retryVisible(){
+    if(retryQueued)return;
+    retryQueued=true;
+    setTimeout(()=>{retryQueued=false;try{window.dispatchEvent(new Event('clm:media-cache-updated'))}catch(err){}},400);
+  }
   function pump(){
     while(active<MAX_ACTIVE&&queue.length){
       const job=queue.shift();active++;
@@ -55,8 +61,10 @@
         waiting.delete(job.key);
         // A failed blob: source may be a media URL that was recycled while this
         // job was running. Swapping it in would show a broken image, so the
-        // placeholder is left in place and the next render resolves it again.
-        if(!url&&job.src.startsWith('blob:'))return;
+        // placeholder is left in place. Something has to come back for it,
+        // though, or the image stays blank: this asks the CRM to resolve its
+        // visible photos again, which re-queues the job against a fresh URL.
+        if(!url&&job.src.startsWith('blob:')){retryVisible();return}
         const finalUrl=url||job.src;
         remember(job.key,finalUrl);
         swapPlaceholder(job.placeholder,finalUrl);
