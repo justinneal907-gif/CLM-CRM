@@ -3688,7 +3688,7 @@ function resetDraftModelLink(id){
   setStatus('Portfolio link reset to the model default. Click Refresh preview when ready.');
 }
 function startBlankManualEmail(){
-  const html='<div><br></div><div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div>';
+  const html='<div><br></div>'+standardSignatureHtml();
   storeDraftPreview(html);
   const preview=$('#emailPreview');
   if(preview){preview.innerHTML=html;preview.dataset.manualRefreshInitialized='1';preview.focus();}
@@ -4246,10 +4246,39 @@ function editPreviewModels(previousIds,photoModelId=''){
       block.appendChild(photos.content);
     }
   }
-  if(selectionChanged)syncCategoryCanvaLinks(root,selectedModels());
+  // The standard signature lists every category package, so the older
+  // per-selection block is not inserted any more; any already in a saved draft
+  // is cleared so the links are not shown twice.
+  if(selectionChanged)root.querySelectorAll('[data-clm-category-links]').forEach(el=>el.remove());
   const html=sanitizeEditableEmailHtml(t.innerHTML);storeDraftPreview(html);
   const preview=$('#emailPreview');if(preview){preview.innerHTML=draftPreviewHtml(html);preview.dataset.manualRefreshInitialized='1';bindDraftPreviewGifs();}
 }
+/* STANDARD SIGNATURE 2026-10-22
+   One signature for every draft: the close, the six category packages laid out
+   two per line, and the WhatsApp number. The agency block that follows in sent
+   mail comes from the Gmail account signature, so it is deliberately not
+   repeated here. */
+const SIGNATURE_CATEGORY_ROWS=[
+  [{label:'Standard',url:'https://canva.link/qotixws4g0xzcy2'},{label:'Commercial',url:'https://canva.link/roe42u4m15ykmz1'}],
+  [{label:'Mature',url:'https://canva.link/wcqk69xohlz0j7i'},{label:'Alternative',url:'https://canva.link/6dkl45q4x83m1ou'}],
+  [{label:'New Faces',url:'https://canva.link/wnblda107s1pdj1'},{label:'Celebrity',url:'https://canva.link/no4za3cv5ew9fng'}]
+];
+const SIGNATURE_WHATSAPP_HREF='tel:(907)%20317-3791';
+const SIGNATURE_WHATSAPP_TEXT='+1(907)317 3791';
+function signatureCategoryLink(item){
+  return '<a href="'+esc(item.url)+'" target="_blank"><b><i>'+esc(item.label)+'</i></b></a>';
+}
+function standardSignatureHtml(close='Thank you,'){
+  const rows=SIGNATURE_CATEGORY_ROWS
+    .map(pair=>'<div>'+pair.map(signatureCategoryLink).join(' | ')+'</div>').join('');
+  return '<div data-clm-signature="1">'
+    +'<div>'+esc(close||'Thank you,')+'</div><div>Justin</div><div><br></div>'
+    +rows
+    +'<div><br></div><div>WhatsApp:</div>'
+    +'<div><a href="'+SIGNATURE_WHATSAPP_HREF+'">'+esc(SIGNATURE_WHATSAPP_TEXT)+'</a></div>'
+    +'</div>';
+}
+/* END STANDARD SIGNATURE */
 /* CATEGORY CANVA LINKS 2026-10-21
    Standardized public Canva packages, one per roster category. When models are
    added to or removed from a draft, a block with the matching category links is
@@ -4432,9 +4461,7 @@ function generateInitialEmailHtml(){
     const intro='<div>'+salutation+'</div><br><div>I wanted to send '+esc(joined||'our models')+' for any upcoming '+brand+' projects. Their info is below.</div><br>'+
       '<div>You can find the rest of our models <a data-clm-package-link="1" href="'+website+'">here</a>.</div><br>';
     const signature='<div>Let me know if you want to see any of them.</div><br>'+
-      '<div>Thank you,</div><br><div>Justin</div><br><div>WhatsApp:</div><div>+1(907)317 3791</div><br>'+
-      '<div><b>Chez Les Mannequins · Creative Agency</b></div>'+
-      '<div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div>';
+      standardSignatureHtml();
     return '<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">'+intro+
       (blocks||'<div>Select one or more models in this package.</div>')+signature+'</div>';
   }
@@ -4452,18 +4479,18 @@ function generateInitialEmailHtml(){
     const bridalGreeting=String(activeRecord?.contactName||working.contactName||'').trim()==='James'?'Hi James,':'Hi '+brand+' Team,';
     const intro='<div>'+bridalGreeting+'</div><div><br></div><div>I wanted to send '+esc(miamiNames)+' for New York Bridal Week. Their materials are below.</div><div><br></div><div>Click <a data-clm-package-link="1" href="'+bridalLink+'" target="_blank">HERE</a> to see the rest of our models.</div><div><br></div>';
     const closing='<div style="margin:8px 0 0">Again, you can find the rest of our models <a data-clm-package-link="1" href="'+bridalLink+'" target="_blank">HERE</a>.</div><div style="margin:8px 0 0">Let me know if you would like to see any of them for a casting or fitting. If you are not interested in this selection, please let me know and I can send others.</div><div style="margin:8px 0 0"><div>Thank you,</div><div>Justin</div><div><br></div><div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>';
-    return packageLinkHtml('<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">'+intro+modelSection+closing+'</div>',d.link);
+    return packageLinkHtml('<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">'+intro+modelSection+closing+standardSignatureHtml()+'</div>',d.link);
   }
   if(useMiamiSentFormat){
     const brand=esc(identity.brand||d.brand);
     const intro=`<div>${greeting}</div><div><br></div><div>I wanted to send ${esc(miamiNames)} to ${brand} for Miami Fashion week. Their materials are below.</div><div><br></div><div>Click <a data-clm-package-link="1" href="${miamiLink}" target="_blank">HERE</a>&nbsp;to see the rest of our models.</div><div><br></div>`;
     const closing=`<div style="margin:8px 0 0">Again, you can find the rest of our models&nbsp;<a data-clm-package-link="1" href="${miamiLink}" target="_blank">HERE</a>.&nbsp;</div><div style="margin:8px 0 0">Let me know if you would like to see any of them for a casting or fitting.</div><div style="margin:8px 0 0"><div>Thank you,</div><div>Justin</div><div><br></div><div><i>WhatsApp:</i></div><div><i>+1(907)317 3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
-    return packageLinkHtml(`<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${intro}${modelSection}${closing}</div>`,d.link);
+    return packageLinkHtml(`<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${intro}${modelSection}${closing}${standardSignatureHtml()}</div>`,d.link);
   }
   if(activeRecord?.goSeeSentTemplate20261013||working.goSeeSentTemplate20261013){
-    return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${modelSection}${followupCtaHtml}<div>Thank you,</div><br><div>Justin</div><br><div>Chez Les Mannequins · Creative Agency</div><br><div>Model Representation | Artist Management | Casting | Production | Advertising</div></div>`;
+    return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${modelSection}${followupCtaHtml}${standardSignatureHtml()}`;
   }
-  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${(!blankBodyCopy&&more)?`<div style="margin:0 0 24px">${more}</div>`:''}${followupCtaHtml}<div>${close}</div><div>Justin</div><div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
+  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${(!blankBodyCopy&&more)?`<div style="margin:0 0 24px">${more}</div>`:''}${followupCtaHtml}${standardSignatureHtml(close)}</div>`;
 }
 
 /* EMAIL DRAFT BUILDER STABILITY FIX 2026-09-17 */
@@ -4475,6 +4502,10 @@ function compactDraftCachesForStorage(){
 function isAnimatedGifSource(src){return window.CLMMediaStore?.isGif?.(src)||/^data:image\/gif/i.test(String(src||''))||/\.gif(?:[?#]|$)/i.test(String(src||''))}
 function draftPreviewHtml(html){
   const t=document.createElement('template');t.innerHTML=String(html||'');
+  // The standard signature carries every category package. Blocks written by
+  // the earlier per-selection feature would repeat those links, so any left in
+  // a saved draft are dropped.
+  t.content.querySelectorAll('[data-clm-category-links]').forEach(el=>el.remove());
   t.content.querySelectorAll('img').forEach(img=>{
     const src=img.getAttribute('src')||'';
     const isStored=!!window.CLMMediaStore?.isMediaRef?.(src);
@@ -4673,6 +4704,7 @@ let emailPreviewEditTimer=0;
 function sanitizeEditableEmailHtml(html){
   const template=document.createElement('template');
   template.innerHTML=uniformEmailPhotoSizes(stripCanvaLinksText(html));
+  template.content.querySelectorAll('[data-clm-category-links]').forEach(el=>el.remove());
   // Undo the screen-only downscaling before anything reads this HTML back.
   restorePreviewFullSizeImages(template.content);
   // The visible src is authoritative. Hidden attributes must never substitute another image.

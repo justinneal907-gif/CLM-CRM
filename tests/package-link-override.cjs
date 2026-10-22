@@ -43,6 +43,13 @@ for(const variant of ['general','bridal','miami']){
   assert.ok(generated.includes('CUSTOM'),variant);
   assert.ok(!generated.includes(old),variant);
   run(`document.getElementById('emailLink').value='';`);
-  assert.ok(!run('generateInitialEmailHtml()').includes('canva.'),variant+' clear');
+  // The standard signature always carries the six category package links, so
+  // the check is that no PACKAGE link survives the field being cleared.
+  const cleared=run(`(()=>{const t=document.createElement('template');t.innerHTML=generateInitialEmailHtml();
+    t.content.querySelectorAll('[data-clm-signature]').forEach(el=>el.remove());return t.innerHTML})()`);
+  assert.ok(!cleared.includes('canva.'),variant+' clear');
+  const signature=run(`(()=>{const t=document.createElement('template');t.innerHTML=generateInitialEmailHtml();
+    return [...t.content.querySelectorAll('[data-clm-signature] a')].map(a=>a.getAttribute('href')).join(' ')})()`);
+  assert.ok(signature.includes('canva.link/qotixws4g0xzcy2')&&signature.includes('tel:'),variant+' signature intact');
 }
 console.log('PASS: package field updates saved and visible CTA links; reload/copy preserve URLs; model/reference links, photos and signature stay intact; clear/re-entry and all generated formats work.');
