@@ -2925,7 +2925,7 @@ async function createFormattedWorkGmailDraft(){
   const purpose=$('#emailPurpose')?.value||db.draft?.purpose||'submission';
   const activeRecord=db.activeDraftId?(db.drafts||[]).find(d=>d.id===db.activeDraftId):null;
   const hasPreview=typeof db.draft?.previewHtml==='string';
-  if(!selected.length&&purpose!=='followup'&&!hasPreview)throw new Error('Select at least one model first.');
+  if(!selected.length&&purpose!=='followup'&&!hasPreview&&!db.draft?.commNoModels)throw new Error('Select at least one model first.');
   if(!$('#emailRecipient').value.trim())throw new Error('Add a recipient email first.');
   await freezePreviewImagesForReview();
   const to=$('#emailRecipient').value.trim();
@@ -4485,7 +4485,7 @@ function generateInitialEmailHtml(){
   const picked=selectedModels();
   const identity=packageIdentity({...working,brandProject:d.brand,eventName:$('#emailEvent').value.trim()});
   const initialMessage=String(working.initialMessage||'');
-  const messageHasGreeting=/^\s*Hi(?:\s|,)/.test(initialMessage);
+  const messageHasGreeting=/^\s*(?:Hi|Hello|Dear)(?:\s|,)/.test(initialMessage);
   const activeId=String(activeRecord?.id||db.activeDraftId||working?.id||'');
   const isMiamiSubmission=activeId.startsWith('miami_fashion_week_2026_')&&d.purpose==='submission';
   const useMiamiSentFormat=isMiamiSubmission&&!initialMessage;
@@ -4523,7 +4523,7 @@ function generateInitialEmailHtml(){
   }
   const extra='';
   const more=(isBridalFollowup||!!initialMessage||useMiamiSentFormat||!d.link)?'':`Again, you can see more models <a data-clm-package-link="1" href="${esc(d.link)}"><strong><em>HERE</em></strong></a>.`;
-  const modelSection=blocks||(d.purpose==='followup'?'':'<div>[Select one or more models]</div>');
+  const modelSection=blocks||((d.purpose==='followup'||activeRecord?.commNoModels||working.commNoModels)?'':'<div>[Select one or more models]</div>');
   const close=useMiamiSentFormat?'Thank you,':(String(activeRecord?.signatureClose||working?.signatureClose||'').trim()||(tone.tone==='personal'?'Best,':'Thank you,'));
   const followupCtaHtml=String(activeRecord?.followupCtaHtml||working.followupCtaHtml||'').trim();
   const blankBodyCopy=!useMiamiSentFormat&&!!(activeRecord?.blankBodyCopy||working.blankBodyCopy)&&!initialMessage;
@@ -6597,6 +6597,7 @@ $('#exportBtn').onclick=exportAll;$('#exportDataBtn').onclick=exportAll;$('#expo
 <script src="assets/data/brand-picks-20261015.js?v=20261014-six-tomorrow-1"></script>
 <script src="assets/crm-daily-queue-core.js?v=20261013-4"></script>
 <script src="assets/crm-daily-queue.js?v=20261019-coalesced-saves-1"></script>
+<script src="assets/crm-comm-types.js?v=20261026-1"></script>
 <script src="assets/data/bergdorf-reviewed-packages-20261015.js?v=1"></script>
 <script src="assets/data/bergdorf-additional-packages-20261015.js?v=2-email-format"></script>
 <script src="assets/data/casting-packages-20261016.js?v=4-bergdorf-only"></script>
