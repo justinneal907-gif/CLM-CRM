@@ -900,6 +900,10 @@
     panel.innerHTML=`<style>
       #openTrackingPanel{border:1px solid var(--line,#d8dfe8);border-radius:12px;padding:16px;margin:16px 0;background:var(--panel,#fff);font-size:14px}
       #openTrackingPanel h3{margin:0 0 8px;font-size:18px}
+      #openTrackingPanel>details>summary{cursor:pointer;font-weight:700;font-size:18px;margin:0 0 8px;list-style:none;display:flex;align-items:center;gap:8px}
+      #openTrackingPanel>details>summary::-webkit-details-marker{display:none}
+      #openTrackingPanel>details>summary::before{content:"▾";font-size:12px;transition:transform .15s}
+      #openTrackingPanel>details:not([open])>summary::before{transform:rotate(-90deg)}
       #openTrackingPanel .tracking-help{line-height:1.55;margin:10px 0;color:var(--muted,#536174)}
       #openTrackingPanel .tracking-tools{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
       #openTrackingPanel .tracking-tools input{flex:1;min-width:140px}
@@ -911,14 +915,14 @@
       #openTrackingPanel .tracking-error{color:#a22c25;margin-top:5px}
       #trackingCheckResult{margin-top:8px;line-height:1.5}
       #openTrackingPanel button,#openTrackingPanel input,#openTrackingPanel select{font-size:14px}
-    </style><h3>Email open tracking</h3>
+    </style><details class="collapsible-block" id="openTrackingCollapse" open><summary>Email open tracking</summary>
     <div id="trackingSummary"></div>
     <p class="tracking-help">Create a formatted Gmail draft below, review it in Gmail, then return here to send with tracking. Sending directly in Gmail does not enable this tracker.</p>
     <div id="trackingActions" class="actions"></div>
     <div id="trackingCheckResult" role="status" aria-live="polite"></div>
     <details><summary>What the results mean</summary><p class="tracking-help">Signals mean the tracking address was requested, not proof that your casting director read the email. Your own views, CC recipients and privacy tools may trigger signals; blocked images and mail proxies may hide opens or repeat views. This legacy counter does not return a normal image, so some mail apps may not load it. No signal does not mean unread.</p><p class="tracking-help">Checks run about once a minute while this CRM is open. Background tabs may check less often. Automatic checks cover the last 45 days; older results stay in history. Times show when the CRM detected a signal, in your device’s timezone.</p></details>
     <div class="tracking-tools"><input id="trackingSearch" type="search" aria-label="Search tracked emails" placeholder="Search brand, recipient or model"><select id="trackingFilter" aria-label="Filter tracked emails"><option value="all">All tracked emails</option><option value="signals">With signals</option><option value="waiting">Awaiting signal</option><option value="ready">Ready to send</option><option value="attention">Needs attention</option></select></div>
-    <div id="trackingHistory" class="tracking-list"></div>`;
+    <div id="trackingHistory" class="tracking-list"></div></details>`;
     anchor.insertAdjacentElement('afterend',panel);
     ['openWorkGmailBtn','sendTrackedDraftBtn','enableOpenNotificationsBtn','testOpenNotificationsBtn','checkOpenTrackingBtn'].forEach(id=>{
       const button=q('#'+id);if(button)q('#trackingActions').appendChild(button);

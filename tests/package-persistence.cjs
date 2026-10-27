@@ -35,8 +35,9 @@ function page(){
  assert.match(q.run("document.querySelector('#savedDrafts').textContent"),/Recently saved packages/);
  assert.match(q.run("document.querySelector('#savedDrafts').textContent"),/Last edited/);
  assert.match(q.run("packageDateText(db.drafts.find(d=>d.id==='legacy'))"),/Edit time unavailable/);
- // A field edit archives a new draft automatically, including recipient/notes.
- q.run(`db.activeDraftId='';db.draft={subject:'Autosaved custom title',modelIds:['m']};selected=['m'];hydrateDraft();document.querySelector('#emailRecipient').value='new@example.com';document.querySelector('#emailPrivateNotes').value='Keep this exact private note';queueEmailDraftRender();`);
+ // A field edit archives a new draft automatically, including recipient and stored private notes.
+ // Private notes no longer have an input on the page, so existing notes must survive a capture.
+ q.run(`db.activeDraftId='';db.draft={subject:'Autosaved custom title',modelIds:['m']};selected=['m'];hydrateDraft();document.querySelector('#emailRecipient').value='new@example.com';db.draft.notes='Keep this exact private note';queueEmailDraftRender();`);
  assert.equal(q.run('db.drafts.length'),3);await q.run('persistEditedPackage()');
  const auto=q.run('structuredClone(db.draft)');assert.equal(auto.recipientEmail,'new@example.com');assert.equal(auto.notes,'Keep this exact private note');
  assert.equal((await q.run('idbReadWorkspace()')).drafts.find(d=>d.id===auto.id).notes,auto.notes);
