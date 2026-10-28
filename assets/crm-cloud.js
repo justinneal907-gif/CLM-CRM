@@ -19,7 +19,6 @@
   const KEY='sb_publishable_-3GGsWtASGt6dyTet6TWjg_CoZf7Xqs';
   const SDK='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
   const LOCAL_ONLY=new Set(['draft','selected','activeDraftId','workspaceSavedAt','_cloudAcceptedAt']);
-  const SPLIT_BYTES=900*1024;      // values bigger than this are stored as several parts
   const BATCH_BYTES=1500*1024;     // largest single commit request
   const PUSH_DELAY=8000;
   const LS='clm.cloud.sync.v1';
@@ -39,28 +38,27 @@
   function setDb(v){db=v}                                      // eslint-disable-line no-undef
 
   // ---------- workspace <-> parts ----------
+  // Part layout (shared with the October 16 cloud copy):
+  //   draft:<package id>   one row per saved package
+  //   gallery:<model id>   one row per model's photo library
+  //   <field>              every other workspace field
   function toParts(ws){
     const parts={};
     for(const [k,v] of Object.entries(ws||{})){
       if(LOCAL_ONLY.has(k))continue;
-      if(k==='drafts'){for(const d of v||[])if(d&&d.id)parts['pkg:'+d.id]=d;continue}
-      const json=JSON.stringify(v??null);
-      if(isPlain(v)&&json.length>SPLIT_BYTES){
-        parts['wsmeta:'+k]={split:true,keys:Object.keys(v)};
-        for(const [sk,sv] of Object.entries(v))parts['wss:'+k+':'+sk]=sv;
-      }else parts['ws:'+k]=v??null;
+      if(k==='drafts'){for(const d of v||[])if(d&&d.id)parts['draft:'+d.id]=d;continue}
+      if(k==='photoLibrary'&&isPlain(v)){for(const [id,photos] of Object.entries(v))parts['gallery:'+id]=photos;continue}
+      parts[k]=v??null;
     }
     return parts;
   }
   function fromParts(rows){
-    const ws={drafts:[]},split={};
+    const ws={drafts:[]};
     for(const {part_key:k,data} of rows){
-      if(k.startsWith('pkg:'))ws.drafts.push(data);
-      else if(k.startsWith('ws:'))ws[k.slice(3)]=data;
-      else if(k.startsWith('wsmeta:'))split[k.slice(7)]=split[k.slice(7)]||{};
-      else if(k.startsWith('wss:')){const rest=k.slice(4),i=rest.indexOf(':');const key=rest.slice(0,i);(split[key]=split[key]||{})[rest.slice(i+1)]=data}
+      if(k.startsWith('draft:'))ws.drafts.push(data);
+      else if(k.startsWith('gallery:'))(ws.photoLibrary=ws.photoLibrary||{})[k.slice(8)]=data;
+      else if(!k.includes(':'))ws[k]=data;
     }
-    for(const [k,v] of Object.entries(split))ws[k]=v;
     return ws;
   }
 
@@ -76,6 +74,18 @@
     if(isPlain(local)&&isPlain(cloud))return {...structuredClone(cloud),...local};
     return local;
   }
+  const isEmpty=v=>v===undefined||v===null||v===''||(Array.isArray(v)&&!v.length)||(isPlain(v)&&!Object.keys(v).length);
+  // The winning copy keeps its values; fields it lacks are filled from the
+  // other copy so a slimmer browser copy never thins out a richer cloud one.
+  function fillGaps(winner,other){
+    let out=winner;
+    for(const [k,v] of Object.entries(other||{})){
+      if(k==='html'||isEmpty(v)||!isEmpty(winner[k]))continue;
+      if(out===winner)out={...winner};
+      out[k]=v;
+    }
+    return out;
+  }
   function merge(local,cloud){
     const out={...local};
     const dels={...(cloud.packageDeletionTimes||{})};
@@ -88,8 +98,9 @@
     for(const d of cloud.drafts||[]){
       if(!d||!d.id)continue;
       const cur=byId.get(d.id);
-      if(!cur){byId.set(d.id,d);added++}
-      else if(draftTime(d,restores)>draftTime(cur,restores)){byId.set(d.id,d);updated++}
+      if(!cur){byId.set(d.id,d);added++;continue}
+      const next=draftTime(d,restores)>draftTime(cur,restores)?fillGaps(d,cur):fillGaps(cur,d);
+      if(next!==cur){byId.set(d.id,next);updated++}
     }
     let removed=0;
     for(const [id,d] of byId)if(dels[id]&&dels[id]>=draftTime(d,restores)){byId.delete(id);removed++}
@@ -125,7 +136,7 @@
     if(error)throw error;return data?.version||0;
   }
   async function pullRows(){
-    const rows=[];const page=200;
+    const rows=[];const page=20;
     for(let from=0;;from+=page){
       const {data,error}=await client.from('crm_cloud_parts').select('part_key,data').eq('owner_id',user.id).order('part_key').range(from,from+page-1);
       if(error)throw error;rows.push(...data);if(data.length<page)break;

@@ -10,7 +10,7 @@ A small "Cloud saving" panel sits in the bottom right corner of the CRM. Sign in
 
 - Syncing only adds or updates. A package missing on one side is never treated as deleted.
 - A package is removed only by an explicit deletion marker (`packageDeletionTimes`) that is newer than the package's last edit.
-- When both sides hold the same package, the most recently edited copy wins. On a tie the browser copy wins.
+- When both sides hold the same package, the most recently edited copy wins (on a tie, the browser copy). Fields the winning copy lacks are filled from the other copy, so a slimmer copy never thins out a richer one.
 - Lists of records with ids (models, contacts and so on) are unioned. Settings objects are merged with the browser's values winning.
 - The open draft, current selection and active package stay local to each browser.
 - Every commit stores the previous version of each changed part in `crm_cloud_history`.
