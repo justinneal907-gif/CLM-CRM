@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CLM CRM Package Photo Report</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:980px;margin:40px auto;padding:0 20px;color:#1d2521;background:#f6f7f6}
+.card{background:#fff;border:1px solid #d8ddd9;border-radius:14px;padding:24px;margin:18px 0}
+button{border:0;border-radius:9px;padding:12px 18px;font-weight:700;cursor:pointer;background:#1f2923;color:white}
+button:disabled{opacity:.5;cursor:default}
+pre{white-space:pre-wrap;background:#f2f4f2;padding:14px;border-radius:8px;max-height:680px;overflow:auto;font-size:13px}
+</style>
+</head>
+<body>
+<h1>Package Photo Report</h1>
+<div class="card">
+<p><b>This page changes nothing.</b> It reads your saved packages and reports how each photo in them is stored, and whether the CRM photo store still holds it.</p>
+<p>Close other CRM tabs first, then press the button and send me the report.</p>
+<button id="runBtn">Check my package photos</button>
+</div>
+<div class="card"><b>Report</b><pre id="out">Ready.</pre></div>
+<script>
+const out=document.getElementById('out');
+const say=s=>{out.textContent+=('\n'+s);out.scrollTop=out.scrollHeight};
+function openDb(){return new Promise((res,rej)=>{const q=indexedDB.open('jn-agency-crm');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error||new Error('Could not open the CRM database'));q.onblocked=()=>rej(new Error('The CRM database is busy. Close other CRM tabs and try again.'))})}
+function get(db,store,key){return new Promise((res,rej)=>{const t=db.transaction(store,'readonly');const q=t.objectStore(store).get(key);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+function keys(db,store){return new Promise((res,rej)=>{const t=db.transaction(store,'readonly');const q=t.objectStore(store).getAllKeys();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+
+const MEDIA=/^clm-media:([0-9a-f-]{36})/i;
+function kindOf(src){
+  const s=String(src||'');
+  if(!s.trim())return 'empty';
+  if(MEDIA.test(s))return 'photo store ref';
+  if(/#clm-photo-loading/.test(s))return 'LOADING PLACEHOLDER';
+  if(/^data:image\//i.test(s))return 'inline data';
+  if(/^blob:/i.test(s))return 'BLOB URL (dies with the tab)';
+  if(/^https?:/i.test(s))return 'web link';
+  return 'OTHER: '+s.slice(0,40);
+}
+function tally(map,key){map.set(key,(map.get(key)||0)+1)}
+function refsIn(value,sink){
+  const m=String(value||'').match(/clm-media:[0-9a-f-]{36}/ig);
+  if(m)for(const r of m)sink.add(r.toLowerCase());
+}
+
+document.getElementById('runBtn').onclick=async()=>{
+  const btn=document.getElementById('runBtn');btn.disabled=true;out.textContent='Reading…';
+  try{
+    const db=await openDb();
+    const mediaKeys=new Set((await keys(db,'media')).map(k=>'clm-media:'+String(k).toLowerCase()));
+    say('photo store holds '+mediaKeys.size+' photos');
+
+    const ws=await get(db,'workspace','primary');
+    const data=ws&&ws.data?ws.data:ws;
+    const drafts=(data&&data.drafts)||[];
+    say('saved packages: '+drafts.length);
+
+    const srcKinds=new Map(), selKinds=new Map();
+    const allRefs=new Set();
+    let noPreview=0, previewNoImg=0, selectionsButNoPreviewImg=0, previewImgs=0;
+    const problems=[];
+    const parser=new DOMParser();
+
+    for(const d of drafts){
+      const name=String(d.brandProject||d.company||d.subject||d.id||'(untitled)').slice(0,46);
+      const sel=d.photoSelections||{}, pack=d.packagePhotos||{};
+      let selCount=0;
+      for(const map of [sel,pack])for(const id of Object.keys(map||{})){
+        const list=Array.isArray(map[id])?map[id]:[map[id]];
+        for(const u of list){ if(u==null)continue; selCount++; tally(selKinds,kindOf(u)); refsIn(u,allRefs) }
+      }
+      if(typeof d.previewHtml!=='string'||!d.previewHtml.trim()){ noPreview++; continue }
+      refsIn(d.previewHtml,allRefs);
+      let doc;
+      try{ doc=parser.parseFromString(d.previewHtml,'text/html') }catch(e){ problems.push(name+' · preview could not be parsed'); continue }
+      const imgs=[...doc.querySelectorAll('img')].filter(i=>i.getAttribute('data-clm-open-track')!=='1');
+      previewImgs+=imgs.length;
+      const kinds=new Set();
+      for(const img of imgs){ const k=kindOf(img.getAttribute('src')); tally(srcKinds,k); kinds.add(k) }
+      if(!imgs.length){
+        previewNoImg++;
+        if(selCount){ selectionsButNoPreviewImg++; problems.push(name+' · '+selCount+' photo(s) chosen, but the saved email has no photo in it') }
+      }
+      for(const bad of ['LOADING PLACEHOLDER','BLOB URL (dies with the tab)','empty'])
+        if(kinds.has(bad))problems.push(name+' · saved email contains a '+bad);
+    }
+
+    say('\nPHOTOS INSIDE THE SAVED EMAILS ('+previewImgs+' images)');
+    if(!srcKinds.size)say('  none');
+    for(const [k,n] of [...srcKinds].sort((a,b)=>b[1]-a[1]))say('  '+n+' × '+k);
+
+    say('\nPHOTOS CHOSEN FOR PACKAGES');
+    if(!selKinds.size)say('  none');
+    for(const [k,n] of [...selKinds].sort((a,b)=>b[1]-a[1]))say('  '+n+' × '+k);
+
+    let dangling=0; const examples=[];
+    for(const ref of allRefs)if(!mediaKeys.has(ref)){dangling++;if(examples.length<5)examples.push(ref)}
+    say('\nPHOTO STORE LINKS');
+    say('  '+allRefs.size+' distinct photos referenced by packages');
+    say('  '+dangling+' of them are missing from the photo store'+(examples.length?' (e.g. '+examples.join(', ')+')':''));
+
+    say('\nPACKAGES');
+    say('  '+noPreview+' have no saved email body');
+    say('  '+previewNoImg+' have a saved email with no photos in it');
+    say('  '+selectionsButNoPreviewImg+' of those still have photos chosen');
+
+    if(problems.length){
+      say('\nWHAT LOOKS WRONG ('+problems.length+')');
+      for(const line of problems.slice(0,60))say('  '+line);
+      if(problems.length>60)say('  …and '+(problems.length-60)+' more');
+    } else say('\nNothing unusual found in the saved packages.');
+    say('\nDone.');
+  }catch(err){ say('\nERROR: '+(err&&err.message||err)) }
+  finally{ btn.disabled=false }
+};
+</script>
+</body>
+</html>

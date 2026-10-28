@@ -175,6 +175,15 @@
     }
     return raw;
   }
+  // The reference a display URL came from, so HTML read back off the screen can
+  // be saved as the stored photo rather than as an object URL that dies with
+  // the tab.
+  function refForDisplayUrl(value){
+    const raw=String(value||'');
+    if(!raw.startsWith('blob:'))return '';
+    for(const [id,url] of objectUrls)if(url===raw)return 'clm-media:'+id;
+    return '';
+  }
   function isGif(value){
     const raw=String(value||'');
     const id=idFromRef(raw);
@@ -241,6 +250,6 @@
     objectUrls.delete(id);metadata.delete(id);contentKeys.delete(id);
     await tx('readwrite',store=>store.delete(id));
   }
-  window.CLMMediaStore={init,storeFile,putBlob,getRecord,displayUrl,toDataUrl,migrateWorkspace,isGif,contentKey,findRefByHashes,mediaMeta,isMediaRef:v=>!!idFromRef(v),remove};
+  window.CLMMediaStore={init,storeFile,putBlob,getRecord,displayUrl,toDataUrl,migrateWorkspace,isGif,contentKey,findRefByHashes,mediaMeta,isMediaRef:v=>!!idFromRef(v),refForDisplayUrl,remove};
 })();
 

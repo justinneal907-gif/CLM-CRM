@@ -7,7 +7,7 @@
 <style>
 :root{--bg:#f5f4ef;--panel:#fff;--ink:#171b18;--muted:#68706a;--line:#d9ded9;--accent:#214a37;--soft:#edf3ef;--danger:#8a2c2c}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Arial,Helvetica,sans-serif}
-button,input,select,textarea{font:inherit}button{cursor:pointer}.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}.sidebar{background:#17241d;color:white;padding:24px 18px;position:sticky;top:0;height:100vh}.brand{font-weight:800;letter-spacing:.08em}.subbrand{font-size:12px;opacity:.75;margin:5px 0 26px}.nav button{display:block;width:100%;text-align:left;border:0;background:transparent;color:#dce6df;padding:10px 12px;border-radius:7px;margin:3px 0}.nav button.active,.nav button:hover{background:#294638;color:white}.main{padding:26px;min-width:0}.topbar{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:24px}.eyebrow{font-size:11px;letter-spacing:.12em;font-weight:700;color:var(--muted)}h1{font-size:26px;margin:5px 0 3px}h2{margin-top:0}.muted{color:var(--muted)}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #b8c2ba;background:white;padding:8px 11px;border-radius:7px}.btn.primary{background:var(--accent);border-color:var(--accent);color:white}.btn.danger{color:var(--danger)}.stats{display:grid;grid-template-columns:repeat(6,minmax(100px,1fr));gap:10px;margin-bottom:20px}.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}.stat b{font-size:22px;display:block}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:18px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.toolbar input,.toolbar select,.field input,.field select,.field textarea{border:1px solid #bdc6bf;border-radius:7px;padding:9px;background:white}.toolbar input{min-width:220px;flex:1}.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.card{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}.model-photo{height:245px;background:#eceeea;display:flex;align-items:center;justify-content:center;overflow:hidden}.model-photo img{width:100%;height:100%;object-fit:cover}.placeholder{font-size:34px;font-weight:800;color:#8d968f}.card-body{padding:13px}.pill{display:inline-block;padding:3px 7px;border-radius:999px;background:var(--soft);font-size:11px;margin:0 4px 4px 0}.statsline{font-size:12px;color:#343b36;margin:8px 0;min-height:36px}.view{display:none}.view.active{display:block}.split{display:grid;grid-template-columns:minmax(320px,.85fr) minmax(380px,1.15fr);gap:18px}.field{margin-bottom:11px}.field label{display:block;font-weight:700;font-size:12px;margin-bottom:5px}.field input,.field select,.field textarea{width:100%}.checkrow{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0}.checkrow label{font-weight:400}.selected-model{border-top:1px solid var(--line);padding:10px 0}.selected-model:first-child{border-top:0}.preview{border:1px solid var(--line);border-radius:8px;padding:18px;min-height:360px;background:#fff;outline:none}.preview[contenteditable="true"]{cursor:text}.preview[contenteditable="true"]:focus{border-color:#7b8f83;box-shadow:0 0 0 3px #dfe8e2}.preview-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.preview-title-row h2{margin:0}.preview-edit-note{margin:7px 0 12px}.preview img{max-width:100%;height:auto}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.pipeline{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.metric-grid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px}.metric{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff}.metric b{display:block;font-size:20px}.mini-bar{height:7px;background:#e7ebe8;border-radius:999px;overflow:hidden;margin-top:5px}.mini-bar span{display:block;height:100%;background:#68706a}.status-warn{font-weight:700}.tiny{font-size:11px}.pipeline .panel{margin:0}.empty{padding:14px;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}.draft-card{border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px}
+button,input,select,textarea{font:inherit}button{cursor:pointer}.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}.sidebar{background:#17241d;color:white;padding:24px 18px;position:sticky;top:0;height:100vh}.brand{font-weight:800;letter-spacing:.08em}.subbrand{font-size:12px;opacity:.75;margin:5px 0 26px}.nav button{display:block;width:100%;text-align:left;border:0;background:transparent;color:#dce6df;padding:10px 12px;border-radius:7px;margin:3px 0}.nav button.active,.nav button:hover{background:#294638;color:white}.main{padding:26px;min-width:0}.topbar{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:24px}.eyebrow{font-size:11px;letter-spacing:.12em;font-weight:700;color:var(--muted)}h1{font-size:26px;margin:5px 0 3px}h2{margin-top:0}.muted{color:var(--muted)}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid #b8c2ba;background:white;padding:8px 11px;border-radius:7px}.btn.primary{background:var(--accent);border-color:var(--accent);color:white}.btn.danger{color:var(--danger)}.stats{display:grid;grid-template-columns:repeat(6,minmax(100px,1fr));gap:10px;margin-bottom:20px}.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}.stat b{font-size:22px;display:block}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:18px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.toolbar input,.toolbar select,.field input,.field select,.field textarea{border:1px solid #bdc6bf;border-radius:7px;padding:9px;background:white}.toolbar input{min-width:220px;flex:1}.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.card{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}.model-photo{height:245px;background:#eceeea;display:flex;align-items:center;justify-content:center;overflow:hidden}.model-photo img{width:100%;height:100%;object-fit:cover}.placeholder{font-size:34px;font-weight:800;color:#8d968f}.card-body{padding:13px}.pill{display:inline-block;padding:3px 7px;border-radius:999px;background:var(--soft);font-size:11px;margin:0 4px 4px 0}.statsline{font-size:12px;color:#343b36;margin:8px 0;min-height:36px}.view{display:none}.view.active{display:block}.split{display:grid;grid-template-columns:minmax(320px,.85fr) minmax(380px,1.15fr);gap:18px}.field{margin-bottom:11px}.field label{display:block;font-weight:700;font-size:12px;margin-bottom:5px}.field input,.field select,.field textarea{width:100%}.checkrow{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0}.checkrow label{font-weight:400}.selected-model{border-top:1px solid var(--line);padding:10px 0}.selected-model:first-child{border-top:0}.preview{border:1px solid var(--line);border-radius:8px;padding:18px;min-height:360px;background:#fff;outline:none}.preview[contenteditable="true"]{cursor:text}.preview[contenteditable="true"]:focus{border-color:#7b8f83;box-shadow:0 0 0 3px #dfe8e2}.preview-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.preview-title-row h2{margin:0}.preview-edit-note{margin:7px 0 12px}.unsendable-images{border:1px solid #d8b24a;background:#fff8e6;border-radius:9px;padding:12px;margin:8px 0 2px;font-size:13px}.unsendable-images b{display:block;margin-bottom:5px}.unsendable-images ul{margin:6px 0 10px 18px;padding:0}.unsendable-images .actions{gap:7px}.preview img{max-width:100%;height:auto}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.pipeline{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.metric-grid{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px}.metric{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff}.metric b{display:block;font-size:20px}.mini-bar{height:7px;background:#e7ebe8;border-radius:999px;overflow:hidden;margin-top:5px}.mini-bar span{display:block;height:100%;background:#68706a}.status-warn{font-weight:700}.tiny{font-size:11px}.pipeline .panel{margin:0}.empty{padding:14px;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}.draft-card{border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px}
 .repeat-caster-flag{display:inline-block;margin-left:6px;padding:3px 7px;border-radius:999px;background:#fff3cd;border:1px solid #e4c76b;color:#5f4a00;font-size:10px;font-weight:800;letter-spacing:.04em;vertical-align:middle}
 .repeat-caster-box{margin-top:9px;padding:9px 10px;border:1px solid #e4c76b;border-radius:8px;background:#fffaf0;font-size:12px;line-height:1.45}
 .repeat-caster-box b{color:#5f4a00}
@@ -277,7 +277,7 @@ th,td{padding:8px}
 <section id="view-bookings" class="view"><div class="panel"><div class="actions" style="margin-bottom:12px"><button class="btn primary" onclick="openRecordModal('bookings')">Add booking</button></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Project</th><th>Client</th><th>Model</th><th>Total</th><th>Your commission</th><th>Status</th><th></th></tr></thead><tbody id="bookingsBody"></tbody></table></div></div></section>
 <section id="view-tasks" class="view"><div class="panel"><div class="actions" style="margin-bottom:12px"><button class="btn primary" onclick="openRecordModal('tasks')">Add task</button></div><div class="table-wrap"><table><thead><tr><th>Task</th><th>Details / Notes</th><th>Due</th><th>Priority</th><th>Status</th><th></th></tr></thead><tbody id="tasksBody"></tbody></table></div></div></section>
 <section id="view-gallery" class="view"><div class="panel"><h2>Model Photo Gallery</h2><p class="muted">Photos saved here are available for future packages. Deleting a photo removes it from the CRM and saved packages.</p><div class="field"><label>Find model</label><input id="gallerySearch" type="search" placeholder="Search model names" oninput="renderModelGallery()"></div><div class="field"><label>Model</label><select id="galleryModel" onchange="renderModelGallery()"></select></div><div class="actions"><input id="galleryUrl" type="url" placeholder="Photo URL"><button class="btn" onclick="addGalleryUrl()">Add URL</button><label class="btn">Upload photos<input type="file" accept="image/*" multiple hidden onchange="addGalleryFiles(this)"></label></div><label id="galleryReplaceControl" class="btn">Replace from computer<input type="file" accept="image/*" multiple hidden onchange="replaceGalleryFiles(this)"></label><p class="muted">For website models, select the downloaded photos for this model to replace the CRM portfolio. Original filenames are preserved. Files are copied into this browser.</p><div id="galleryStatus" class="muted" role="status" style="margin:10px 0"></div><div id="galleryGrid" class="photo-library-grid"></div></div></section>
-<section id="view-email" class="view"><div class="split"><div class="panel"><h2>Model package builder</h2><div class="field"><label>Purpose</label><select id="emailPurpose"><option value="submission">Model submission</option><option value="followup">Follow-up</option><option value="availability">Availability / hold</option><option value="introduction">Introduction</option></select></div><div class="field"><label>Contact</label><select id="emailContact"></select></div><div class="field"><label>Contact name</label><input id="emailContactName" placeholder="Casting director / client"/></div><div class="field"><label>Company / brand</label><input id="emailCompany" placeholder="Company, brand or casting office"/></div><div class="field"><label>Recipient email</label><input id="emailRecipient" type="email" placeholder="name@example.com"/></div><div class="field"><label>Sending account</label><input id="emailSender" value="justin.neal.chezlesmannequins@gmail.com" readonly/><div class="muted" style="margin-top:5px">Agency Work Gmail</div></div><div class="field"><label>CC on every email</label><input id="emailCc" value="agent@chezlesmannequins.com" readonly/><div class="muted" style="margin-top:5px">Automatically included on every CRM-created Gmail draft.</div></div><div class="field" id="gmailApiPanel"><label>Gmail API connection</label><div id="gmailApiStatus" class="muted">Checking Gmail connection…</div><div class="actions" style="margin-top:7px"><button class="btn primary" type="button" id="connectGmailApiBtn">Connect Work Gmail</button><button class="btn" type="button" id="disconnectGmailApiBtn">Disconnect</button><button class="btn" type="button" id="syncGmailNowBtn">Sync sent mail now</button><button class="btn primary" type="button" id="sendTrackedDraftBtn" disabled>Send tracked draft</button><button class="btn" type="button" id="enableOpenNotificationsBtn">Enable open alerts</button><button class="btn" type="button" id="testOpenNotificationsBtn">Test alert</button><button class="btn" type="button" id="checkOpenTrackingBtn">Check opens now</button></div><div id="gmailRuntimeStatus" class="tiny muted" style="margin-top:6px">Loading Gmail sync and open-tracking tools…</div><details id="gmailApiSetup" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">One-time Google OAuth setup</summary><div class="muted tiny" style="margin:7px 0">Create a Google OAuth Web client for this CRM, enable the Gmail API, and authorize <b>https://justinneal907-gif.github.io</b> as a JavaScript origin. Paste the public Client ID below. No client secret is stored in the CRM.</div><input id="gmailOAuthClientId" type="text" autocomplete="off" placeholder="1234567890-abc123.apps.googleusercontent.com"/><div class="actions" style="margin-top:7px"><button class="btn" type="button" id="saveGmailClientIdBtn">Save Client ID</button><button class="btn danger" type="button" id="clearGmailClientIdBtn">Clear Client ID</button></div></details></div><div class="field"><label>Event</label><input id="emailEvent" placeholder="New York Bridal Week"/></div><div class="field"><label>Project / brand</label><input id="emailBrand" placeholder="Private Policy"/></div><div class="field"><label>Brand Intelligence</label><div id="brandLookSuggestion" class="warning" style="margin-bottom:8px">Enter a brand or project name to see the likely casting direction.</div><div class="actions"><button class="btn" type="button" id="suggestLookBtn">Suggest look</button><button class="btn" type="button" id="brandWebSearchBtn">Research current brand on web</button></div></div><div id="submissionWarning" class="warning" style="display:none;margin-bottom:11px"></div><div class="field"><label>Subject</label><input id="emailSubject" value="Model Package"/></div><div class="field"><label>Package / portfolio link</label><input id="emailLink" placeholder="https://..."/><div class="muted tiny" style="margin-top:5px">Whatever you enter here overrides the generated package link. Clear it to remove the package link from generated email copy.</div></div><div class="checkrow"><label><input type="checkbox" id="includeStats" checked/> Measurements</label><label>Units <select id="measurementUnits" aria-label="Measurement units"><option value="imperial">Imperial</option><option value="metric">Metric</option></select></label><label><input type="checkbox" id="includePhotos" checked/> Photos</label><label><input type="checkbox" id="includeSources" checked/> Portfolio links</label></div><div class="field"><label>Find model</label><input id="emailModelSearch" placeholder="Type a model name, city or division"/></div><div id="emailModelMatches"></div><h3>Selected models</h3><div id="selectedModels"></div><div class="actions"><button class="btn" id="openWorkGmailBtn">Create formatted Gmail draft</button><button class="btn" id="saveDraftBtn">Save draft</button><button class="btn" id="recordSubmissionBtn">Record submission</button><button class="btn" id="jumpToCastingLeadsBtn" type="button">Casting leads</button></div><div id="emailStatus" class="muted" style="margin-top:10px"></div><section class="saved-packages-section" aria-labelledby="savedPackagesHeading"><details class="collapsible-block" id="savedPackagesCollapse" open><summary id="savedPackagesHeading">Saved Packages</summary><div class="package-copy-actions"><button class="btn copy-formatted-btn" id="copyEmailBtn" type="button">Copy Formatted Email</button><button class="btn copy-subject-btn" id="copySubjectBtn" type="button">Copy Subject</button><button class="btn copy-recipient-btn" id="copyRecipientBtn" type="button">Copy Recipient Email</button></div><div class="saved-package-search"><input id="draftSearch" type="search" placeholder="Search saved packages by brand, model or edited date" oninput="renderDrafts()"><div id="draftSearchMeta" class="muted tiny">Only the package you are viewing stays open here. Search to switch packages.</div></div><div class="actions" style="margin:8px 0"><label class="btn">Recover sent packages<input id="recoverSentPackagesInput" type="file" accept="application/json,.json" hidden onchange="this.files[0]&&importRecoveredPackages(this.files[0]);this.value=''"></label></div><details style="margin:8px 0"><summary>Restore without file picker</summary><label for="recoveryBackupText">Backup contents</label><textarea id="recoveryBackupText" rows="3" spellcheck="false" autocomplete="off" placeholder="Paste the contents of your recovery backup here"></textarea><button class="btn" type="button" onclick="restorePastedPackages()">Restore pasted backup</button></details><div id="savedDrafts"></div></details></section></div><div class="panel"><div class="preview-title-row"><h2>Email preview</h2><div class="preview-title-actions"><button class="btn primary" type="button" id="refreshEmailPreviewBtn" onclick="refreshEmailPreview()">Refresh preview</button><button class="btn" type="button" onclick="startBlankManualEmail()">Start blank manual email</button></div></div><div class="preview-edit-note">Edit the email directly below. Your preview is saved and is the email used for Gmail. Refresh keeps your edits.</div><div id="emailPreview" class="preview" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" aria-label="Editable email preview"></div></div></div><div style="height:12px"></div><details class="casting-leads panel" id="castingLeadsPanel"><summary>Previously researched NYFW casting leads</summary><div id="castingLeadsLazy" class="muted">Archived casting research loads only when this panel is opened.</div></details></section>
+<section id="view-email" class="view"><div class="split"><div class="panel"><h2>Model package builder</h2><div class="field"><label>Purpose</label><select id="emailPurpose"><option value="submission">Model submission</option><option value="followup">Follow-up</option><option value="availability">Availability / hold</option><option value="introduction">Introduction</option></select></div><div class="field"><label>Contact</label><select id="emailContact"></select></div><div class="field"><label>Contact name</label><input id="emailContactName" placeholder="Casting director / client"/></div><div class="field"><label>Company / brand</label><input id="emailCompany" placeholder="Company, brand or casting office"/></div><div class="field"><label>Recipient email</label><input id="emailRecipient" type="email" placeholder="name@example.com"/></div><div class="field"><label>Sending account</label><input id="emailSender" value="justin.neal.chezlesmannequins@gmail.com" readonly/><div class="muted" style="margin-top:5px">Agency Work Gmail</div></div><div class="field"><label>CC on every email</label><input id="emailCc" value="agent@chezlesmannequins.com" readonly/><div class="muted" style="margin-top:5px">Automatically included on every CRM-created Gmail draft.</div></div><div class="field" id="gmailApiPanel"><label>Gmail API connection</label><div id="gmailApiStatus" class="muted">Checking Gmail connection…</div><div class="actions" style="margin-top:7px"><button class="btn primary" type="button" id="connectGmailApiBtn">Connect Work Gmail</button><button class="btn" type="button" id="disconnectGmailApiBtn">Disconnect</button><button class="btn" type="button" id="syncGmailNowBtn">Sync sent mail now</button><button class="btn primary" type="button" id="sendTrackedDraftBtn" disabled>Send tracked draft</button><button class="btn" type="button" id="enableOpenNotificationsBtn">Enable open alerts</button><button class="btn" type="button" id="testOpenNotificationsBtn">Test alert</button><button class="btn" type="button" id="checkOpenTrackingBtn">Check opens now</button></div><div id="gmailRuntimeStatus" class="tiny muted" style="margin-top:6px">Loading Gmail sync and open-tracking tools…</div><details id="gmailApiSetup" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">One-time Google OAuth setup</summary><div class="muted tiny" style="margin:7px 0">Create a Google OAuth Web client for this CRM, enable the Gmail API, and authorize <b>https://justinneal907-gif.github.io</b> as a JavaScript origin. Paste the public Client ID below. No client secret is stored in the CRM.</div><input id="gmailOAuthClientId" type="text" autocomplete="off" placeholder="1234567890-abc123.apps.googleusercontent.com"/><div class="actions" style="margin-top:7px"><button class="btn" type="button" id="saveGmailClientIdBtn">Save Client ID</button><button class="btn danger" type="button" id="clearGmailClientIdBtn">Clear Client ID</button></div></details></div><div class="field"><label>Event</label><input id="emailEvent" placeholder="New York Bridal Week"/></div><div class="field"><label>Project / brand</label><input id="emailBrand" placeholder="Private Policy"/></div><div class="field"><label>Brand Intelligence</label><div id="brandLookSuggestion" class="warning" style="margin-bottom:8px">Enter a brand or project name to see the likely casting direction.</div><div class="actions"><button class="btn" type="button" id="suggestLookBtn">Suggest look</button><button class="btn" type="button" id="brandWebSearchBtn">Research current brand on web</button></div></div><div id="submissionWarning" class="warning" style="display:none;margin-bottom:11px"></div><div class="field"><label>Subject</label><input id="emailSubject" value="Model Package"/></div><div class="field"><label>Package / portfolio link</label><input id="emailLink" placeholder="https://..."/><div class="muted tiny" style="margin-top:5px">Whatever you enter here overrides the generated package link. Clear it to remove the package link from generated email copy.</div></div><div class="checkrow"><label><input type="checkbox" id="includeStats" checked/> Measurements</label><label>Units <select id="measurementUnits" aria-label="Measurement units"><option value="imperial">Imperial</option><option value="metric">Metric</option></select></label><label><input type="checkbox" id="includePhotos" checked/> Photos</label><label><input type="checkbox" id="includeSources" checked/> Portfolio links</label></div><div class="field"><label>Find model</label><input id="emailModelSearch" placeholder="Type a model name, city or division"/></div><div id="emailModelMatches"></div><h3>Selected models</h3><div id="selectedModels"></div><div class="actions"><button class="btn" id="openWorkGmailBtn">Create formatted Gmail draft</button><button class="btn" id="saveDraftBtn">Save draft</button><button class="btn" id="recordSubmissionBtn">Record submission</button><button class="btn" id="jumpToCastingLeadsBtn" type="button">Casting leads</button></div><div id="emailStatus" class="muted" style="margin-top:10px"></div><section class="saved-packages-section" aria-labelledby="savedPackagesHeading"><details class="collapsible-block" id="savedPackagesCollapse" open><summary id="savedPackagesHeading">Saved Packages</summary><div class="package-copy-actions"><button class="btn copy-formatted-btn" id="copyEmailBtn" type="button">Copy Formatted Email</button><button class="btn copy-subject-btn" id="copySubjectBtn" type="button">Copy Subject</button><button class="btn copy-recipient-btn" id="copyRecipientBtn" type="button">Copy Recipient Email</button></div><div class="saved-package-search"><input id="draftSearch" type="search" placeholder="Search saved packages by brand, model or edited date" oninput="renderDrafts()"><div id="draftSearchMeta" class="muted tiny">Only the package you are viewing stays open here. Search to switch packages.</div></div><div class="actions" style="margin:8px 0"><label class="btn">Recover sent packages<input id="recoverSentPackagesInput" type="file" accept="application/json,.json" hidden onchange="this.files[0]&&importRecoveredPackages(this.files[0]);this.value=''"></label></div><details style="margin:8px 0"><summary>Restore without file picker</summary><label for="recoveryBackupText">Backup contents</label><textarea id="recoveryBackupText" rows="3" spellcheck="false" autocomplete="off" placeholder="Paste the contents of your recovery backup here"></textarea><button class="btn" type="button" onclick="restorePastedPackages()">Restore pasted backup</button></details><div id="savedDrafts"></div></details></section></div><div class="panel"><div class="preview-title-row"><h2>Email preview</h2><div class="preview-title-actions"><button class="btn primary" type="button" id="refreshEmailPreviewBtn" onclick="refreshEmailPreview()">Refresh preview</button><button class="btn" type="button" id="trimSignatureBtn" onclick="trimBelowSignOff()" title="Remove the WhatsApp lines, agency lines and any logo below your name">Remove everything under “Justin”</button><button class="btn" type="button" onclick="startBlankManualEmail()">Start blank manual email</button></div></div><div id="unsendableImagePanel" class="unsendable-images" hidden></div><div class="preview-edit-note">Edit the email directly below. Your preview is saved and is the email used for Gmail. Refresh keeps your edits.</div><div id="emailPreview" class="preview" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" aria-label="Editable email preview"></div></div></div><div style="height:12px"></div><details class="casting-leads panel" id="castingLeadsPanel"><summary>Previously researched NYFW casting leads</summary><div id="castingLeadsLazy" class="muted">Archived casting research loads only when this panel is opened.</div></details></section>
 <section id="view-data" class="view"><div class="panel"><h2>Backup / transfer</h2><p class="muted">Everything remains stored locally in this browser unless you export it.</p><div class="actions"><button class="btn primary" id="exportDataBtn">Export CRM JSON</button><label class="btn">Import CRM JSON<input id="importDataInput" type="file" accept="application/json" hidden/></label><button class="btn" id="exportRosterBtn">Export roster CSV</button><button class="btn danger" id="resetWorkspaceBtn">Reset workspace data</button></div><p class="warning" style="margin-top:16px">This upgraded copy can import the previous CRM JSON format and automatically migrates prior browser data when opened in the same browser.</p><p class="muted" style="margin-top:12px"><b>Recovered history:</b> 11 model-package submissions and 2 Gmail drafts from September 11, 2026 are restored across the agency email history, including 3 submissions synced from the Work Gmail account (justin.neal.chezlesmannequins@gmail.com). The package workspace also includes the September 13–15 NYFW casting-lead research and the established agency package template. The archived first-CRM source/snapshot contains no populated task records, so no tasks were invented.</p></div></section>
 </main></div>
 <dialog id="modelDialog"><div class="modal" id="modelModal"></div></dialog>
@@ -2722,6 +2722,41 @@ function setPackageSendLock(locked){
 }
 let lastGmailPackage=null;
 const verifiedGmailPackages=new Map();
+// An image Gmail cannot be given. A cid: or googleusercontent source belongs to
+// another message and its bytes are not ours to read; anything that is not a
+// web address, an object URL, inline data or a photo in the CRM store has no
+// bytes at all. A signature logo pasted in from Gmail is the usual culprit.
+function unsendableImageReason(src){
+  const value=String(src||'');
+  if(/^data:image\//i.test(value))return '';
+  if(window.CLMMediaStore?.isMediaRef?.(value))return '';
+  if(/^cid:/i.test(value))return 'attached to another email';
+  if(/https?:\/\/(?:mail\.google\.com|(?:ci\d+\.)?googleusercontent\.com)\//i.test(value))return 'stored inside Gmail';
+  if(!/^(https?:|blob:)/i.test(value))return value.trim()?'not a usable image address':'missing its image';
+  return '';
+}
+function describePreviewImage(img,index,total){
+  const alt=String(img.getAttribute('alt')||'').trim();
+  if(alt)return '"'+alt+'"';
+  if(index===total-1)return 'the image at the bottom of the email';
+  return 'image '+(index+1)+' of '+total;
+}
+// Every image in the preview that Gmail would refuse, in document order.
+function unsendablePreviewImages(){
+  const preview=$('#emailPreview');
+  if(!preview)return [];
+  const imgs=[...preview.querySelectorAll('img')].filter(img=>img.getAttribute('data-clm-open-track')!=='1');
+  const out=[];
+  imgs.forEach((img,i)=>{
+    const parked=img.getAttribute(PREVIEW_FULL_SRC_ATTR)||'';
+    const reason=unsendableImageReason(parked||img.getAttribute('src')||'');
+    if(reason)out.push({img,reason,label:describePreviewImage(img,i,imgs.length)});
+  });
+  return out;
+}
+function unsendableImageSummary(list){
+  return list.map(x=>x.label+' ('+x.reason+')').join(', ');
+}
 async function freezePreviewImagesForReview(){
   const preview=$('#emailPreview');
   const original=currentEmailPreviewHtml(),draftId=db.activeDraftId;
@@ -2734,8 +2769,11 @@ async function freezePreviewImagesForReview(){
     // Held in the CRM photo store: the exact bytes are already pinned.
     if(window.CLMMediaStore?.isMediaRef?.(src))continue;
     // A CID or Gmail attachment URL belongs to another MIME document. Never reuse it.
-    if(!/^(https?:|blob:)/i.test(src)||/https?:\/\/(?:mail\.google\.com|(?:ci\d+\.)?googleusercontent\.com)\//i.test(src))
-      throw new Error('This preview contains an image linked to another Gmail message or unavailable media. Replace that image with an uploaded photo; no Gmail draft was created.');
+    if(unsendableImageReason(src)){
+      const blocked=unsendablePreviewImages();
+      const named=blocked.length?unsendableImageSummary(blocked):'one image';
+      throw new Error('Gmail cannot be given '+named+'. Your model photos are fine. Use the box above the preview to upload a replacement or remove it, then create the draft again. No Gmail draft was created.');
+    }
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
     try{
       const response=await fetch(src,{signal:controller.signal,cache:'no-store'});
@@ -2750,7 +2788,7 @@ async function freezePreviewImagesForReview(){
   if(!changed)return;
   if(db.activeDraftId!==draftId||currentEmailPreviewHtml()!==original)throw new Error('The preview changed while preparing images. Review it and try again.');
   const html=sanitizeEditableEmailHtml(t.innerHTML);
-  storeDraftPreview(html);preview.innerHTML=html;preview.dataset.manualRefreshInitialized='1';
+  storeDraftPreview(html);preview.innerHTML=draftPreviewHtml(html);preview.dataset.manualRefreshInitialized='1';
   persistWorkspaceSafe(true);
   throw new Error('Images are now fixed in the preview. Review every photograph, then click Create Gmail draft again. No email was sent.');
 }
@@ -4522,9 +4560,7 @@ function generateInitialEmailHtml(){
     const intro='<div>'+salutation+'</div><br><div>I wanted to send '+esc(joined||'our models')+' for any upcoming '+brand+' projects. Their info is below.</div><br>'+
       '<div>You can find the rest of our models <a data-clm-package-link="1" href="'+website+'">here</a>.</div><br>';
     const signature='<div>Let me know if you want to see any of them.</div><br>'+
-      '<div>Thank you,</div><br><div>Justin</div><br><div>WhatsApp:</div><div>+1(907)317 3791</div><br>'+
-      '<div><b>Chez Les Mannequins · Creative Agency</b></div>'+
-      '<div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div>';
+      '<div>Thank you,</div><br><div>Justin</div>';
     return '<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">'+intro+
       (blocks||'<div>Select one or more models in this package.</div>')+signature+'</div>';
   }
@@ -4541,19 +4577,19 @@ function generateInitialEmailHtml(){
     const bridalLink=esc(d.link);
     const bridalGreeting=String(activeRecord?.contactName||working.contactName||'').trim()==='James'?'Hi James,':'Hi '+brand+' Team,';
     const intro='<div>'+bridalGreeting+'</div><div><br></div><div>I wanted to send '+esc(miamiNames)+' for New York Bridal Week. Their materials are below.</div><div><br></div><div>Click <a data-clm-package-link="1" href="'+bridalLink+'" target="_blank">HERE</a> to see the rest of our models.</div><div><br></div>';
-    const closing='<div style="margin:8px 0 0">Again, you can find the rest of our models <a data-clm-package-link="1" href="'+bridalLink+'" target="_blank">HERE</a>.</div><div style="margin:8px 0 0">Let me know if you would like to see any of them for a casting or fitting. If you are not interested in this selection, please let me know and I can send others.</div><div style="margin:8px 0 0"><div>Thank you,</div><div>Justin</div><div><br></div><div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>';
+    const closing='<div style="margin:8px 0 0">Again, you can find the rest of our models <a data-clm-package-link="1" href="'+bridalLink+'" target="_blank">HERE</a>.</div><div style="margin:8px 0 0">Let me know if you would like to see any of them for a casting or fitting. If you are not interested in this selection, please let me know and I can send others.</div><div style="margin:8px 0 0"><div>Thank you,</div><div>Justin</div></div>';
     return packageLinkHtml('<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">'+intro+modelSection+closing+'</div>',d.link);
   }
   if(useMiamiSentFormat){
     const brand=esc(identity.brand||d.brand);
     const intro=`<div>${greeting}</div><div><br></div><div>I wanted to send ${esc(miamiNames)} to ${brand} for Miami Fashion week. Their materials are below.</div><div><br></div><div>Click <a data-clm-package-link="1" href="${miamiLink}" target="_blank">HERE</a>&nbsp;to see the rest of our models.</div><div><br></div>`;
-    const closing=`<div style="margin:8px 0 0">Again, you can find the rest of our models&nbsp;<a data-clm-package-link="1" href="${miamiLink}" target="_blank">HERE</a>.&nbsp;</div><div style="margin:8px 0 0">Let me know if you would like to see any of them for a casting or fitting.</div><div style="margin:8px 0 0"><div>Thank you,</div><div>Justin</div><div><br></div><div><i>WhatsApp:</i></div><div><i>+1(907)317 3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
+    const closing=`<div style="margin:8px 0 0">Again, you can find the rest of our models&nbsp;<a data-clm-package-link="1" href="${miamiLink}" target="_blank">HERE</a>.&nbsp;</div><div style="margin:8px 0 0">Let me know if you would like to see any of them for a casting or fitting.</div><div style="margin:8px 0 0"><div>Thank you,</div><div>Justin</div></div>`;
     return packageLinkHtml(`<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${intro}${modelSection}${closing}</div>`,d.link);
   }
   if(activeRecord?.goSeeSentTemplate20261013||working.goSeeSentTemplate20261013){
-    return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${modelSection}${followupCtaHtml}<div>Thank you,</div><br><div>Justin</div><br><div>Chez Les Mannequins · Creative Agency</div><br><div>Model Representation | Artist Management | Casting | Production | Advertising</div></div>`;
+    return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${modelSection}${followupCtaHtml}<div>Thank you,</div><br><div>Justin</div></div>`;
   }
-  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${(!blankBodyCopy&&more)?`<div style="margin:0 0 24px">${more}</div>`:''}${followupCtaHtml}<div>${close}</div><div>Justin</div><div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
+  return `<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${greetingHtml}${leadHtml}${extra}${modelSection}${(!blankBodyCopy&&more)?`<div style="margin:0 0 24px">${more}</div>`:''}${followupCtaHtml}<div>${close}</div><div>Justin</div></div>`;
 }
 
 /* EMAIL DRAFT BUILDER STABILITY FIX 2026-09-17 */
@@ -4589,13 +4625,17 @@ function draftPreviewHtml(html){
       img.setAttribute(PREVIEW_FULL_SRC_ATTR,authority);
       const display=photoDisplayUrl(src);
       const ready=display&&display!==src;
-      img.setAttribute('src',ready?(previewDisplaySrc(display,img)||display):PREVIEW_PENDING_SRC);
+      img.setAttribute('src',ready?previewSrcFor(display,img):PREVIEW_PENDING_SRC);
       return;
     }
-    const small=previewDisplaySrc(src,img)||src;
+    const small=previewSrcFor(src,img);
     img.setAttribute('src',small);
     if(small!==authority)img.setAttribute(PREVIEW_FULL_SRC_ATTR,authority);
-  });return t.innerHTML;
+  });
+  // Whatever is still loading gets looked at again shortly.
+  schedulePreviewPhotoCheck();
+  scheduleUnsendableImageCheck();
+  return t.innerHTML;
 }
 const PREVIEW_FULL_SRC_ATTR='data-clm-preview-full-src';
 const PREVIEW_PENDING_SRC='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7#clm-photo-loading';
@@ -4603,19 +4643,50 @@ const PREVIEW_PENDING_SRC='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAE
 // in place and is the authority for what gets saved, so only the src of an
 // image already carrying its reference is touched: no re-render, and nothing
 // the user typed is disturbed.
+const previewPendingSince=new WeakMap();
+// How long a photo may stay blank while its downscaled copy is built. After
+// this the full-size photo is shown instead: a visible photo always beats a
+// smaller one that never arrives.
+const PREVIEW_THUMBNAIL_GRACE_MS=2500;
+let previewPhotoWaitTimer=0;
+// The media cache only reports when a photo arrives, so a photo whose
+// downscaled copy stalls would never be looked at again. Keep checking while
+// anything on screen is still waiting.
+function schedulePreviewPhotoCheck(){
+  clearTimeout(previewPhotoWaitTimer);
+  previewPhotoWaitTimer=setTimeout(refreshPreviewStoredPhotos,700);
+}
 function refreshPreviewStoredPhotos(){
+  clearTimeout(previewPhotoWaitTimer);
   const preview=$('#emailPreview');
   if(!preview)return;
+  let stillWaiting=false;
   for(const img of preview.querySelectorAll('img['+PREVIEW_FULL_SRC_ATTR+']')){
     const ref=img.getAttribute(PREVIEW_FULL_SRC_ATTR)||'';
     if(!window.CLMMediaStore?.isMediaRef?.(ref))continue;
     const display=photoDisplayUrl(ref);
     if(!display||display===ref)continue;
-    const next=previewDisplaySrc(display,img)||display;
-    // Only move away from a placeholder once there is a real photo to show.
-    if(!next||next.startsWith('data:image/gif'))continue;
-    if(img.getAttribute('src')!==next)img.setAttribute('src',next);
+    const current=img.getAttribute('src')||'';
+    const waiting=!current||current===PREVIEW_PENDING_SRC||!!window.CLMThumbnails?.isPending?.(current);
+    if(!waiting)continue;
+    // Prefer the downscaled copy. The originals are 1300-2500px wide and
+    // decoding a package of them costs hundreds of megabytes.
+    const small=previewSrcFor(display,img);
+    if(small&&small!==ref&&!window.CLMThumbnails?.isPending?.(small)){
+      previewPendingSince.delete(img);
+      if(current!==small)img.setAttribute('src',small);
+      continue;
+    }
+    // Still being built: wait a moment, then show the photo itself rather
+    // than leaving an empty box on screen for good.
+    const since=previewPendingSince.get(img)||Date.now();
+    previewPendingSince.set(img,since);
+    if(Date.now()-since<PREVIEW_THUMBNAIL_GRACE_MS){stillWaiting=true;continue}
+    if(display&&display!==ref&&current!==display)img.setAttribute('src',display);
+    else if(!display||display===ref)stillWaiting=true;
   }
+  if(stillWaiting)schedulePreviewPhotoCheck();
+  scheduleUnsendableImageCheck();
 }
 function previewDisplayWidth(img){
   const attr=parseInt(img.getAttribute('width')||'',10);
@@ -4623,6 +4694,17 @@ function previewDisplayWidth(img){
   const styled=/(?:^|[^-\w])width\s*:\s*(\d+)px/i.exec(img.getAttribute('style')||'');
   if(styled)return parseInt(styled[1],10);
   return 440;
+}
+// A thumbnail is built in the background and is handed out as a placeholder
+// until it is ready. The placeholder is fine on a first render, because the
+// thumbnailer swaps it in place, but it must never be the last word: if that
+// swap never comes the photo stays an empty box. Anything already on screen
+// therefore falls back to the full-size photo rather than waiting.
+function previewSrcFor(src,img,allowPending=true){
+  const small=previewDisplaySrc(src,img);
+  if(!small)return src;
+  if(!allowPending&&window.CLMThumbnails?.isPending?.(small))return src;
+  return small;
 }
 function previewDisplaySrc(src,img){
   try{return window.CLMThumbnails?.url?.(src,previewDisplayWidth(img))||''}
@@ -4683,6 +4765,78 @@ function renderEmailPreviewOnly(){
   bindDraftPreviewGifs();
   setEmailPreviewRefreshPending(false);
   renderBriefSummary();renderSubmissionWarnings();renderDraftScope();
+}
+// Shown only when the email holds an image Gmail would refuse — almost always
+// a logo pasted in from a Gmail signature. Model photos are never listed here.
+let unsendableImagePanelTimer=0;
+function renderUnsendableImages(){
+  const panel=$('#unsendableImagePanel');
+  if(!panel)return;
+  const blocked=unsendablePreviewImages();
+  if(!blocked.length){panel.hidden=true;panel.innerHTML='';return}
+  const plural=blocked.length===1?'image':'images';
+  panel.hidden=false;
+  panel.innerHTML='<b>'+blocked.length+' '+plural+' in this email cannot be sent through Gmail</b>'
+    +'<div class="muted tiny">Your model photos are fine. This is usually a logo pasted in from an email signature: Gmail keeps those bytes to itself, so they have to be uploaded once.</div>'
+    +'<ul>'+blocked.map(x=>'<li>'+esc(x.label)+' — '+esc(x.reason)+'</li>').join('')+'</ul>'
+    +'<div class="actions"><label class="btn primary">Upload a replacement'
+    +'<input type="file" accept="image/*" hidden onchange="replaceUnsendableImages(this)"></label>'
+    +'<button class="btn danger" type="button" onclick="removeUnsendableImages()">Remove '+(blocked.length===1?'it':'them')+'</button></div>';
+}
+function scheduleUnsendableImageCheck(){
+  clearTimeout(unsendableImagePanelTimer);
+  unsendableImagePanelTimer=setTimeout(renderUnsendableImages,250);
+}
+// One upload stands in for every blocked image, which is what a repeated
+// signature logo needs. The photo is stored once and referenced.
+async function replaceUnsendableImages(input){
+  const file=input&&input.files&&input.files[0];
+  if(input)input.value='';
+  if(!file)return;
+  const blocked=unsendablePreviewImages();
+  if(!blocked.length)return renderUnsendableImages();
+  let ref='';
+  try{ref=await window.CLMMediaStore.storeFile(file)}
+  catch(err){return setStatus('That image could not be saved: '+(err?.message||'unknown error'))}
+  if(!ref)return setStatus('That image could not be saved.');
+  for(const {img} of blocked){
+    img.removeAttribute(PREVIEW_FULL_SRC_ATTR);
+    img.setAttribute('src',ref);
+  }
+  storeEmailPreviewEdit();
+  const preview=$('#emailPreview');
+  if(preview){preview.innerHTML=draftPreviewHtml(currentEmailPreviewHtml());preview.dataset.manualRefreshInitialized='1';}
+  renderUnsendableImages();
+  setStatus('Replaced '+blocked.length+' image'+(blocked.length===1?'':'s')+' with your upload. It is saved in the CRM for future packages.');
+}
+function removeUnsendableImages(){
+  const blocked=unsendablePreviewImages();
+  if(!blocked.length)return renderUnsendableImages();
+  for(const {img} of blocked)img.remove();
+  storeEmailPreviewEdit();
+  renderUnsendableImages();
+  setStatus('Removed '+blocked.length+' image'+(blocked.length===1?'':'s')+' Gmail could not send.');
+}
+// Generated emails now end at "Thank you, / Justin". A package saved before
+// that still carries the old footer — WhatsApp lines, agency lines and a logo
+// pasted in from a mail signature — so this clears it from the open package.
+function trimBelowSignOff(){
+  const preview=$('#emailPreview');
+  if(!preview)return;
+  const body=preview.children.length===1&&!preview.firstElementChild.matches('img')?preview.firstElementChild:preview;
+  const blocks=[...body.children];
+  let cut=-1;
+  blocks.forEach((el,i)=>{
+    if(el.querySelector('[data-clm-model-id]'))return;
+    if(/^justin[.,]?$/i.test((el.textContent||'').trim()))cut=i;
+  });
+  if(cut<0)return setStatus('No “Justin” sign-off found in this preview, so nothing was removed.');
+  const removed=blocks.slice(cut+1);
+  if(!removed.length)return setStatus('This email already ends at your name.');
+  for(const el of removed)el.remove();
+  storeEmailPreviewEdit();
+  renderUnsendableImages();
+  setStatus('Removed '+removed.length+' line'+(removed.length===1?'':'s')+' below your name.');
 }
 function refreshEmailPreview(){
   clearTimeout(emailDraftRenderTimer);clearTimeout(emailDraftPersistTimer);
@@ -4760,11 +4914,36 @@ async function copyFormattedPreview(){
 
 /* DIRECT EMAIL PREVIEW EDITING · 2026-09-24 */
 let emailPreviewEditTimer=0;
+// Follows a screen-only source — a thumbnail, a thumbnail placeholder, an
+// object URL — back to the stored photo it was made from. Object URLs die with
+// the tab and a placeholder is a 1x1 pixel, so neither may ever be saved as if
+// it were the photograph.
+function storedPhotoBehind(src){
+  let value=String(src||'');
+  if(!value||/^(data:image\/(?!gif;base64,R0lGODlhAQAB)|clm-media:|https?:)/i.test(value))return '';
+  for(let hop=0;hop<4;hop++){
+    const ref=window.CLMMediaStore?.refForDisplayUrl?.(value)||'';
+    if(ref)return ref;
+    const origin=window.CLMThumbnails?.sourceFor?.(value)||'';
+    if(!origin||origin===value)break;
+    value=origin;
+  }
+  const ref=window.CLMMediaStore?.refForDisplayUrl?.(value)||'';
+  if(ref)return ref;
+  return /^(https?:|data:image\/)/i.test(value)&&value!==String(src||'')?value:'';
+}
 function sanitizeEditableEmailHtml(html){
   const template=document.createElement('template');
   template.innerHTML=uniformEmailPhotoSizes(stripCanvaLinksText(html));
   // Undo the screen-only downscaling before anything reads this HTML back.
   restorePreviewFullSizeImages(template.content);
+  // Belt and braces: if an image lost its parked reference (a contenteditable
+  // edit can drop an attribute), recover the photo the placeholder stands for
+  // rather than saving a 1x1 placeholder over a real photograph.
+  template.content.querySelectorAll('img').forEach(img=>{
+    const stored=storedPhotoBehind(img.getAttribute('src')||'');
+    if(stored)img.setAttribute('src',stored);
+  });
   // The visible src is authoritative. Hidden attributes must never substitute another image.
   template.content.querySelectorAll('img').forEach(img=>{['data-gif-src','data-gif-playing','data-gif-bound','data-media-ref','title','role','tabindex'].forEach(name=>img.removeAttribute(name));img.style.removeProperty('cursor')});
   template.content.querySelectorAll('script,style,iframe,object,embed,form,input,textarea,button,meta,link').forEach(el=>el.remove());
@@ -4814,6 +4993,7 @@ function rememberEditedPreviewPhotos(html){
   }
 }
 function storeEmailPreviewEdit(showStatus=false){
+  scheduleUnsendableImageCheck();
   captureDraft();
   const preview=$('#emailPreview');if(!preview)return;
   const editedHtml=sanitizeEditableEmailHtml(preview.innerHTML);
@@ -5526,7 +5706,7 @@ function addSophiaBridalFollowups20261004(data){
     const subject='New York Bridal Week | '+entry.brand;
     const message='I wanted to follow up and send Sophia Pippen as an additional option for '+entry.brand+'. Her materials are below. Please let me know what you think!';
     const modelBlock='<div data-clm-model-id="'+esc(sophiaId)+'" style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>Sophia Pippen</b> | '+esc(stats)+'</div>'+(profile?'<div><a href="'+esc(profile)+'" target="_blank">'+esc(profileLabel)+'</a></div>':'')+(credential?'<div data-clm-model-extra="'+esc(sophiaId)+'" style="margin:6px 0 0"><span class="saved-model-text" style="color:#b00020;font-weight:800">'+esc(credential)+'</span></div>':'')+(photo?'<div style="text-align:left"><img src="'+esc(photo)+'" width="440" style="max-width:100%;height:auto;margin:8px 0 0" alt="Sophia Pippen"></div>':'')+'</div>';
-    const previewHtml='<div style="font-family:Arial,sans-serif;font-size:13px;color:#000"><div>Hi '+esc(entry.greeting)+',</div><br><div>'+esc(message)+'</div><br>'+modelBlock+'<div>Thank you,</div><div>Justin</div><div><i>WhatsApp:</i></div><div><i>+1(907)317-3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>';
+    const previewHtml='<div style="font-family:Arial,sans-serif;font-size:13px;color:#000"><div>Hi '+esc(entry.greeting)+',</div><br><div>'+esc(message)+'</div><br>'+modelBlock+'<div>Thank you,</div><div>Justin</div></div>';
     const photoSelections={};if(photo)photoSelections[sophiaId]=[photo];
     const modelExtras={};modelExtras[sophiaId]={enabled:!!credential,text:credential,textOptionId:'',mediaEnabled:false,mediaUrl:'',mediaLabel:''};
     data.drafts.push({
@@ -6084,7 +6264,7 @@ function repairMiamiSentCopy20261007(data){
 
     const safeBrand=esc(brand);
     const intro=`<div>Hi ${safeBrand} Team,</div><div><br></div><div>I wanted to send ${esc(miamiNames)} to ${safeBrand} for Miami Fashion week. Their materials are below.</div><div><br></div><div>Click <a href="${miamiLink}" target="_blank">HERE</a>&nbsp;to see the rest of our models.</div><div><br></div>`;
-    const closing=`<div style="margin:8px 0 0">Again, you can find the rest of our models&nbsp;<a href="${miamiLink}" target="_blank">HERE</a>.&nbsp;</div><div style="margin:8px 0 0">Let me know if you would like to see any of them for a casting or fitting.</div><div style="margin:8px 0 0"><div>Thank you,</div><div>Justin</div><div><br></div><div><i>WhatsApp:</i></div><div><i>+1(907)317 3791</i></div><br><div><b>Chez Les Mannequins · Creative Agency</b></div><div><i>Model Representation | Artist Management | Casting | Production | Advertising</i></div></div>`;
+    const closing=`<div style="margin:8px 0 0">Again, you can find the rest of our models&nbsp;<a href="${miamiLink}" target="_blank">HERE</a>.&nbsp;</div><div style="margin:8px 0 0">Let me know if you would like to see any of them for a casting or fitting.</div><div style="margin:8px 0 0"><div>Thank you,</div><div>Justin</div></div>`;
     draft.previewHtml=`<div style="font-family:Arial,sans-serif;font-size:13px;color:#000">${intro}${modelHtml}${closing}</div>`;
   };
   repair(data.draft);
