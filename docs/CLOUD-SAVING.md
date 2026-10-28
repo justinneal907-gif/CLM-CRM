@@ -23,6 +23,8 @@ A small "Cloud saving" panel sits in the bottom right corner of the CRM. Sign in
 - `crm_cloud_history`: previous values of changed parts, per revision.
 - `crm_commit(p_expected, p_parts)`: the only write path. It checks the work account, locks the state row, rejects stale revisions with `CRM_CONFLICT`, records history, upserts the parts and increments the revision. The browser resolves a conflict by pulling, merging and retrying.
 
-Photos stored as uploaded files in the browser's media store are not uploaded yet. Package photos referenced by URL sync normally.
+## Photos
+
+Photos uploaded into the CRM live in the browser's media store and are referenced as `clm-media:<id>`. Each referenced photo is uploaded once to the private `clm-crm-private` bucket under the owner's folder; identical bytes are stored once. `cloudMediaManifest` maps every reference to its file and syncs like any other field. A browser that is missing a referenced photo downloads it into its own media store under the same id. Photos nothing refers to are not uploaded. Package photos referenced by URL sync as text.
 
 `docs/private-cloud-schema.sql` records the database setup.

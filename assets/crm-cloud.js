@@ -148,6 +148,79 @@
     if(error)throw error;return Number(data);
   }
 
+
+  // ---------- photos ----------
+  // Photos uploaded into the CRM live in the browser's media store and are
+  // referenced as clm-media:<id>. Each referenced photo is uploaded once to the
+  // private bucket; cloudMediaManifest (a normal synced field) maps every
+  // reference to its file. Identical bytes are uploaded only once.
+  const BUCKET='clm-crm-private';
+  const REF_RE=/clm-media:([A-Za-z0-9-]{6,})/g;
+  function referencedIds(ws){
+    const ids=new Set(),{cloudMediaManifest:_m,...rest}=ws||{};
+    for(const m of JSON.stringify(rest).matchAll(REF_RE))ids.add(m[1]);
+    return ids;
+  }
+  function mediaDb(){return new Promise((res,rej)=>{const q=indexedDB.open('jn-agency-crm',2);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+  async function mediaRecord(id){
+    const d=await mediaDb();
+    return new Promise((res,rej)=>{const t=d.transaction('media','readonly'),q=t.objectStore('media').get(id);q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error);t.oncomplete=()=>d.close()});
+  }
+  async function mediaHasIds(ids){
+    const d=await mediaDb();
+    return new Promise((res,rej)=>{const t=d.transaction('media','readonly'),q=t.objectStore('media').getAllKeys();q.onsuccess=()=>res(new Set(q.result.map(String)));q.onerror=()=>rej(q.error);t.oncomplete=()=>d.close()});
+  }
+  async function mediaPut(id,record){
+    const d=await mediaDb();
+    return new Promise((res,rej)=>{const t=d.transaction('media','readwrite');t.objectStore('media').put(record,id);t.oncomplete=()=>{d.close();res()};t.onerror=()=>{d.close();rej(t.error)}});
+  }
+  async function sha256(blob){const b=new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer()));return Array.from(b,x=>x.toString(16).padStart(2,'0')).join('')}
+  async function pool(items,n,fn){let i=0;await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{while(i<items.length)await fn(items[i++])}))}
+  async function uploadPhotos(){
+    const ws=getDb();if(!ws)return 0;
+    const manifest={...(ws.cloudMediaManifest||{})};
+    const bySha=new Map(Object.values(manifest).filter(e=>e?.sha256&&e?.path).map(e=>[e.sha256,e.path]));
+    const todo=[...referencedIds(ws)].filter(id=>!manifest['clm-media:'+id]);
+    if(!todo.length)return 0;
+    let done=0,failed=0;
+    await pool(todo,3,async id=>{
+      try{
+        const rec=await mediaRecord(id);if(!rec?.blob){failed++;return}
+        const sha=rec.contentHash||await sha256(rec.blob);
+        const name=String(rec.name||'photo').replace(/[^\w.-]+/g,'_').slice(0,80)||'photo';
+        let path=bySha.get(sha);
+        if(!path){
+          path=user.id+'/'+id+'/'+sha+'/'+name;
+          const {error}=await client.storage.from(BUCKET).upload(path,rec.blob,{contentType:rec.type||rec.blob.type||'image/jpeg',upsert:false});
+          if(error&&!/exists|duplicate/i.test(error.message||''))throw error;
+          bySha.set(sha,path);
+        }
+        manifest['clm-media:'+id]={name:rec.name||name,path,sha256:sha};
+        done++;
+        if(done%10===0)status('Uploading photos to cloud… '+done+' of '+todo.length);
+      }catch(err){failed++;console.warn('Photo upload failed',id,err)}
+    });
+    const cur=getDb();cur.cloudMediaManifest={...(cur.cloudMediaManifest||{}),...manifest};
+    if(failed)console.warn(failed+' photo(s) could not be uploaded; they will be retried on the next save.');
+    return done;
+  }
+  async function downloadMissingPhotos(){
+    const ws=getDb();if(!ws?.cloudMediaManifest)return 0;
+    const have=await mediaHasIds();
+    const todo=[...referencedIds(ws)].filter(id=>!have.has(id)&&ws.cloudMediaManifest['clm-media:'+id]?.path);
+    let done=0;
+    await pool(todo,3,async id=>{
+      const e=ws.cloudMediaManifest['clm-media:'+id];
+      try{
+        const {data,error}=await client.storage.from(BUCKET).download((()=>{try{return decodeURIComponent(e.path)}catch{return e.path}})());if(error)throw error;
+        await mediaPut(id,{contentHash:e.sha256||'',blob:data,name:e.name||'Cloud photo',type:data.type||'',size:data.size,createdAt:Date.now(),sourceUrl:''});
+        done++;if(done%10===0)status('Downloading photos from cloud… '+done+' of '+todo.length);
+      }catch(err){console.warn('Photo download failed',id,err)}
+    });
+    if(done)try{window.dispatchEvent(new Event('clm:media-cache-updated'))}catch{}
+    return done;
+  }
+
   // ---------- sync ----------
   async function pullAndMerge(){
     const local=getDb();if(!local)return null;
@@ -198,6 +271,8 @@
       let remote=await cloudVersion();
       let merged=null;
       if(reason==='start'||remote!==st.version)merged=await pullAndMerge();
+      await downloadMissingPhotos();
+      await uploadPhotos();
       try{await push()}
       catch(err){
         if(!/CRM_CONFLICT/.test(err.message||''))throw err;
