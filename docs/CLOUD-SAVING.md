@@ -1,21 +1,28 @@
-# Private CRM saving
+# Private CRM cloud saving
 
-The main CRM uses the existing Supabase project, separate from Submission Manager tables. Sign in through the Private cloud saving panel with the agency work account. Choose Open cloud copy or Save this browser copy to cloud once. Later refreshes resume the confirmed revision automatically. A cloud revision changed by another browser requires reviewing the copies again.
+The CRM keeps its working copy in the browser (IndexedDB `jn-agency-crm`). `assets/crm-cloud.js` mirrors that copy to the private Supabase project `coipdgmfuervnuqnfiud` so every browser that signs in sees the same packages.
 
-Browser edits are committed to IndexedDB before cloud saving. A cloud failure never reports a confirmed cloud save. The browser copy and its media are retained. Cloud switches keep an additional IndexedDB safety copy in clm-cloud-safety/copies. Existing package journals and gallery recovery records remain intact. An explicit cloud-copy acceptance records a local cutoff so earlier journal entries cannot replace the chosen cloud package on refresh; later edits continue using the journal normally.
+## Using it
 
-Workspace data is partitioned by package and gallery without changing its text, image bytes, model IDs or photo associations. Other workspace fields are separate parts. Current working-draft selection and navigation remain local; archived packages, model records, galleries and settings persist remotely. New uploaded images retain original file bytes and filenames. Private storage objects use immutable paths containing their SHA-256 hash. Save verifies an uploaded file before committing references; cold loading verifies bytes before restoring the same local media ID.
+A small "Cloud saving" panel sits in the bottom right corner of the CRM. Sign in with the agency work account. The first sign in on a browser merges that browser's packages into the cloud copy and pulls in any packages the browser was missing. After that, every local save is pushed to the cloud about eight seconds later. "Save now" forces a sync.
 
-The crm_commit RPC intentionally uses SECURITY DEFINER with an empty search_path, an explicit authenticated work-owner check, a locked revision row and an expected-version condition. Direct table writes have no RLS policy. Anonymous users cannot read CRM tables or call this RPC. Authenticated table reads require ownership. The private photo bucket has owner-folder SELECT/INSERT policies and no UPDATE/DELETE policy. No service-role key is shipped. The security advisor reports the intentionally callable SECURITY DEFINER RPC; its owner gate and stale-version rejection are verified in rolled-back database tests.
+## Rules that protect data
 
-Each commit atomically retains previous changed parts in crm_cloud_history and increments the revision. No absent package row or photo object is deleted. Package deletion markers remain workspace data. Changing accounts, clearing browser data or moving devices requires signing in again; use the cloud copy after checking its package count.
+- Syncing only adds or updates. A package missing on one side is never treated as deleted.
+- A package is removed only by an explicit deletion marker (`packageDeletionTimes`) that is newer than the package's last edit.
+- When both sides hold the same package, the most recently edited copy wins. On a tie the browser copy wins.
+- Lists of records with ids (models, contacts and so on) are unioned. Settings objects are merged with the browser's values winning.
+- The open draft, current selection and active package stay local to each browser.
+- Every commit stores the previous version of each changed part in `crm_cloud_history`.
+- A cloud failure is shown in the panel and never blocks the editor or the local save.
 
-Run npm run test:cloud --prefix tests, npm run test:persistence --prefix tests and npm run test:gallery --prefix tests. Cloud tests use a simulated service for upload/readback, text, reload, conflicts and failures; database tests separately verify real RLS, versioning and history. An authenticated live-browser sign-in is required to verify the real browser-to-cloud upload flow.
+## Storage layout
 
-The private-cloud-schema.sql file records the migration already applied through the Supabase migration tool. Do not rerun it as a reset script. Private migration backups are deliberately excluded from this public repository.
+- `crm_cloud_state`: one row per owner with the revision number.
+- `crm_cloud_parts`: one row per package (`pkg:<id>`) and per workspace field (`ws:<field>`). Fields larger than 900 KB are split by key (`wsmeta:<field>`, `wss:<field>:<key>`).
+- `crm_cloud_history`: previous values of changed parts, per revision.
+- `crm_commit(p_expected, p_parts)`: the only write path. It checks the work account, locks the state row, rejects stale revisions with `CRM_CONFLICT`, records history, upserts the parts and increments the revision. The browser resolves a conflict by pulling, merging and retrying.
 
-Startup unlocks the editor after local loading and starts cloud initialization in the background. A stalled sign-in or save cannot keep the workspace inert. Cloud saves keep one active request and one latest pending snapshot; callers wait for the final coalesced save. Requests abort after 20 seconds, including response-body reads; account checks stop after 12 seconds, and a save stops waiting after 45 seconds. A timed-out operation cannot later update the confirmed baseline or claim success. Interrupted confirmation requires checking the cloud revision again before retrying. Local data is retained throughout. Resuming a known revision reads only the revision row instead of downloading the full workspace. Connection copy replacement checks for intervening browser edits before replacing the local workspace.
+Photos stored as uploaded files in the browser's media store are not uploaded yet. Package photos referenced by URL sync normally.
 
-Photo upload and readback verification use at most three concurrent workers. Each verified immutable file path and hash is checkpointed to IndexedDB under verified-media-v1, before the package commit. Retries and refreshes resume that verified progress, including when a previous package commit failed. The UI reports photo progress without disabling the editor. A pending workspace never references an unverified upload.
-
-Opening the cloud copy retains browser-only packages, model IDs and gallery entries, then confirms the resulting save. Connection and sign-in errors stay visible instead of being replaced by unrelated background autosaves. Concurrent connection requests are ignored while the current connection is being completed. The Recover missing browser packages button restores missing IDs from retained pre-switch safety copies, keeps current versions for matching IDs, respects existing package-deletion markers and preserves gallery additions. It confirms cloud saving when connected; otherwise it clearly asks to connect the restored browser copy.
+`docs/private-cloud-schema.sql` records the database setup.
