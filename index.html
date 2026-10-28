@@ -2750,7 +2750,7 @@ async function freezePreviewImagesForReview(){
   if(!changed)return;
   if(db.activeDraftId!==draftId||currentEmailPreviewHtml()!==original)throw new Error('The preview changed while preparing images. Review it and try again.');
   const html=sanitizeEditableEmailHtml(t.innerHTML);
-  storeDraftPreview(html);preview.innerHTML=html;preview.dataset.manualRefreshInitialized='1';
+  storeDraftPreview(html);preview.innerHTML=draftPreviewHtml(html);preview.dataset.manualRefreshInitialized='1';
   persistWorkspaceSafe(true);
   throw new Error('Images are now fixed in the preview. Review every photograph, then click Create Gmail draft again. No email was sent.');
 }
@@ -4589,13 +4589,16 @@ function draftPreviewHtml(html){
       img.setAttribute(PREVIEW_FULL_SRC_ATTR,authority);
       const display=photoDisplayUrl(src);
       const ready=display&&display!==src;
-      img.setAttribute('src',ready?(previewDisplaySrc(display,img)||display):PREVIEW_PENDING_SRC);
+      img.setAttribute('src',ready?previewSrcFor(display,img):PREVIEW_PENDING_SRC);
       return;
     }
-    const small=previewDisplaySrc(src,img)||src;
+    const small=previewSrcFor(src,img);
     img.setAttribute('src',small);
     if(small!==authority)img.setAttribute(PREVIEW_FULL_SRC_ATTR,authority);
-  });return t.innerHTML;
+  });
+  // Whatever is still loading gets looked at again shortly.
+  schedulePreviewPhotoCheck();
+  return t.innerHTML;
 }
 const PREVIEW_FULL_SRC_ATTR='data-clm-preview-full-src';
 const PREVIEW_PENDING_SRC='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7#clm-photo-loading';
@@ -4603,19 +4606,49 @@ const PREVIEW_PENDING_SRC='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAE
 // in place and is the authority for what gets saved, so only the src of an
 // image already carrying its reference is touched: no re-render, and nothing
 // the user typed is disturbed.
+const previewPendingSince=new WeakMap();
+// How long a photo may stay blank while its downscaled copy is built. After
+// this the full-size photo is shown instead: a visible photo always beats a
+// smaller one that never arrives.
+const PREVIEW_THUMBNAIL_GRACE_MS=2500;
+let previewPhotoWaitTimer=0;
+// The media cache only reports when a photo arrives, so a photo whose
+// downscaled copy stalls would never be looked at again. Keep checking while
+// anything on screen is still waiting.
+function schedulePreviewPhotoCheck(){
+  clearTimeout(previewPhotoWaitTimer);
+  previewPhotoWaitTimer=setTimeout(refreshPreviewStoredPhotos,700);
+}
 function refreshPreviewStoredPhotos(){
+  clearTimeout(previewPhotoWaitTimer);
   const preview=$('#emailPreview');
   if(!preview)return;
+  let stillWaiting=false;
   for(const img of preview.querySelectorAll('img['+PREVIEW_FULL_SRC_ATTR+']')){
     const ref=img.getAttribute(PREVIEW_FULL_SRC_ATTR)||'';
     if(!window.CLMMediaStore?.isMediaRef?.(ref))continue;
     const display=photoDisplayUrl(ref);
     if(!display||display===ref)continue;
-    const next=previewDisplaySrc(display,img)||display;
-    // Only move away from a placeholder once there is a real photo to show.
-    if(!next||next.startsWith('data:image/gif'))continue;
-    if(img.getAttribute('src')!==next)img.setAttribute('src',next);
+    const current=img.getAttribute('src')||'';
+    const waiting=!current||current===PREVIEW_PENDING_SRC||!!window.CLMThumbnails?.isPending?.(current);
+    if(!waiting)continue;
+    // Prefer the downscaled copy. The originals are 1300-2500px wide and
+    // decoding a package of them costs hundreds of megabytes.
+    const small=previewSrcFor(display,img);
+    if(small&&small!==ref&&!window.CLMThumbnails?.isPending?.(small)){
+      previewPendingSince.delete(img);
+      if(current!==small)img.setAttribute('src',small);
+      continue;
+    }
+    // Still being built: wait a moment, then show the photo itself rather
+    // than leaving an empty box on screen for good.
+    const since=previewPendingSince.get(img)||Date.now();
+    previewPendingSince.set(img,since);
+    if(Date.now()-since<PREVIEW_THUMBNAIL_GRACE_MS){stillWaiting=true;continue}
+    if(display&&display!==ref&&current!==display)img.setAttribute('src',display);
+    else if(!display||display===ref)stillWaiting=true;
   }
+  if(stillWaiting)schedulePreviewPhotoCheck();
 }
 function previewDisplayWidth(img){
   const attr=parseInt(img.getAttribute('width')||'',10);
@@ -4623,6 +4656,17 @@ function previewDisplayWidth(img){
   const styled=/(?:^|[^-\w])width\s*:\s*(\d+)px/i.exec(img.getAttribute('style')||'');
   if(styled)return parseInt(styled[1],10);
   return 440;
+}
+// A thumbnail is built in the background and is handed out as a placeholder
+// until it is ready. The placeholder is fine on a first render, because the
+// thumbnailer swaps it in place, but it must never be the last word: if that
+// swap never comes the photo stays an empty box. Anything already on screen
+// therefore falls back to the full-size photo rather than waiting.
+function previewSrcFor(src,img,allowPending=true){
+  const small=previewDisplaySrc(src,img);
+  if(!small)return src;
+  if(!allowPending&&window.CLMThumbnails?.isPending?.(small))return src;
+  return small;
 }
 function previewDisplaySrc(src,img){
   try{return window.CLMThumbnails?.url?.(src,previewDisplayWidth(img))||''}
@@ -4760,11 +4804,36 @@ async function copyFormattedPreview(){
 
 /* DIRECT EMAIL PREVIEW EDITING · 2026-09-24 */
 let emailPreviewEditTimer=0;
+// Follows a screen-only source — a thumbnail, a thumbnail placeholder, an
+// object URL — back to the stored photo it was made from. Object URLs die with
+// the tab and a placeholder is a 1x1 pixel, so neither may ever be saved as if
+// it were the photograph.
+function storedPhotoBehind(src){
+  let value=String(src||'');
+  if(!value||/^(data:image\/(?!gif;base64,R0lGODlhAQAB)|clm-media:|https?:)/i.test(value))return '';
+  for(let hop=0;hop<4;hop++){
+    const ref=window.CLMMediaStore?.refForDisplayUrl?.(value)||'';
+    if(ref)return ref;
+    const origin=window.CLMThumbnails?.sourceFor?.(value)||'';
+    if(!origin||origin===value)break;
+    value=origin;
+  }
+  const ref=window.CLMMediaStore?.refForDisplayUrl?.(value)||'';
+  if(ref)return ref;
+  return /^(https?:|data:image\/)/i.test(value)&&value!==String(src||'')?value:'';
+}
 function sanitizeEditableEmailHtml(html){
   const template=document.createElement('template');
   template.innerHTML=uniformEmailPhotoSizes(stripCanvaLinksText(html));
   // Undo the screen-only downscaling before anything reads this HTML back.
   restorePreviewFullSizeImages(template.content);
+  // Belt and braces: if an image lost its parked reference (a contenteditable
+  // edit can drop an attribute), recover the photo the placeholder stands for
+  // rather than saving a 1x1 placeholder over a real photograph.
+  template.content.querySelectorAll('img').forEach(img=>{
+    const stored=storedPhotoBehind(img.getAttribute('src')||'');
+    if(stored)img.setAttribute('src',stored);
+  });
   // The visible src is authoritative. Hidden attributes must never substitute another image.
   template.content.querySelectorAll('img').forEach(img=>{['data-gif-src','data-gif-playing','data-gif-bound','data-media-ref','title','role','tabindex'].forEach(name=>img.removeAttribute(name));img.style.removeProperty('cursor')});
   template.content.querySelectorAll('script,style,iframe,object,embed,form,input,textarea,button,meta,link').forEach(el=>el.remove());

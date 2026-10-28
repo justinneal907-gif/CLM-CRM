@@ -11,6 +11,7 @@
   const MAX_CACHED=500,MAX_ACTIVE=2;
   const ready=new Map();      // source|width -> small blob URL, or the source itself when shrinking failed
   const waiting=new Map();    // source|width -> placeholder src
+  const origins=new Map();  // placeholder src -> the photo it stands for
   const queue=[];let active=0,seq=0;
 
   function pixelWidth(cssWidth){return Math.ceil(cssWidth*Math.min(2,window.devicePixelRatio||1))}
@@ -41,7 +42,10 @@
     const blob=await response.blob();
     const bitmap=await createImageBitmap(blob);
     const target=pixelWidth(cssWidth);
-    if(bitmap.width<=target*1.25){bitmap.close();return ''}
+    // Already small enough: the source itself is the display copy. Returning
+    // an empty string here used to read as a failure, and a blob: source then
+    // sat on its placeholder forever.
+    if(bitmap.width<=target*1.25){bitmap.close();return src}
     const height=Math.round(bitmap.height*target/bitmap.width);
     const canvas=typeof OffscreenCanvas==='function'?new OffscreenCanvas(target,height):Object.assign(document.createElement('canvas'),{width:target,height});
     const ctx=canvas.getContext('2d');ctx.imageSmoothingQuality='high';ctx.drawImage(bitmap,0,0,target,height);bitmap.close();
@@ -66,11 +70,18 @@
         // visible photos again, which re-queues the job against a fresh URL.
         if(!url&&job.src.startsWith('blob:')){retryVisible();return}
         const finalUrl=url||job.src;
+        if(finalUrl!==job.src)origins.set(finalUrl,job.src);
         remember(job.key,finalUrl);
         swapPlaceholder(job.placeholder,finalUrl);
       }).finally(()=>{active--;pump()});
     }
   }
+  // The source a pending placeholder stands for, so a caller that still holds
+  // the placeholder can fall back to the real photo.
+  function sourceFor(value){return origins.get(String(value||''))||''}
+  // Placeholders are dropped once their photo is on screen; a finished
+  // thumbnail keeps its entry so the CRM can map it back to the photo.
+  function originCount(){return origins.size}
   function url(src,cssWidth=150){
     src=String(src||'');
     if(!src||src.startsWith('clm-media:'))return src;
@@ -81,10 +92,10 @@
     if(ready.has(key)){const hit=ready.get(key);ready.delete(key);ready.set(key,hit);return hit}
     if(waiting.has(key))return waiting.get(key);
     const placeholder=PLACEHOLDER+'#clm-thumb-'+(++seq);
-    waiting.set(key,placeholder);
+    waiting.set(key,placeholder);origins.set(placeholder,src);
     queue.push({key,src,cssWidth,placeholder});
     setTimeout(pump,0);
     return placeholder;
   }
-  window.CLMThumbnails={url};
+  window.CLMThumbnails={url,sourceFor,originCount,isPending:value=>String(value||'').startsWith(PLACEHOLDER)};
 })();
