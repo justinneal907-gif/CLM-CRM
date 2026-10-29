@@ -33,7 +33,7 @@ const ui=source.slice(source.indexOf('let gmailDraftCreationInProgress='),source
  assert.equal(ctx.db.drafts.length,1);
  assert.doesNotMatch(ctx.draftCardHtml(ctx.db.drafts[0]),/REPEAT CASTER/);
  ctx.db.drafts.push({id:'second',recipientEmail:'test@example.com',company:'Second show'});
- assert.match(ctx.draftCardHtml(ctx.db.drafts[0]),/REPEAT CASTER/);
- assert.match(ctx.draftCardHtml(ctx.db.drafts[0]),/Second show/);
+ // Repeat casting notices are turned off, even when another package shares the contact.
+ assert.doesNotMatch(ctx.draftCardHtml(ctx.db.drafts[0]),/REPEAT CASTER|Repeat casting contact/);
  console.log('Gmail draft creation passed: create, update, stale link, malformed response, permissions, duplicate clicks, direct link and visible errors.');
 })().catch(e=>{console.error(e);process.exitCode=1});
