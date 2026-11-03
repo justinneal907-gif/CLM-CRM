@@ -68,9 +68,14 @@ dialog{border:0;border-radius:12px;width:min(720px,calc(100% - 24px));padding:0;
 </div></dialog>
 
 <script src="roster.js"></script>
+<script src="roster-updates.js"></script>
 <script>
 (function(){
-const BASE=Array.isArray(window.CLM_PACKAGE_ROSTER)?window.CLM_PACKAGE_ROSTER:[];
+const SNAPSHOT=Array.isArray(window.CLM_PACKAGE_ROSTER)?window.CLM_PACKAGE_ROSTER:[];
+const WEBSITE_UPDATES=Array.isArray(window.CLM_ROSTER_UPDATES)?window.CLM_ROSTER_UPDATES:[];
+const baseById=new Map(SNAPSHOT.map(model=>[model.id,Object.assign({},model)]));
+WEBSITE_UPDATES.forEach(model=>baseById.set(model.id,Object.assign({},baseById.get(model.id)||{},model)));
+const BASE=[...baseById.values()];
 const KEY='clm-standalone-package-roster-v1', SAVED='clm-standalone-packages-v1';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

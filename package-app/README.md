@@ -20,5 +20,10 @@ Because URL fragments are not sent in HTTP requests, the package payload is not 
 ## Roster behavior
 The initial roster is a copied snapshot and does not read from the CRM at runtime. Edits made in the builder are stored in that browser's localStorage. The Manage Roster dialog supports JSON export/import for backup or moving the roster to another browser.
 
+Public website additions are layered through `roster-updates.js`. The scheduled
+`sync-coworker-roster.yml` workflow changes only that roster-only file. It never
+copies CRM contacts, submissions, casting research, email settings, or drafts
+into this standalone app.
+
 ## Deployment note
 The current CLM-CRM repository is already its own GitHub Pages application. For a true custom subdomain, deploy this `package-app` directory as the root of a separate static hosting target and map `packages.chezlesmannequins.com` to it. Do not repoint the CRM's existing Pages site.
