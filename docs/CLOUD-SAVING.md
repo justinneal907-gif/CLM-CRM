@@ -19,7 +19,7 @@ A small "Cloud saving" panel sits in the bottom right corner of the CRM. Sign in
 ## Storage layout
 
 - `crm_cloud_state`: one row per owner with the revision number.
-- `crm_cloud_parts`: one row per package (`pkg:<id>`) and per workspace field (`ws:<field>`). Fields larger than 900 KB are split by key (`wsmeta:<field>`, `wss:<field>:<key>`).
+- `crm_cloud_parts`: one row per package (`draft:<id>`), one per model photo library (`gallery:<model id>`) and one per other workspace field (`<field>`).
 - `crm_cloud_history`: previous values of changed parts, per revision.
 - `crm_commit(p_expected, p_parts)`: the only write path. It checks the work account, locks the state row, rejects stale revisions with `CRM_CONFLICT`, records history, upserts the parts and increments the revision. The browser resolves a conflict by pulling, merging and retrying.
 
