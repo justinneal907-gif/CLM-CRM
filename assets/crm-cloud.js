@@ -20,8 +20,9 @@
   const SDK='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js';
   const LOCAL_ONLY=new Set(['draft','selected','activeDraftId','workspaceSavedAt','_cloudAcceptedAt']);
   const BATCH_BYTES=1500*1024;     // largest single commit request
+  const FETCH_BYTES=3*1024*1024;  // largest single download request
   const PUSH_DELAY=8000;
-  const LS='clm.cloud.sync.v1';
+  const LS='clm.cloud.sync.v2';
 
   let client=null,user=null,busy=false,pushTimer=0,pendingPush=false,lastError='',lastSync=0,ready=false;
 
@@ -31,7 +32,7 @@
   function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)+':'+str.length}
   function syncState(){try{return JSON.parse(localStorage.getItem(LS)||'{}')}catch{return {}}}
   function setSyncState(s){try{localStorage.setItem(LS,JSON.stringify(s))}catch{}}
-  function mine(){const s=syncState();return s.owner===user?.id?s:{owner:user?.id,version:0,hashes:{}}}
+  function mine(){const s=syncState();return s.owner===user?.id?s:{owner:user?.id,seen:{}}}
   function draftTime(d,restores){return Math.max(Date.parse(d?.lastEditedAt||d?.recoveryStoredAt||d?.savedAt||'')||0,restores?.[d?.id]||0)}
   function isPlain(v){return v&&typeof v==='object'&&!Array.isArray(v)}
   function getDb(){try{return db}catch{return null}}           // eslint-disable-line no-undef
@@ -131,18 +132,6 @@
     const {data}=await client.auth.getSession();user=data.session?.user||null;
     return client;
   }
-  async function cloudVersion(){
-    const {data,error}=await client.from('crm_cloud_state').select('version').eq('owner_id',user.id).maybeSingle();
-    if(error)throw error;return data?.version||0;
-  }
-  async function pullRows(){
-    const rows=[];const page=20;
-    for(let from=0;;from+=page){
-      const {data,error}=await client.from('crm_cloud_parts').select('part_key,data').eq('owner_id',user.id).order('part_key').range(from,from+page-1);
-      if(error)throw error;rows.push(...data);if(data.length<page)break;
-    }
-    return rows;
-  }
   async function commit(parts,expected){
     const {data,error}=await client.rpc('crm_commit',{p_expected:expected,p_parts:parts});
     if(error)throw error;return Number(data);
@@ -221,42 +210,105 @@
     return done;
   }
 
+  // ---------- fingerprints ----------
+  // The cloud stores each part as jsonb and keeps a sha256 of its jsonb text.
+  // canon() reproduces that text exactly (keys ordered by length, then bytes;
+  // ", " and ": " separators), so a part is only sent or fetched when its
+  // content really differs.
+  const enc=new TextEncoder();
+  function canon(v){
+    if(v===null||typeof v!=='object')return JSON.stringify(v);
+    if(Array.isArray(v))return '['+v.map(canon).join(', ')+']';
+    const ks=Object.keys(v).map(k=>[k,enc.encode(k)]).sort((a,b)=>{if(a[1].length!==b[1].length)return a[1].length-b[1].length;for(let i=0;i<a[1].length;i++)if(a[1][i]!==b[1][i])return a[1][i]-b[1][i];return 0});
+    return '{'+ks.map(([k])=>JSON.stringify(k)+': '+canon(v[k])).join(', ')+'}';
+  }
+  const shaMemo=new Map();   // fast hash of JSON -> cloud-style sha256
+  async function partSha(v){
+    const json=JSON.stringify(v??null);const quick=hash(json);
+    if(shaMemo.has(quick))return shaMemo.get(quick);
+    const b=new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(canon(JSON.parse(json)))));
+    const sha=Array.from(b,x=>x.toString(16).padStart(2,'0')).join('');
+    shaMemo.set(quick,sha);return sha;
+  }
+  async function localShas(parts){const out={};for(const [k,v] of Object.entries(parts))out[k]=await partSha(v);return out}
+
   // ---------- sync ----------
-  async function pullAndMerge(){
+  class SignedOut extends Error{}
+  function need(uid){if(!user||user.id!==uid)throw new SignedOut('Signed out during cloud save')}
+  async function cloudIndex(){
+    const {data,error}=await client.rpc('crm_cloud_index');
+    if(error)throw error;
+    return {version:Number(data?.version||0),parts:data?.parts||{}};
+  }
+  async function fetchParts(keys,idx,uid){
+    const rows=[];let batch=[],bytes=0,done=0;
+    const flush=async()=>{
+      if(!batch.length)return;
+      need(uid);
+      const {data,error}=await client.from('crm_cloud_parts').select('part_key,data,sha').eq('owner_id',uid).in('part_key',batch);
+      if(error)throw error;
+      rows.push(...data);done+=batch.length;batch=[];bytes=0;
+      status('Loading cloud changes… '+done+' of '+keys.length);
+    };
+    for(const k of keys){
+      const size=Number(idx.parts[k]?.[1]||0);
+      if(batch.length&&(bytes+size>FETCH_BYTES||batch.length>=25))await flush();
+      batch.push(k);bytes+=size;
+    }
+    await flush();
+    return rows;
+  }
+  // Pull only the parts whose cloud content differs from both this browser and
+  // what this browser already merged. Deleted packages are never downloaded.
+  async function pull(idx,uid){
     const local=getDb();if(!local)return null;
-    const rows=await pullRows();
-    const version=await cloudVersion();
-    if(!rows.length)return {version,added:0,updated:0,removed:0};
-    const cloud=fromParts(rows);
-    const r=merge(local,cloud);
-    const changed=r.added||r.updated||r.removed||JSON.stringify(Object.keys(r.workspace).sort())!==JSON.stringify(Object.keys(local).sort());
+    const st=mine();st.seen=st.seen||{};
+    const lsha=await localShas(toParts(local));
+    const wanted=Object.entries(idx.parts).filter(([k,[sha]])=>sha&&sha!==lsha[k]&&sha!==st.seen[k]).map(([k])=>k);
+    for(const [k,[sha]] of Object.entries(idx.parts))if(sha&&sha===lsha[k])st.seen[k]=sha;
+    if(!wanted.length){setSyncState(st);return {added:0,updated:0,removed:0}}
+    // Deletion and restore times first, so deleted packages can be skipped.
+    const meta=wanted.filter(k=>!k.startsWith('draft:'));
+    const metaRows=await fetchParts(meta,idx,uid);
+    const cloudMeta=fromParts(metaRows);
+    const dels={...(cloudMeta.packageDeletionTimes||{})},restores={...(cloudMeta.packageRestoreTimes||{})};
+    for(const [id,t] of Object.entries(local.packageDeletionTimes||{}))dels[id]=Math.max(dels[id]||0,t);
+    for(const [id,t] of Object.entries(local.packageRestoreTimes||{}))restores[id]=Math.max(restores[id]||0,t);
+    const drafts=wanted.filter(k=>{if(!k.startsWith('draft:'))return false;const id=k.slice(6);return !(dels[id]&&!((restores[id]||0)>dels[id]))});
+    const draftRows=await fetchParts(drafts,idx,uid);
+    const rows=[...metaRows,...draftRows];
+    need(uid);
+    const r=merge(getDb(),fromParts(rows));
+    const cur=getDb();
+    const changed=r.added||r.updated||r.removed||JSON.stringify(toParts(r.workspace))!==JSON.stringify(toParts(cur));
     if(changed){
       setDb(r.workspace);
       try{if(typeof hydrateDraft==='function')hydrateDraft()}catch{}
       try{if(typeof save==='function')save()}catch(err){console.warn('Cloud merge local save failed',err)}
     }
-    // Everything in the cloud is now in this browser, so mark it as known.
-    const st=mine();st.version=version;const cloudParts={};for(const {part_key,data} of rows)cloudParts[part_key]=hash(JSON.stringify(data));
-    st.hashes={...cloudParts};setSyncState(st);
-    return {version,...r};
+    for(const {part_key,sha} of rows)st.seen[part_key]=sha||idx.parts[part_key]?.[0];
+    setSyncState(st);
+    return r;
   }
-  async function push(){
+  async function push(idx,uid){
     const local=getDb();if(!local)return 0;
-    const parts=toParts(local);const st=mine();
-    const changed=Object.entries(parts).filter(([k,v])=>st.hashes[k]!==hash(JSON.stringify(v)));
+    const parts=toParts(local);const lsha=await localShas(parts);
+    const changed=Object.keys(parts).filter(k=>lsha[k]!==idx.parts[k]?.[0]);
     if(!changed.length)return 0;
+    const st=mine();st.seen=st.seen||{};
     let batch={},bytes=0,sent=0;
     const flush=async()=>{
       if(!Object.keys(batch).length)return;
-      st.version=await commit(batch,st.version);
-      for(const [k,v] of Object.entries(batch))st.hashes[k]=hash(JSON.stringify(v));
+      need(uid);
+      idx.version=await commit(batch,idx.version);
+      for(const k of Object.keys(batch)){idx.parts[k]=[lsha[k],0];st.seen[k]=lsha[k]}
       setSyncState(st);sent+=Object.keys(batch).length;batch={};bytes=0;
       status('Saving to cloud… '+sent+' of '+changed.length);
     };
-    for(const [k,v] of changed){
-      const size=JSON.stringify(v).length;
+    for(const k of changed){
+      const size=JSON.stringify(parts[k]).length;
       if(bytes&&bytes+size>BATCH_BYTES)await flush();
-      batch[k]=v;bytes+=size;
+      batch[k]=parts[k];bytes+=size;
     }
     await flush();
     return sent;
@@ -265,26 +317,28 @@
     if(!user||!ready)return;
     if(busy){pendingPush=true;return}
     busy=true;lastError='';
+    const uid=user.id;
     try{
       status(reason==='start'?'Checking the cloud copy…':'Saving to cloud…');
-      const st=mine();
-      let remote=await cloudVersion();
-      let merged=null;
-      if(reason==='start'||remote!==st.version)merged=await pullAndMerge();
+      let idx=await cloudIndex();
+      let merged=await pull(idx,uid);
+      need(uid);
       await downloadMissingPhotos();
       await uploadPhotos();
-      try{await push()}
+      let sent=0;
+      try{sent=await push(idx,uid)}
       catch(err){
         if(!/CRM_CONFLICT/.test(err.message||''))throw err;
-        merged=await pullAndMerge();await push();
+        idx=await cloudIndex();merged=await pull(idx,uid);sent=await push(idx,uid);
       }
       lastSync=Date.now();
       const n=getDb()?.drafts?.length||0;
-      status('Saved to cloud · '+n+' packages'+(merged&&(merged.added||merged.updated)?' · '+merged.added+' added from the cloud'+(merged.updated?', '+merged.updated+' updated':''):''));
+      status('Saved to cloud · '+n+' packages'+(sent?' · '+sent+' sent':'')+(merged&&(merged.added||merged.updated)?' · '+merged.added+' added from the cloud'+(merged.updated?', '+merged.updated+' updated':''):''));
       if(merged&&(merged.added||merged.updated||merged.removed))try{renderAll()}catch{}
     }catch(err){
+      if(err instanceof SignedOut){statusText='';render();return}
       lastError=err.message||String(err);
-      console.error('Cloud save failed',err);
+      console.error('Cloud save failed',lastError,err);
       status('Cloud save failed: '+lastError+' · Your browser copy is safe.',true);
     }finally{
       busy=false;
