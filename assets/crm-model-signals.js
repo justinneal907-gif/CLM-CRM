@@ -79,3 +79,68 @@
   }
   init();
 })();
+
+/* CLM memory slimming (2026-11-10). Removes embedded base64 photos from saved
+ * packages so the workspace stays small. The open package is left alone so a
+ * Gmail draft in progress keeps its frozen images until it is sent. */
+(function(){
+  if(window.__clmSlimLoaded)return;window.__clmSlimLoaded=true;
+  var DROP={};
+  function heavy(s){return typeof s==='string'&&s.length>2000&&s.slice(0,11)==='data:image/'}
+  // Plain index scanning: regular expressions overflow the stack on
+  // multi-megabyte strings.
+  function slimHtml(h){
+    if(typeof h!=='string'||h.length<2000||h.indexOf('data:image/')<0)return h;
+    var parts=[],pos=0,i,changed=false;
+    while((i=h.indexOf('data:image/',pos))>=0){
+      var q=h.charAt(i-1),close=q==='('?')':q;
+      var end=(q==='"'||q==="'"||q==='(')?h.indexOf(close,i):-1;
+      if(end<0)end=h.length;
+      if(end-i<2000){parts.push(h.slice(pos,end));pos=end;continue}
+      var tagStart=h.lastIndexOf('<',i),tagName=h.slice(tagStart+1,tagStart+4).toLowerCase();
+      var tagEnd=h.indexOf('>',end);
+      if(tagStart>=pos&&tagName==='img'&&tagEnd>=0&&h.slice(tagStart,i).indexOf('>')<0){
+        parts.push(h.slice(pos,tagStart));pos=tagEnd+1;
+      }else{parts.push(h.slice(pos,i));pos=end}
+      changed=true;
+    }
+    if(!changed)return h;
+    parts.push(h.slice(pos));
+    var out=parts.join('');
+    return out.trim()?out:'<div></div>';
+  }
+  function prune(v){
+    if(heavy(v))return DROP;
+    if(Array.isArray(v)){var a=[];for(var i=0;i<v.length;i++){var p=prune(v[i]);if(p!==DROP)a.push(p)}return a}
+    if(v&&typeof v==='object'){var o={};for(var k in v){if(!Object.prototype.hasOwnProperty.call(v,k))continue;var q=prune(v[k]);if(q===DROP)return DROP;o[k]=q}return o}
+    return v;
+  }
+  var HTML_FIELDS=['previewHtml','sentPreviewHtml','html','followupCtaHtml'];
+  var PHOTO_FIELDS=['photoSelections','packagePhotos','userOverrides','modelExtras'];
+  function slimDraft(d,keepActive){
+    var changed=false;
+    for(var i=0;i<HTML_FIELDS.length;i++){var f=HTML_FIELDS[i];
+      if(keepActive&&f!=='sentPreviewHtml')continue;
+      var s=slimHtml(d[f]);if(s!==d[f]){d[f]=s;changed=true}}
+    if(!keepActive)for(var j=0;j<PHOTO_FIELDS.length;j++){var g=PHOTO_FIELDS[j];var v=d[g];
+      if(!v||typeof v!=='object')continue;
+      var js=JSON.stringify(v);if(js.indexOf('data:image/')<0)continue;
+      var p=prune(v);if(p===DROP)p=Array.isArray(v)?[]:{};
+      if(JSON.stringify(p).length!==js.length){d[g]=p;changed=true}}
+    return changed;
+  }
+  function run(){
+    try{
+      if(typeof db==='undefined'||!db||!Array.isArray(db.drafts))return 0;
+      var activeId=db.activeDraftId||'',n=0,now=new Date().toISOString();
+      for(var i=0;i<db.drafts.length;i++){var d=db.drafts[i];if(!d)continue;
+        if(slimDraft(d,d.id&&d.id===activeId)){d.lastEditedAt=now;n++}}
+      if(n&&typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+      if(n)console.info('CLM slim: removed embedded photos from '+n+' packages');
+      return n;
+    }catch(err){console.warn('CLM slim skipped',err);return 0}
+  }
+  window.CLMSlim={run:run};
+  function later(){setTimeout(run,3000)}
+  if(window.__clmWorkspaceReady)later();else window.addEventListener('clm:workspace-ready',later,{once:true});
+})();
