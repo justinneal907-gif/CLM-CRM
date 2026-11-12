@@ -1,11 +1,11 @@
 const assert=require('node:assert/strict');
 const T=require('../assets/crm-comm-types.js');
 assert.equal(T.TYPES.length,7);
-// Go-see: exact wording from the sent email, no models, six Canva links.
+// Go-see: exact wording from the sent email, no models, a general roster link without category labels.
 let r=T.render('gosee',{contactName:'Dana Smith'});
 assert.equal(r.subject,'Model Go-See(s)');
 assert.match(r.body,/^Hi Dana,\n\nI hope you are well\. I am a model agent at Chez Les Mannequins \(CLM\)\. Would you be available to see any models on go-sees some time between November and January\?/);
-assert.equal(r.noModels,true);assert.equal((r.footerHtml.match(/canva\.link/g)||[]).length,6);
+assert.equal(r.noModels,true);assert.match(r.footerHtml,/chezlesmannequins\.com/);assert.doesNotMatch(r.footerHtml,/Standard|Mature|Alternative|Commercial|New Faces|Celebrity/);
 assert.match(T.render('gosee',{timing:'December and February'}).body,/between December and February\?/);
 assert.match(T.render('gosee',{}).body,/^Hi there,/);
 // Submission

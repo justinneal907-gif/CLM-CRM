@@ -4302,9 +4302,15 @@ function editPreviewModels(previousIds,photoModelId=''){
 /* Retired model category labels. Remove only generated markup and its saved
    toggle state; preserve model details, media, selections and authored copy. */
 function stripModelCategoryLabels(html){
-  if(typeof html!=='string'||!html.includes('data-clm-category-'))return html;
+  if(typeof html!=='string'||(!html.includes('data-clm-category-')&&!html.includes('data-clm-comm-footer')))return html;
   const t=document.createElement('template');t.innerHTML=html;
   t.content.querySelectorAll('[data-clm-category-label],[data-clm-category-links]').forEach(el=>el.remove());
+  // Older go-see templates used a marked footer with six category rows.
+  // Preserve the links while removing only their generated category wording.
+  t.content.querySelectorAll('[data-clm-comm-footer] div').forEach(el=>{
+    const text=el.firstChild;
+    if(text?.nodeType===3&&/^View our (Standard|Mature|Alternative|Commercial|New Faces|Celebrity) models\s*$/.test(text.nodeValue))text.nodeValue='View more models ';
+  });
   return t.innerHTML;
 }
 function removeModelCategoryLabels(data){
@@ -4313,7 +4319,7 @@ function removeModelCategoryLabels(data){
     if(!record||typeof record!=='object')continue;
     delete record.categoryLabels;
     if(record.userOverrides)delete record.userOverrides.categoryLabels;
-    for(const key of ['previewHtml','initialMessage']){
+    for(const key of ['previewHtml','initialMessage','followupCtaHtml']){
       if(typeof record[key]==='string'){
         const cleaned=stripModelCategoryLabels(record[key]);
         if(cleaned!==record[key]){record[key]=cleaned;record.previewNeedsGmailUpdate=true;}

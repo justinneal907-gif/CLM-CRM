@@ -7,17 +7,8 @@
   else{root.CLMCommTypes=api;if(typeof document!=='undefined')api.mount(root);}
 })(typeof window!=='undefined'?window:globalThis,function(){
 'use strict';
-const CANVA=[
-  ['Standard','https://canva.link/qotixws4g0xzcy2'],
-  ['Commercial','https://canva.link/roe42u4m15ykmz1'],
-  ['Mature','https://canva.link/wcqk69xohlz0j7i'],
-  ['Alternative','https://canva.link/6dkl45q4x83m1ou'],
-  ['New Faces','https://canva.link/wnblda107s1pdj1'],
-  ['Celebrity','https://canva.link/no4za3cv5ew9fng']
-];
 const WEBSITE='https://www.chezlesmannequins.com/';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const canvaFooter=()=>'<div data-clm-comm-footer="1">'+CANVA.map(([l,u])=>'<div>View our '+l+' models <a href="'+u+'" target="_blank"><strong><em>HERE</em></strong></a>.</div>').join('')+'<br></div>';
 const rosterFooter=(link)=>'<div data-clm-comm-footer="1"><div>You can see the rest of our models <a data-clm-package-link="1" href="'+esc(link||WEBSITE)+'" target="_blank"><strong><em>HERE</em></strong></a>.</div><br><div>Let me know if you want to see any of them.</div><br></div>';
 
 /* Placeholders: {first} {brand} {models} {model} {city} {timing} {prevSubject}.
@@ -26,7 +17,7 @@ const TYPES=[
   {id:'gosee',label:'Casting go-see request',purpose:'introduction',models:false,
    subject:'Model Go-See(s)',
    body:"Hi {first},\n\nI hope you are well. I am a model agent at Chez Les Mannequins (CLM). Would you be available to see any models on go-sees some time between {timing}? We would love for you to consider our talent for any upcoming bookings.",
-   defaults:{timing:'November and January'},footer:canvaFooter},
+   defaults:{timing:'November and January'},footer:rosterFooter},
   {id:'brand_submission',label:'Brand or casting submission',purpose:'submission',models:true,
    subject:'{brand} | Campaign Casting',
    body:"Hi {first},\n\nI wanted to send {models} for any upcoming {brand} campaign casting. Their materials are below.",
@@ -121,7 +112,7 @@ function build(win,doc,anchor){
     const t=byId(typeId()),o=overrides()[t.id]||{};
     $('commTplSubject').value=o.subject!==undefined?o.subject:t.subject;
     $('commTplBody').value=o.body!==undefined?o.body:t.body;
-    $('commTypeHint').textContent=t.models?'Uses the models selected below, with measurements and photos.':'No model photos. Sends the message and the signature only'+(t.footer&&t.id==='gosee'?', plus the six roster category links.':'.');
+    $('commTypeHint').textContent=t.models?'Uses the models selected below, with measurements and photos.':'No model photos. Sends the message and signature'+(t.footer&&t.id==='gosee'?', plus the roster link.':'.');
     const d=t.defaults||{};
     $('commCity').placeholder='City'+(d.city?' (default '+d.city+')':'');
     $('commTiming').placeholder='Timing'+(d.timing?' (default '+d.timing+')':'');
