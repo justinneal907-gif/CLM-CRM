@@ -12,7 +12,7 @@ const ctx={console,structuredClone,Blob,AbortController,setTimeout,clearTimeout,
  generateInitialEmailHtml:()=>{throw Error('Existing preview must never regenerate');},
  freezePreviewImagesForReview:async()=>{},verifyStoredGmailPackage:async()=>{},verifiedGmailPackages:new Map(),lastGmailPackage:{},gmailToken:async()=> 'mock-token'};
 vm.createContext(ctx);
-for(const name of ['migrateDraftPreviewDocuments','applyRecovered','activeSavedDraftRecord','markPreviewNeedsGmailUpdate','storeDraftPreview','sanitizeEditableEmailHtml','emailHtml','currentEmailPreviewHtml','refreshEmailPreview','saveDraft','loadDraft','renderEmail','renderEmailPreviewOnly'])vm.runInContext(fn(name),ctx);
+for(const name of ['stripModelCategoryLabels','removeModelCategoryLabels','migrateDraftPreviewDocuments','applyRecovered','activeSavedDraftRecord','markPreviewNeedsGmailUpdate','storeDraftPreview','sanitizeEditableEmailHtml','emailHtml','currentEmailPreviewHtml','refreshEmailPreview','saveDraft','loadDraft','renderEmail','renderEmailPreviewOnly'])vm.runInContext(fn(name),ctx);
 // Body editor and destructive rebuild paths are absent.
 for(const token of ['emailCustomBody','resetBodyTextOverride','resetEmailPreviewEdits','ignoreFullPreviewOverride','syncManualPackageModels','Body text override','copyRichEmailForGmail'])assert.ok(!source.includes(token),token);
 // Migrate existing body and manually edited full preview without deleting content.

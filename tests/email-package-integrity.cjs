@@ -12,7 +12,7 @@ const ctx={console,crypto:require("node:crypto").webcrypto,document,window:{},Bl
 vm.createContext(ctx);vm.runInContext('let lastGmailPackage=null;const verifiedGmailPackages=new Map();',ctx);
 // Helpers that sanitizeEditableEmailHtml and draftPreviewHtml call. Without them the first
 // sanitize call threw a ReferenceError and none of the checks below ever ran.
-const helpers=['clmImageSlug','clmImageFingerprint','clmLegacyGenericImageIdentifier','clmPackageImageIdentifier','assignPackageImageIdentifiers','uniformEmailPhotoSizes','stripCanvaLinksText','photoDisplayUrl','previewDisplayWidth','previewDisplaySrc','restorePreviewFullSizeImages'];
+const helpers=['stripModelCategoryLabels','clmImageSlug','clmImageFingerprint','clmLegacyGenericImageIdentifier','clmPackageImageIdentifier','assignPackageImageIdentifiers','uniformEmailPhotoSizes','stripCanvaLinksText','photoDisplayUrl','previewDisplayWidth','previewDisplaySrc','restorePreviewFullSizeImages'];
 for(const n of [...helpers,'freezePreviewImagesForReview','normalizedPackageHtml','verifyStoredGmailPackage','gmailInlineDataImages','buildGmailDraftRaw','sanitizeEditableEmailHtml','draftPreviewHtml'])vm.runInContext(fn(n),ctx);
 ctx.currentEmailPreviewHtml=()=>ctx.sanitizeEditableEmailHtml(preview.innerHTML);
 const one='data:image/png;base64,'+Buffer.from('reviewed photo A').toString('base64');

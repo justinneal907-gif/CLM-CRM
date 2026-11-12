@@ -88,7 +88,6 @@ dialog{border:0;border-radius:12px;max-width:680px;width:calc(100% - 30px);paddi
 .draft-model-card{border:1px solid var(--line);border-radius:10px;padding:10px;margin:0 0 10px;background:#fff}
 .draft-model-head{display:grid;grid-template-columns:84px 1fr;gap:10px;align-items:start}
 .draft-model-thumb{width:84px;height:112px;object-fit:cover;border-radius:7px;background:#eceeea}
-.draft-category-control{display:inline-flex;align-items:center;gap:6px;margin:0 8px;font-size:12px}
 .draft-model-controls{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
 .draft-photo-strip{display:flex;gap:7px;overflow-x:auto;padding:8px 0 3px}
 .draft-photo-choice{flex:0 0 66px;border:2px solid transparent;border-radius:7px;padding:0;background:#fff}
@@ -1907,6 +1906,7 @@ function restoreMainGalleryState(data,snapshot){
 /* Drafts, research imports, startup recovery and package edits may read gallery media,
    but may never change the main model gallery. */
 function applyRecovered(incoming){
+  removeModelCategoryLabels(incoming);
   // A saved workspace is authoritative. Retired seed/recovery routines must not
   // remove, retarget, or rewrite packages, models, text, or photo galleries.
   if(incoming&&Array.isArray(incoming.drafts)){
@@ -1950,7 +1950,7 @@ function applyRecovered(incoming){
     ? window.updateCastingDirectorBrandSelections20261012(withCastingDirectorPackages)
     : withCastingDirectorPackages;
   const withoutRachelBridal=removeRachelFromBridalPackages20261009(withBrandMatchedCastingPackages);
-  return restoreMainGalleryState(migrateDraftPreviewDocuments(withoutRachelBridal),gallerySnapshot);
+  return removeModelCategoryLabels(restoreMainGalleryState(migrateDraftPreviewDocuments(withoutRachelBridal),gallerySnapshot));
 }
 /* CRM INDEXEDDB STORAGE V1 */
 const IDB_DB_NAME='jn-agency-crm';
@@ -3503,6 +3503,7 @@ async function resetWorkspace(){if(!confirm('Reset contacts, submissions, bookin
 function renderAll(){if(active==='gallery'){renderModelGallery();return;}if(maintenanceSweep())persistWorkspaceSafe(false);renderStats();if(active==='today'){renderToday();return}if(active==='models'){setupFilters();renderModels();return}if(['contacts','submissions','bookings','tasks'].includes(active)){renderTables();return}if(active==='email'){setupFilters();renderContactOptions();renderDrafts();if(packagePreviewPaused){const preview=$('#emailPreview');if(preview){preview.replaceChildren();preview.textContent='Open a saved package to load its full preview.';preview.dataset.manualRefreshInitialized='';}return;}renderEmail();return}}
 function captureDraft(){db.draft={...(db.draft||{}),eventName:$('#emailEvent').value.trim(),purpose:$('#emailPurpose').value,contactId:$('#emailContact').value,contactName:$('#emailContactName').value,company:$('#emailCompany').value,recipientEmail:$('#emailRecipient').value,brandProject:$('#emailBrand').value,packageLink:$('#emailLink').value,brief:$('#emailContext')?.value??db.draft?.brief??'',notes:$('#emailPrivateNotes')?.value??db.draft?.notes??'',castingBriefRaw:$('#castingBriefRaw')?.value||db.draft?.castingBriefRaw||'',parsedBrief:db.draft?.parsedBrief||null,subject:$('#emailSubject').value,includeStats:$('#includeStats').checked,measurementUnits:normalizeMeasurementUnits($('#measurementUnits')?.value),includePhotos:$('#includePhotos').checked,includeSources:$('#includeSources').checked,modelIds:[...selected]}}
 function hydrateDraft(){
+  removeModelCategoryLabels(db);
   const d=db.draft||seed.draft;
   $('#emailEvent').value=packageIdentity(d).event;
   const v=(key,fallback)=>userOverrideFieldValue(d,key,fallback);
@@ -3755,7 +3756,7 @@ function livePackageModelBlock(m){
     ?ANHELINA_CANONICAL_STATS_2026_09_25
     :((activeRecord?.modelStats||working?.modelStats||{})[m.id]||m.stats||m.measurements||'');
   const modelLink=draftModelLinkForModel(m);
-  return `<div data-clm-model-id="${esc(m.id)}" style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${includeStats&&forcedStats?' | '+formatStats(forcedStats):''}</div>${modelCategoryLabelHtml(m)}${includeSources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftExtraHtml(m)}${includePhotos?modelDraftPhotosHtml(m):''}</div>`;
+  return `<div data-clm-model-id="${esc(m.id)}" style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${includeStats&&forcedStats?' | '+formatStats(forcedStats):''}</div>${includeSources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftExtraHtml(m)}${includePhotos?modelDraftPhotosHtml(m):''}</div>`;
 }
 
 /* END LIVE PACKAGE MODEL PHOTO SYNC */
@@ -4295,153 +4296,36 @@ function editPreviewModels(previousIds,photoModelId=''){
       block.appendChild(photos.content);
     }
   }
-  if(selectionChanged)syncCategoryCanvaLinks(root,selectedModels());
   const html=sanitizeEditableEmailHtml(t.innerHTML);storeDraftPreview(html);
   const preview=$('#emailPreview');if(preview){preview.innerHTML=draftPreviewHtml(html);preview.dataset.manualRefreshInitialized='1';bindDraftPreviewGifs();}
 }
-/* MODEL CATEGORY LABELS 2026-10-23
-   Which package presentation each model actually appears in, read from the six
-   public Canva links on 23 October 2026. A model that is not in any of them has
-   no category and gets no label. The public link only serves pages that are
-   visible, so a model on a hidden page cannot be seen here and is not listed. */
-const MODEL_CANVA_CATEGORY={
-  // Standard
-  'london-men-alex-connor':'Standard','site-men111-mathis':'Standard','new-york-women-seven-wright':'Standard',
-  'london-women-ambre-prognitz':'Standard','site-men111-dioulby':'Standard','germany-women-bianca-eigenfeld-own':'Standard',
-  // Commercial
-  'miami-men-stevenson-jean':'Commercial','miami-women-darian':'Commercial','site-men111-remi':'Commercial',
-  // Mature
-  'new-york-women-maja-stockwell':'Mature','site-women-anhelina':'Mature','new-york-women-claudia-lucchini':'Mature',
-  // Alternative
-  'london-main-reine':'Alternative','new-york-women-rachel-stone':'Alternative','new-york-women-molly-gardiner':'Alternative',
-  'new-york-men-matt-rossi':'Alternative','site-main-board-eva-kann':'Alternative','new-york-development-em0-spit':'Alternative',
-  // New Faces
-  'draft-women-clara':'New Faces','site-development-ainoa':'New Faces',
-  // Confirmed by Justin: in the deck on a page the public link does not show.
-  'new-york-women-agang':'New Faces',
-  // Celebrity
-  'new-york-women-sophia-pippen':'Celebrity','miami-women-raquel':'Celebrity',
-  'new-york-men-scottie-pippen':'Celebrity'
-};
-function modelCanvaCategory(m){return MODEL_CANVA_CATEGORY[m&&m.id]||''}
-// On unless turned off for this package, and only for a model that has one.
-function modelCategoryLabelOn(m){
-  if(!modelCanvaCategory(m))return false;
-  const record=typeof activeDraftRecord==='function'?activeDraftRecord():null;
-  const maps=[record&&record.categoryLabels,db.draft&&db.draft.categoryLabels];
-  for(const map of maps)if(map&&Object.prototype.hasOwnProperty.call(map,m.id))return !!map[m.id];
-  return true;
-}
-function modelCategoryLabelHtml(m){
-  if(!modelCategoryLabelOn(m))return '';
-  return '<div data-clm-category-label="1"><i>'+esc(modelCanvaCategory(m))+'</i></div>';
-}
-function setModelCategoryLabel(id,on){
-  for(const target of activeDraftOverrideTargets()){
-    target.categoryLabels={...(target.categoryLabels||{}),[id]:!!on};
-    const o=draftUserOverrides(target);
-    o.categoryLabels={...(o.categoryLabels||{}),[id]:!!on};
-  }
-  syncPreviewCategoryLabels();
-  if(typeof markPreviewNeedsGmailUpdate==='function')markPreviewNeedsGmailUpdate();
-  persistWorkspaceSafe(true);
-  renderEmailSelection();
-}
-// Adds or removes the label inside each model block of the saved preview, so a
-// toggle shows up without rebuilding the preview and losing edits.
-function syncPreviewCategoryLabels(){
-  const apply=root=>{
-    let changed=false;
-    for(const block of root.querySelectorAll('[data-clm-model-id]')){
-      const model=(db.models||[]).find(x=>x.id===block.getAttribute('data-clm-model-id'));
-      if(!model)continue;
-      const existing=block.querySelector('[data-clm-category-label]');
-      const wanted=modelCategoryLabelOn(model)?modelCanvaCategory(model):'';
-      if(!wanted){if(existing){existing.remove();changed=true}continue}
-      if(existing){
-        if(existing.textContent.trim()!==wanted){existing.innerHTML='<i>'+esc(wanted)+'</i>';changed=true}
-        continue;
-      }
-      const label=document.createElement('div');
-      label.setAttribute('data-clm-category-label','1');
-      label.innerHTML='<i>'+esc(wanted)+'</i>';
-      const first=block.firstElementChild;
-      if(first&&first.nextSibling)block.insertBefore(label,first.nextSibling);
-      else block.appendChild(label);
-      changed=true;
-    }
-    return changed;
-  };
-  const preview=$('#emailPreview');
-  if(preview&&apply(preview)&&preview.dataset.manualRefreshInitialized==='1')storeDraftPreview(currentEmailPreviewHtml(),false);
-  for(const target of activeDraftOverrideTargets()){
-    if(typeof target.previewHtml!=='string'||!target.previewHtml)continue;
-    const t=document.createElement('template');t.innerHTML=target.previewHtml;
-    if(apply(t.content))target.previewHtml=t.innerHTML;
-  }
-}
-/* END MODEL CATEGORY LABELS */
-/* CATEGORY CANVA LINKS 2026-10-21
-   Standardized public Canva packages, one per roster category. When models are
-   added to or removed from a draft, a block with the matching category links is
-   kept directly above the signature. */
-const CATEGORY_CANVA_LINKS=[
-  {key:'standard',label:'Standard',url:'https://canva.link/qotixws4g0xzcy2'},
-  {key:'alternative',label:'Alternative',url:'https://canva.link/6dkl45q4x83m1ou'},
-  {key:'mature',label:'Mature',url:'https://canva.link/wcqk69xohlz0j7i'},
-  {key:'new-faces',label:'New Faces',url:'https://canva.link/wnblda107s1pdj1'},
-  {key:'commercial',label:'Commercial',url:'https://canva.link/roe42u4m15ykmz1'},
-  {key:'celebrity',label:'Celebrity',url:'https://canva.link/no4za3cv5ew9fng'}
-];
-const MODEL_CATEGORY_BY_NAME={
-  reine:'alternative',malia:'alternative',rachel:'alternative',matt:'alternative',molly:'alternative',
-  mary:'standard',seven:'standard',ambre:'standard',alex:'standard',dioulby:'standard',mathis:'standard',bianca:'standard',callie:'standard',
-  maja:'mature',anhelina:'mature',jovana:'mature',claudia:'mature',
-  'sophia pippen':'celebrity',raquel:'celebrity',
-  agang:'new-faces',ainoa:'new-faces',clara:'new-faces',
-  stevenson:'commercial',darian:'commercial',eva:'commercial'
-};
-function modelRosterCategory(model){
-  const name=normalizeName(model?.name);if(!name)return '';
-  return MODEL_CATEGORY_BY_NAME[name]||MODEL_CATEGORY_BY_NAME[name.split(' ')[0]]||'';
-}
-function categoryCanvaLinksHtml(models){
-  const keys=new Set((models||[]).map(modelRosterCategory).filter(Boolean));
-  const rows=CATEGORY_CANVA_LINKS.filter(c=>keys.has(c.key));
-  if(!rows.length)return '';
-  return '<div data-clm-category-links="1">'+rows.map(c=>'<div>View our '+c.label+' models <a href="'+c.url+'" target="_blank"><strong><em>HERE</em></strong></a>.</div>').join('')+'<br></div>';
-}
-const SIGNATURE_CLOSE_RE=/^(Thank you,|Thanks,|Best,|Best regards,|Kind regards,)/;
-function signatureStartElement(root){
-  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
-  let hit=null;
-  for(let n=walker.nextNode();n;n=walker.nextNode())if(SIGNATURE_CLOSE_RE.test(n.nodeValue.trim()))hit=n;
-  if(!hit)return null;
-  let el=hit.parentElement;
-  while(el&&!/^(DIV|P)$/.test(el.tagName))el=el.parentElement;
-  if(!el||!root.contains(el))return null;
-  // A wrapper that holds only the signature (Thank you, Justin, contact lines) moves as one.
-  while(el.parentElement&&root.contains(el.parentElement)&&el.parentElement.firstElementChild===el&&!el.parentElement.querySelector('[data-clm-model-id],img')&&SIGNATURE_CLOSE_RE.test(el.parentElement.textContent.trim()))el=el.parentElement;
-  return el;
-}
-function syncCategoryCanvaLinks(root,models){
-  root.querySelectorAll('[data-clm-category-links]').forEach(el=>el.remove());
-  const html=categoryCanvaLinksHtml(models);if(!html)return;
+/* Retired model category labels. Remove only generated markup and its saved
+   toggle state; preserve model details, media, selections and authored copy. */
+function stripModelCategoryLabels(html){
+  if(typeof html!=='string'||!html.includes('data-clm-category-'))return html;
   const t=document.createElement('template');t.innerHTML=html;
-  const block=t.content.firstElementChild;
-  const sig=signatureStartElement(root);
-  if(sig)sig.parentNode.insertBefore(block,sig);
-  else (root.firstElementChild||root).appendChild(block);
-}
-function withCategoryCanvaLinks(html,models){
-  const t=document.createElement('template');t.innerHTML=String(html||'');
-  syncCategoryCanvaLinks(t.content,models);
+  t.content.querySelectorAll('[data-clm-category-label],[data-clm-category-links]').forEach(el=>el.remove());
   return t.innerHTML;
 }
-/* END CATEGORY CANVA LINKS */
+function removeModelCategoryLabels(data){
+  if(!data||typeof data!=='object')return data;
+  for(const record of [data.draft,...(data.drafts||[]),...(data.models||[])]){
+    if(!record||typeof record!=='object')continue;
+    delete record.categoryLabels;
+    if(record.userOverrides)delete record.userOverrides.categoryLabels;
+    for(const key of ['previewHtml','initialMessage']){
+      if(typeof record[key]==='string'){
+        const cleaned=stripModelCategoryLabels(record[key]);
+        if(cleaned!==record[key]){record[key]=cleaned;record.previewNeedsGmailUpdate=true;}
+      }
+    }
+  }
+  return data;
+}
+/* END RETIRED MODEL CATEGORY LABELS */
 function storeDraftPreview(html,changed=true){
   db.draft=db.draft||structuredClone(seed.draft);
-  db.draft.previewHtml=uniformEmailPhotoSizes(stripCanvaLinksText(html));
+  db.draft.previewHtml=uniformEmailPhotoSizes(stripModelCategoryLabels(stripCanvaLinksText(html)));
   delete db.draft.initialMessage;
   // Main gallery is never changed by package-preview saves.
   const active=activeSavedDraftRecord();
@@ -4505,7 +4389,7 @@ function emailHtml(){
     activeRecord.previewHtml=working.previewHtml;
     return working.previewHtml;
   }
-  const html=withCategoryCanvaLinks(generateInitialEmailHtml(),selectedModels());
+  const html=generateInitialEmailHtml();
   storeDraftPreview(html,false);
   return html;
 }
@@ -4548,7 +4432,7 @@ function generateInitialEmailHtml(){
   const blocks=picked.map(m=>{
     const forcedStats=m.id==='site-women-anhelina'?ANHELINA_CANONICAL_STATS_2026_09_25:((activeRecord?.modelStats||working?.modelStats||{})[m.id]||m.stats||m.measurements||'');
     const modelLink=draftModelLinkForModel(m);
-    return `<div data-clm-model-id="${esc(m.id)}" style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&forcedStats?' | '+formatStats(forcedStats,d.units):''}</div>${modelCategoryLabelHtml(m)}${d.sources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftExtraHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`;
+    return `<div data-clm-model-id="${esc(m.id)}" style="color:#000;font-size:13px;margin:0 0 24px"><div style="line-height:1.65"><b>${esc(m.name)}</b>${d.stats&&forcedStats?' | '+formatStats(forcedStats,d.units):''}</div>${d.sources&&modelLink?`<div><a href="${esc(modelLink)}" target="_blank">${esc(m.profileLabel||'Portfolio')}</a></div>`:''}${modelDraftExtraHtml(m)}${d.photos?modelDraftPhotosHtml(m):''}</div>`;
   }).join('');
   // For this finite set of Bergdorf drafts, reuse the exact prose pattern from
   // Justin's October 15 sent Coach, Givenchy, Jil Sander and Proenza messages.
@@ -4937,7 +4821,7 @@ function storedPhotoBehind(src){
 }
 function sanitizeEditableEmailHtml(html){
   const template=document.createElement('template');
-  template.innerHTML=uniformEmailPhotoSizes(stripCanvaLinksText(html));
+  template.innerHTML=uniformEmailPhotoSizes(stripModelCategoryLabels(stripCanvaLinksText(html)));
   // Undo the screen-only downscaling before anything reads this HTML back.
   restorePreviewFullSizeImages(template.content);
   // Belt and braces: if an image lost its parked reference (a contenteditable
@@ -5294,7 +5178,7 @@ function renderEmailSelection(){
   const quick=picked.length>1?`<div class="quick-order-panel"><div class="quick-order-title"><b>Quick reorder</b><span class="muted tiny">Send any model straight to a position.</span></div><div class="quick-order-list">${picked.map((m,index)=>`<label class="quick-order-row"><span>${index+1}. ${esc(m.name)}</span><select aria-label="Position for ${esc(m.name)}" onchange="setSelectedModelPosition('${m.id}',this.value)">${modelPositionOptions(index,picked.length)}</select></label>`).join('')}</div></div>`:'';
   $('#selectedModels').innerHTML=(picked.length?'<div class="drag-hint">Email order follows this list. Drag a model, use the arrows, or send one straight to a position above. Select as many photos as you want for each model.</div>':'')+quick+picked.map((m,index)=>{
     const picks=draftPhotosForModel(m),pick=picks[0]||'',selectedKeys=new Set(picks.map(galleryPhotoKey)),opts=draftPhotoOptions(m);
-    return `<div class="draft-model-card" draggable="true" ondragstart="dragSelectedModel(event,'${m.id}')" ondragover="event.preventDefault()" ondrop="dropSelectedModel(event,'${m.id}')"><div class="draft-model-head">${pick?`<img class="draft-model-thumb" loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(pick))}" alt="${esc(m.name)} draft photo">`:`<div class="draft-model-thumb placeholder" style="display:flex;align-items:center;justify-content:center">${esc(initials(m.name))}</div>`}<div><div><b>${index+1}. ${esc(m.name)}</b> · ${esc(m.location)} / ${esc(m.division)}</div><div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div><div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div>${modelDraftExtraHtml(m,true)}${modelDraftExtraControlsHtml(m)}<div class="draft-model-controls"><label class="draft-position-control"><span>Position</span><select onchange="setSelectedModelPosition('${m.id}',this.value)">${modelPositionOptions(index,picked.length)}</select></label><span class="pill">${picks.length} photo${picks.length===1?'':'s'}</span>${modelCanvaCategory(m)?`<label class="draft-category-control" title="Shows this model's package category in the email"><input type="checkbox" ${modelCategoryLabelOn(m)?'checked':''} onchange="setModelCategoryLabel('${m.id}',this.checked)"> ${esc(modelCanvaCategory(m))}</label>`:''}<button class="btn" type="button" title="Move up" ${index===0?'disabled':''} onclick="setSelectedModelPosition('${m.id}',${index})">&#9650;</button><button class="btn" type="button" title="Move down" ${index===picked.length-1?'disabled':''} onclick="setSelectedModelPosition('${m.id}',${index+2})">&#9660;</button><button class="btn danger" type="button" onclick="removeFromEmail('${m.id}')">Remove</button></div></div></div>${opts.length?`<div class="draft-photo-strip">${opts.map((p,i)=>{const active=selectedKeys.has(galleryPhotoKey(p.url));return `<button class="draft-photo-choice ${active?'active':''}" type="button" title="${active?'Remove':'Add'} ${esc(p.label)}" onclick="togglePackagePhoto('${m.id}',${i})"><img loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(p.url))}" alt="${esc(m.name)} photo"><span class="multi-photo-badge">${active?'✓':'+'}</span></button>`}).join('')}</div>`:''}<div class="draft-photo-controls"><input type="url" placeholder="Paste photo URL — adds to package" onchange="setDraftPhotoUrl('${m.id}',this.value);this.value=''"><button class="btn" type="button" onclick="resetDraftPhoto('${m.id}')">Clear selected photos</button></div><div class="draft-link-controls"><label>${esc(m.profileLabel||'Portfolio')} link override</label><div class="draft-link-row"><input type="url" value="${esc(draftModelLinkForModel(m))}" placeholder="Paste a link, or clear to hide it" onchange="setDraftModelLink('${m.id}',this.value)"><button class="btn" type="button" onclick="resetDraftModelLink('${m.id}')">Use default</button></div></div><div class="draft-photo-upload"><input type="file" accept="image/*" multiple onchange="setDraftPhotoFile('${m.id}',this)"><button class="btn" type="button" onclick="pasteClipboardImageToModel('${m.id}')">Paste copied image</button><span tabindex="0" onpaste="handleModelImagePaste(event,'${m.id}')" style="display:inline-block;margin-left:6px;padding:6px 8px;border:1px dashed #aab4ad;border-radius:6px;cursor:text" title="Click here, then press Ctrl+V">Ctrl+V image here</span><span class="muted tiny"> Select or paste one or multiple images. They save to the photo library and are added to this draft.</span></div></div>`;
+    return `<div class="draft-model-card" draggable="true" ondragstart="dragSelectedModel(event,'${m.id}')" ondragover="event.preventDefault()" ondrop="dropSelectedModel(event,'${m.id}')"><div class="draft-model-head">${pick?`<img class="draft-model-thumb" loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(pick))}" alt="${esc(m.name)} draft photo">`:`<div class="draft-model-thumb placeholder" style="display:flex;align-items:center;justify-content:center">${esc(initials(m.name))}</div>`}<div><div><b>${index+1}. ${esc(m.name)}</b> · ${esc(m.location)} / ${esc(m.division)}</div><div class="muted">${esc(m.niche||'Unclassified')}${m.secondaryNiche?' · Secondary: '+esc(m.secondaryNiche):''}</div><div class="muted">${esc(m.stats||m.measurements||'')}</div><div class="muted ${availabilityConflict(m,date)?'status-warn':''}">${esc(m.availabilityStatus||'Unknown')}${m.holdProject?' · '+esc(m.holdProject):''}${availabilityConflict(m,date)?' · CONFLICT':''}${availabilityCaution(m,date)?' · HOLD':''}</div>${modelDraftExtraHtml(m,true)}${modelDraftExtraControlsHtml(m)}<div class="draft-model-controls"><label class="draft-position-control"><span>Position</span><select onchange="setSelectedModelPosition('${m.id}',this.value)">${modelPositionOptions(index,picked.length)}</select></label><span class="pill">${picks.length} photo${picks.length===1?'':'s'}</span><button class="btn" type="button" title="Move up" ${index===0?'disabled':''} onclick="setSelectedModelPosition('${m.id}',${index})">&#9650;</button><button class="btn" type="button" title="Move down" ${index===picked.length-1?'disabled':''} onclick="setSelectedModelPosition('${m.id}',${index+2})">&#9660;</button><button class="btn danger" type="button" onclick="removeFromEmail('${m.id}')">Remove</button></div></div></div>${opts.length?`<div class="draft-photo-strip">${opts.map((p,i)=>{const active=selectedKeys.has(galleryPhotoKey(p.url));return `<button class="draft-photo-choice ${active?'active':''}" type="button" title="${active?'Remove':'Add'} ${esc(p.label)}" onclick="togglePackagePhoto('${m.id}',${i})"><img loading="lazy" decoding="async" src="${esc(packageThumbnailUrl(p.url))}" alt="${esc(m.name)} photo"><span class="multi-photo-badge">${active?'✓':'+'}</span></button>`}).join('')}</div>`:''}<div class="draft-photo-controls"><input type="url" placeholder="Paste photo URL — adds to package" onchange="setDraftPhotoUrl('${m.id}',this.value);this.value=''"><button class="btn" type="button" onclick="resetDraftPhoto('${m.id}')">Clear selected photos</button></div><div class="draft-link-controls"><label>${esc(m.profileLabel||'Portfolio')} link override</label><div class="draft-link-row"><input type="url" value="${esc(draftModelLinkForModel(m))}" placeholder="Paste a link, or clear to hide it" onchange="setDraftModelLink('${m.id}',this.value)"><button class="btn" type="button" onclick="resetDraftModelLink('${m.id}')">Use default</button></div></div><div class="draft-photo-upload"><input type="file" accept="image/*" multiple onchange="setDraftPhotoFile('${m.id}',this)"><button class="btn" type="button" onclick="pasteClipboardImageToModel('${m.id}')">Paste copied image</button><span tabindex="0" onpaste="handleModelImagePaste(event,'${m.id}')" style="display:inline-block;margin-left:6px;padding:6px 8px;border:1px dashed #aab4ad;border-radius:6px;cursor:text" title="Click here, then press Ctrl+V">Ctrl+V image here</span><span class="muted tiny"> Select or paste one or multiple images. They save to the photo library and are added to this draft.</span></div></div>`;
   }).join('')||'<div class="empty">No models selected.</div>';
   renderSubmissionWarnings();renderPhotoLibrary();
 }
@@ -5341,6 +5225,7 @@ function normalizeCanvaLinksInDraftRecord(record){
   return record;
 }
 function removeCanvaLinksFromWorkspace(data){
+  removeModelCategoryLabels(data);
   if(!data||typeof data!=='object')return data;
   if(data.draft)normalizeCanvaLinksInDraftRecord(data.draft);
   for(const draft of data.drafts||[])normalizeCanvaLinksInDraftRecord(draft);
