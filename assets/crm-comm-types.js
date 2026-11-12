@@ -158,5 +158,5 @@ function build(win,doc,anchor){
   });
   loadEditor();
 }
-return {TYPES,CANVA,render,byId,names,mount};
+return {TYPES,render,byId,names,mount};
 });
