@@ -2493,12 +2493,12 @@ function parseBodyCm(value){
 function heightFromCm(cm,units){
   if(!Number.isFinite(cm))return'';
   if(units==='metric')return cleanMeasurementNumber(cm,1)+' cm';
-  const total=cm/2.54,feet=Math.floor(total/12),inches=total-feet*12;
-  return feet+"'" + cleanMeasurementNumber(inches,1) + '"';
+  const totalInches=Math.round(cm/2.54),feet=Math.floor(totalInches/12),inches=totalInches-feet*12;
+  return feet+"'" + inches + '"';
 }
 function bodyFromCm(cm,units){
   if(!Number.isFinite(cm))return'';
-  return units==='metric'?cleanMeasurementNumber(cm,1)+' cm':cleanMeasurementNumber(cm/2.54,1)+'"';
+  return units==='metric'?cleanMeasurementNumber(cm,1)+' cm':Math.round(cm/2.54)+'"';
 }
 function measurementStatsForUnits(s,units='imperial'){
   units=normalizeMeasurementUnits(units);
