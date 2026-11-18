@@ -5,7 +5,7 @@ The package builder can create a separate Gmail draft for each recipient while k
 ## Use it
 
 1. Open **Create package** and build the package as usual. Select the models, edit the subject and email preview, and save the package.
-2. In **Send this package to multiple recipients**, enter an email address and recipient name. If the address belongs to a CRM contact, their name fills in automatically. Choose **Add email**. Repeat for each additional recipient.
+2. In **Send this package to multiple recipients**, paste one recipient per line as `Name, email`, or paste two columns from a spreadsheet into **Paste recipient list**. Known CRM contacts get their name filled in automatically. Choose **Add pasted recipients**. Invalid rows stay in the box so you can correct them. You can also add one person at a time with **Add another email**.
 3. Check the queued names and email addresses. Remove anyone who should not receive the package.
 4. Choose **Create personalized Gmail drafts**. The CRM saves one separate package copy and Gmail draft per recipient. The drafts are created one at a time; the CRM reports any address that failed.
 5. Review the individual drafts in Work Gmail, then send them from Gmail.
