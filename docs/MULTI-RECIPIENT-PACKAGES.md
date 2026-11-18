@@ -1,6 +1,6 @@
 # Send one package to multiple recipients
 
-The package builder can create a separate Gmail draft for each recipient while keeping the package content and selected models the same. Each copy uses that recipient’s name in the greeting and their email address in the To field. The CRM’s usual agency CC is included on each Gmail draft.
+The package builder can create a separate Gmail draft for each recipient while keeping the package content and selected models the same. Each copy uses that recipient’s first name in the greeting and their queued email address in the To field. The CRM’s usual agency CC is included on each Gmail draft.
 
 ## Use it
 
@@ -12,7 +12,7 @@ The package builder can create a separate Gmail draft for each recipient while k
 
 ## Notes
 
-- When you create a batch, the current **Recipient email** and **Contact name** fields are included along with the recipients you added in the multi-recipient list. Leave the current email blank if you only want to use the list.
+- Batch drafts use only the recipients in the multi-recipient list. The **Recipient email** field above is for creating a single draft and is not required for a batch.
 - Recipients are kept with the saved base package so the list can be reused. Recipient addresses are not exposed to one another because the CRM creates individual drafts rather than one message with multiple To addresses.
 - Creating the drafts does not send them. Review each draft and send from Work Gmail.
 - If Gmail is not connected, connect Work Gmail in the package builder before creating drafts.
