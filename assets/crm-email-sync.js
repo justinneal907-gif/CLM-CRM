@@ -778,7 +778,7 @@
       .replace(DASH,' ')
       .replace(/\s+([,.;:!?])/g,'$1')
       .replace(/,\s*,/g,',')
-      .replace(/\s{2,}/g,' ');
+      .replace(/[ \t]{2,}/g,' ');
   }
 
   function cleanHtml(html){
@@ -823,12 +823,10 @@
     return changed;
   }
 
-  // Tidying runs on every keystroke, through captureDraft. It must therefore
-  // leave alone whatever is being typed in: cleanSubject ends in trim(), so a
-  // space pressed between two words was removed the instant it was typed and
-  // the next letter landed against the previous word. A field is tidied once
-  // the caret leaves it, which still applies the no-dash rule to what is sent.
-  function cleanUi(){
+  // Tidying is a blur/send operation. captureDraft and hydrateDraft must stay
+  // side-effect free so ordinary typing and package switching cannot rewrite
+  // the active field or preview.
+  function cleanUi({includePreview=false}={}){
     if(typeof db!=='undefined'&&(db.draft?.bodyEdited||db.draft?.userOverrides?.fullHtmlLocked))return false;
     let changed=false;
     const active=document.activeElement;
@@ -844,19 +842,19 @@
       if(next!==el.value){el.value=next;changed=true}
     }
     const preview=document.getElementById('emailPreview');
-    if(preview&&preview.innerHTML&&!(active&&preview.contains(active))){
+    if(includePreview&&preview&&preview.innerHTML&&!(active&&preview.contains(active))){
       const next=cleanHtml(preview.innerHTML);
-      if(next!==preview.innerHTML){preview.innerHTML=next;changed=true}
+      if(next!==preview.innerHTML){preview.innerHTML=next;if(typeof storeDraftPreview==='function')storeDraftPreview(next);changed=true}
     }
     return changed;
   }
 
-  function applyAll(){
+  function applyAll(includeActive=false){
     if(typeof db==='undefined'||!db)return false;
     let changed=false;
-    if(cleanRecord(db.draft))changed=true;
+    if(includeActive&&cleanRecord(db.draft))changed=true;
     (db.drafts||[]).forEach(function(record){if(cleanRecord(record))changed=true});
-    if(cleanUi())changed=true;
+    if(includeActive&&cleanUi({includePreview:true}))changed=true;
     db.settings=Object.assign({},db.settings||{},{
       noDashEmailCopyVersion:1,
       noDashEmailCopyUpdatedOn:'2026-09-25'
@@ -868,50 +866,55 @@
   if(typeof emailHtml==='function'&&!emailHtml.__clmNoDash){
     const original=emailHtml;
     const wrapped=function(){
+      const working=typeof db!=='undefined'?(db?.draft||{}):{};
+      const active=typeof db!=='undefined'&&db?.activeDraftId
+        ?(db.drafts||[]).find(function(d){return d.id===db.activeDraftId})||null
+        :null;
+      const savedPreview=Object.prototype.hasOwnProperty.call(working,'previewHtml')||
+        Object.prototype.hasOwnProperty.call(active||{},'previewHtml');
       const html=original.apply(this,arguments);
-      return typeof db!=='undefined'&&(db.draft?.bodyEdited||db.draft?.userOverrides?.fullHtmlLocked)?html:cleanHtml(html);
+      if((typeof db!=='undefined'&&(db.draft?.bodyEdited||db.draft?.userOverrides?.fullHtmlLocked))||savedPreview)return html;
+      const cleaned=cleanHtml(html);
+      if(cleaned!==html&&typeof storeDraftPreview==='function')storeDraftPreview(cleaned,false);
+      return cleaned;
     };
     wrapped.__clmNoDash=true;
     emailHtml=wrapped;
   }
 
-  // Tidy on the way out, so leaving a field applies the rule straight away.
-  for(const id of ['emailSubject','emailCustomBody','emailContext']){
+  // Normalize text only after the specific field loses focus. Do not wrap
+  // captureDraft or hydrateDraft: both run during ordinary editing and must
+  // never rewrite a field or the editable email preview.
+  ['emailSubject','emailCustomBody','emailContext'].forEach(function(id){
     const el=document.getElementById(id);
-    if(!el||el.__clmNoDashBlur)continue;
-    el.__clmNoDashBlur=true;
-    el.addEventListener('blur',()=>{
-      if(cleanUi()&&typeof captureDraft==='function')captureDraft();
+    if(!el||el.dataset.noDashBlurBound==='1')return;
+    el.dataset.noDashBlurBound='1';
+    el.addEventListener('blur',function(){
+      if(typeof db!=='undefined'&&(db.draft?.bodyEdited||db.draft?.userOverrides?.fullHtmlLocked))return;
+      const next=id==='emailSubject'?cleanSubject(el.value):cleanBodyText(el.value);
+      if(next!==el.value)el.value=next;
+      if(typeof captureDraft==='function')captureDraft();
+      if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
     });
-  }
+  });
 
-  if(typeof captureDraft==='function'&&!captureDraft.__clmNoDash){
-    const original=captureDraft;
-    const wrapped=function(){
-      cleanUi();
-      const result=original.apply(this,arguments);
-      cleanRecord(db.draft);
-      return result;
-    };
-    wrapped.__clmNoDash=true;
-    captureDraft=wrapped;
-  }
-
-  if(typeof hydrateDraft==='function'&&!hydrateDraft.__clmNoDash){
-    const original=hydrateDraft;
-    const wrapped=function(){
-      const result=original.apply(this,arguments);
-      cleanUi();
-      return result;
-    };
-    wrapped.__clmNoDash=true;
-    hydrateDraft=wrapped;
+  const preview=document.getElementById('emailPreview');
+  if(preview&&preview.dataset.noDashBlurBound!=='1'){
+    preview.dataset.noDashBlurBound='1';
+    preview.addEventListener('blur',function(){
+      if(typeof db!=='undefined'&&(db.draft?.bodyEdited||db.draft?.userOverrides?.fullHtmlLocked))return;
+      const next=cleanHtml(preview.innerHTML);
+      if(next===preview.innerHTML)return;
+      preview.innerHTML=next;
+      if(typeof storeDraftPreview==='function')storeDraftPreview(next);
+      if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
+    });
   }
 
   if(typeof createFormattedWorkGmailDraft==='function'&&!createFormattedWorkGmailDraft.__clmNoDash){
     const original=createFormattedWorkGmailDraft;
     const wrapped=async function(){
-      cleanUi();
+      cleanUi({includePreview:true});
       cleanRecord(db.draft);
       const active=db.activeDraftId?(db.drafts||[]).find(function(d){return d.id===db.activeDraftId}):null;
       if(active)cleanRecord(active);
@@ -922,20 +925,8 @@
     createFormattedWorkGmailDraft=wrapped;
   }
 
-  ['emailSubject','emailCustomBody','emailContext'].forEach(function(id){
-    const el=document.getElementById(id);
-    if(!el||el.dataset.noDashBound==='1')return;
-    el.dataset.noDashBound='1';
-    el.addEventListener('blur',function(){
-      cleanUi();
-      if(typeof captureDraft==='function')captureDraft();
-      if(typeof persistWorkspaceSafe==='function')persistWorkspaceSafe(false);
-      if(typeof renderEmail==='function')renderEmail();
-    });
-  });
-
   window.clmCleanEmailDashes=function(){
-    const changed=applyAll();
+    const changed=applyAll(true);
     if(typeof renderEmail==='function')renderEmail();
     if(typeof renderDrafts==='function')renderDrafts();
     if(typeof setStatus==='function')setStatus('Removed dashes from CRM email subjects and body copy.');
@@ -944,15 +935,13 @@
 
   window.addEventListener('clm:workspace-ready',function(){
     setTimeout(function(){
-      applyAll();
-      if(typeof renderAll==='function')renderAll();
+      if(applyAll()&&typeof renderAll==='function')renderAll();
     },0);
   },{once:true});
 
   setTimeout(function(){
     if(typeof db!=='undefined'&&db){
-      applyAll();
-      if(typeof renderAll==='function')renderAll();
+      if(applyAll()&&typeof renderAll==='function')renderAll();
     }
   },1200);
 })();
