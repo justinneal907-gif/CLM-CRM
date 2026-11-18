@@ -2,6 +2,7 @@
   "private": true,
   "scripts": {
     "test": "cd .. && node tests/preview-authority.cjs && node tests/preview-send.cjs && node tests/email-package-integrity.cjs && node tests/package-link-override.cjs",
+    "test:batch-recipient": "cd .. && node tests/batch-recipient-address.cjs",
     "test:gallery": "cd .. && node tests/direct-gallery-reload.cjs",
     "test:persistence": "cd .. && node tests/package-persistence.cjs"
   },
