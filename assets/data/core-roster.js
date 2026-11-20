@@ -11,3 +11,5 @@ window.CLM_CORE_ROSTER.NICHE_MAP["Aliana"]="Development";
 
 window.CLM_CORE_ROSTER.BASE_ROSTER.push({"id":"punnett-productions-jonah-punnett","name":"Jonah Punnett","location":"","division":"Men","measurements":"Height: 6’2’’ | Chest: 41’’ | Waist: 34’’ | Hip: 38’’ | Shoe: U.S. 13","profileUrl":"https://www.punnettproductions.com/modeling","photoUrl":"https://images.squarespace-cdn.com/content/v1/678306dc9f2e5a4d12b71019/604fe9d7-de8c-46e5-9491-b0da6f5ce48d/2.jpg","photoFilename":"2.jpg","activeBoard":true,"source":"Punnett Productions modeling page","sourceDate":"2026-11-19"});
 window.CLM_CORE_ROSTER.NICHE_MAP["Jonah Punnett"]="Luxury / Runway";
+
+window.CLM_CORE_ROSTER.BASE_ROSTER.push({"id":"user-artist-quartz","name":"Quartz","location":"","division":"Artist","measurements":"Height: 5’9’’ | Chest: 32’’ | Waist: 28’’ | Hip: 35’’ | Shoe: 9","profileUrl":"","photoUrl":"","photoFilename":"","source":"User supplied profile image","sourceDate":"2026-11-19","activeBoard":true});
